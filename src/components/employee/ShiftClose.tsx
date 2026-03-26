@@ -1,0 +1,338 @@
+import React, { useState, useMemo } from 'react';
+import { useData } from '@/contexts/DataContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
+import type { SaleItem, Transfer, VipSale, ShiftReport } from '@/types';
+import { Check, Trash2, Plus, Printer, LogOut } from 'lucide-react';
+
+const DENOMINATIONS = [1, 3, 5, 10, 20, 50, 100, 200, 500, 1000];
+
+export default function ShiftClose() {
+  const { products, getStockQuantity, reduceStock, addReport } = useData();
+  const { currentUser, logout } = useAuth();
+  const [step, setStep] = useState(1);
+
+  // Step 1: remaining quantities
+  const stockProducts = useMemo(() =>
+    products.filter(p => getStockQuantity(p.id) > 0).map(p => ({
+      ...p,
+      stockQty: getStockQuantity(p.id),
+    })), [products, getStockQuantity]);
+
+  const [remaining, setRemaining] = useState<Record<string, string>>({});
+
+  // Step 2: payment breakdown
+  const [bills, setBills] = useState<Record<number, number>>(() =>
+    Object.fromEntries(DENOMINATIONS.map(d => [d, 0]))
+  );
+  const [transfers, setTransfers] = useState<Transfer[]>([]);
+  const [newTransfer, setNewTransfer] = useState({ amount: '', code: '' });
+  const [vipSales, setVipSales] = useState<VipSale[]>([]);
+  const [newVip, setNewVip] = useState({ concept: '', amount: '' });
+
+  // Step 3: final report
+  const [finalReport, setFinalReport] = useState<ShiftReport | null>(null);
+
+  // Calculate sold items
+  const saleItems: SaleItem[] = useMemo(() =>
+    stockProducts.map(p => {
+      const rem = Number(remaining[p.id]) || 0;
+      const sold = Math.max(0, p.stockQty - rem);
+      return {
+        productId: p.id,
+        productName: p.name,
+        price: p.price,
+        quantitySold: sold,
+        subtotal: sold * p.price,
+      };
+    }).filter(item => item.quantitySold > 0), [stockProducts, remaining]);
+
+  const totalSold = saleItems.reduce((s, i) => s + i.subtotal, 0);
+  const cashTotal = Object.entries(bills).reduce((s, [denom, count]) => s + Number(denom) * count, 0);
+  const transferTotal = transfers.reduce((s, t) => s + t.amount, 0);
+  const vipTotal = vipSales.reduce((s, v) => s + v.amount, 0);
+  const totalDeclared = cashTotal + transferTotal + vipTotal;
+  const difference = totalDeclared - totalSold;
+  const isBalanced = Math.abs(difference) < 0.01;
+
+  const currentShift = (): 'morning' | 'afternoon' => {
+    const hour = new Date().getHours();
+    return hour < 14 ? 'morning' : 'afternoon';
+  };
+
+  const addTransfer = () => {
+    if (!newTransfer.amount || !newTransfer.code) return;
+    setTransfers(prev => [...prev, { id: crypto.randomUUID(), amount: Number(newTransfer.amount), code: newTransfer.code }]);
+    setNewTransfer({ amount: '', code: '' });
+  };
+
+  const addVip = () => {
+    if (!newVip.amount || !newVip.concept) return;
+    setVipSales(prev => [...prev, { id: crypto.randomUUID(), concept: newVip.concept, amount: Number(newVip.amount) }]);
+    setNewVip({ concept: '', amount: '' });
+  };
+
+  const handleFinalize = () => {
+    const salary = totalSold * 0.02;
+    const report: ShiftReport = {
+      id: crypto.randomUUID(),
+      employeeId: currentUser?.id || '',
+      employeeName: currentUser?.name || '',
+      date: new Date().toISOString(),
+      shift: currentShift(),
+      items: saleItems,
+      cashTotal,
+      cashBreakdown: bills,
+      transfers,
+      vipSales,
+      totalSold,
+      salary,
+      status: isBalanced ? 'balanced' : difference > 0 ? 'surplus' : 'deficit',
+      difference,
+    };
+
+    // Reduce stock
+    saleItems.forEach(item => reduceStock(item.productId, item.quantitySold));
+    addReport(report);
+    setFinalReport(report);
+    setStep(3);
+    toast.success('Turno cerrado exitosamente');
+  };
+
+  if (step === 3 && finalReport) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="glass-card p-8 animate-fade-in-up">
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-3">
+              <Check className="w-8 h-8 text-success" />
+            </div>
+            <h1 className="text-2xl font-display font-bold">Turno Cerrado</h1>
+            <p className="text-muted-foreground">
+              {new Date(finalReport.date).toLocaleDateString()} — Turno {finalReport.shift === 'morning' ? 'Mañana' : 'Tarde'}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="stat-card text-center">
+              <p className="text-sm text-muted-foreground">Total Vendido</p>
+              <p className="text-2xl font-bold font-display">${finalReport.totalSold.toLocaleString()}</p>
+            </div>
+            <div className="stat-card text-center">
+              <p className="text-sm text-muted-foreground">Salario (2%)</p>
+              <p className="text-2xl font-bold font-display text-success">${finalReport.salary.toFixed(2)}</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <h3 className="font-display font-bold mb-2">📋 Productos Vendidos</h3>
+              <table className="data-table text-sm">
+                <thead><tr><th>Producto</th><th>Cant.</th><th>Subtotal</th></tr></thead>
+                <tbody>
+                  {finalReport.items.map(item => (
+                    <tr key={item.productId}>
+                      <td>{item.productName}</td>
+                      <td>{item.quantitySold}</td>
+                      <td>${item.subtotal.toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div>
+              <h3 className="font-display font-bold mb-2">💰 Desglose de Pagos</h3>
+              <p className="text-sm">Efectivo: <span className="font-bold">${finalReport.cashTotal.toLocaleString()}</span></p>
+              {finalReport.transfers.length > 0 && (
+                <div className="mt-1">
+                  <p className="text-sm font-medium">Transferencias:</p>
+                  {finalReport.transfers.map(t => (
+                    <p key={t.id} className="text-sm ml-4">• ${t.amount} — Código: {t.code}</p>
+                  ))}
+                </div>
+              )}
+              {finalReport.vipSales.length > 0 && (
+                <div className="mt-1">
+                  <p className="text-sm font-medium">VIP:</p>
+                  {finalReport.vipSales.map(v => (
+                    <p key={v.id} className="text-sm ml-4">• ${v.amount} — {v.concept}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className={`p-3 rounded-lg text-sm font-medium ${
+              finalReport.status === 'balanced' ? 'bg-success/10 text-success' :
+              finalReport.status === 'surplus' ? 'bg-warning/10 text-warning' :
+              'bg-destructive/10 text-destructive'
+            }`}>
+              {finalReport.status === 'balanced' ? '✅ Todo cuadrado' :
+               finalReport.status === 'surplus' ? `⬆️ Sobrante: $${finalReport.difference.toFixed(2)}` :
+               `⬇️ Faltante: $${Math.abs(finalReport.difference).toFixed(2)}`}
+            </div>
+          </div>
+
+          <div className="flex gap-3 mt-6">
+            <Button variant="outline" className="flex-1" onClick={() => window.print()}>
+              <Printer className="w-4 h-4 mr-2" />
+              Imprimir
+            </Button>
+            <Button className="flex-1" onClick={logout}>
+              <LogOut className="w-4 h-4 mr-2" />
+              Cerrar Sesión
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="page-header">
+        <h1 className="page-title">Cierre de Turno</h1>
+        <div className="step-indicator">
+          <div className={`step-dot ${step === 1 ? 'active' : step > 1 ? 'completed' : 'pending'}`}>1</div>
+          <div className="w-8 h-0.5 bg-border" />
+          <div className={`step-dot ${step === 2 ? 'active' : step > 2 ? 'completed' : 'pending'}`}>2</div>
+        </div>
+      </div>
+
+      {step === 1 && (
+        <div className="glass-card p-6 animate-fade-in-up">
+          <h2 className="text-lg font-display font-bold mb-4">Paso 1: Rebajar Productos</h2>
+          <p className="text-sm text-muted-foreground mb-4">Ingresa la cantidad que <strong>queda</strong> de cada producto.</p>
+          <table className="data-table">
+            <thead>
+              <tr><th>Producto</th><th>Stock Inicial</th><th>Quedan</th><th>Vendidos</th><th>Subtotal</th></tr>
+            </thead>
+            <tbody>
+              {stockProducts.map(p => {
+                const rem = Number(remaining[p.id]) || 0;
+                const sold = Math.max(0, p.stockQty - rem);
+                return (
+                  <tr key={p.id}>
+                    <td className="font-medium">{p.name}</td>
+                    <td>{p.stockQty}</td>
+                    <td>
+                      <Input
+                        type="number"
+                        min="0"
+                        max={p.stockQty}
+                        value={remaining[p.id] || ''}
+                        onChange={e => setRemaining(prev => ({ ...prev, [p.id]: e.target.value }))}
+                        className="w-20"
+                        placeholder="0"
+                      />
+                    </td>
+                    <td className="font-semibold">{sold}</td>
+                    <td className="font-semibold">${(sold * p.price).toLocaleString()}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div className="flex items-center justify-between mt-6">
+            <p className="text-lg font-bold font-display">Total Vendido: <span className="text-primary">${totalSold.toLocaleString()}</span></p>
+            <Button onClick={() => setStep(2)}>Continuar →</Button>
+          </div>
+        </div>
+      )}
+
+      {step === 2 && (
+        <div className="glass-card p-6 animate-fade-in-up">
+          <h2 className="text-lg font-display font-bold mb-4">Paso 2: Desglose de Pagos</h2>
+
+          {/* Cash */}
+          <div className="mb-6">
+            <h3 className="font-semibold mb-3">💵 Efectivo</h3>
+            <div className="grid grid-cols-5 gap-2">
+              {DENOMINATIONS.map(d => (
+                <div key={d} className="text-center">
+                  <label className="text-xs text-muted-foreground">${d}</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={bills[d] || ''}
+                    onChange={e => setBills(prev => ({ ...prev, [d]: Number(e.target.value) || 0 }))}
+                    className="text-center"
+                    placeholder="0"
+                  />
+                </div>
+              ))}
+            </div>
+            <p className="text-sm mt-2 font-medium">Subtotal Efectivo: <span className="text-primary">${cashTotal.toLocaleString()}</span></p>
+          </div>
+
+          {/* Transfers */}
+          <div className="mb-6">
+            <h3 className="font-semibold mb-3">💳 Transferencias</h3>
+            <div className="flex gap-2 mb-2">
+              <Input placeholder="Monto" type="number" value={newTransfer.amount} onChange={e => setNewTransfer(prev => ({ ...prev, amount: e.target.value }))} className="w-28" />
+              <Input placeholder="Código" value={newTransfer.code} onChange={e => setNewTransfer(prev => ({ ...prev, code: e.target.value }))} />
+              <Button size="sm" onClick={addTransfer}><Plus className="w-4 h-4" /></Button>
+            </div>
+            {transfers.map(t => (
+              <div key={t.id} className="flex items-center justify-between bg-secondary/50 rounded-lg px-3 py-2 mb-1">
+                <span className="text-sm">${t.amount} — <span className="text-muted-foreground">{t.code}</span></span>
+                <Button variant="ghost" size="sm" onClick={() => setTransfers(prev => prev.filter(x => x.id !== t.id))}>
+                  <Trash2 className="w-3 h-3 text-destructive" />
+                </Button>
+              </div>
+            ))}
+            <p className="text-sm font-medium">Subtotal Transferencias: <span className="text-primary">${transferTotal.toLocaleString()}</span></p>
+          </div>
+
+          {/* VIP */}
+          <div className="mb-6">
+            <h3 className="font-semibold mb-3">👑 VIP</h3>
+            <div className="flex gap-2 mb-2">
+              <Input placeholder="Concepto" value={newVip.concept} onChange={e => setNewVip(prev => ({ ...prev, concept: e.target.value }))} />
+              <Input placeholder="Monto" type="number" value={newVip.amount} onChange={e => setNewVip(prev => ({ ...prev, amount: e.target.value }))} className="w-28" />
+              <Button size="sm" onClick={addVip}><Plus className="w-4 h-4" /></Button>
+            </div>
+            {vipSales.map(v => (
+              <div key={v.id} className="flex items-center justify-between bg-secondary/50 rounded-lg px-3 py-2 mb-1">
+                <span className="text-sm">{v.concept} — <span className="font-medium">${v.amount}</span></span>
+                <Button variant="ghost" size="sm" onClick={() => setVipSales(prev => prev.filter(x => x.id !== v.id))}>
+                  <Trash2 className="w-3 h-3 text-destructive" />
+                </Button>
+              </div>
+            ))}
+            <p className="text-sm font-medium">Subtotal VIP: <span className="text-primary">${vipTotal.toLocaleString()}</span></p>
+          </div>
+
+          {/* Verification */}
+          <div className={`p-4 rounded-xl border-2 mb-6 ${isBalanced ? 'border-success bg-success/5' : 'border-destructive bg-destructive/5'}`}>
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <p className="text-xs text-muted-foreground">Total Vendido</p>
+                <p className="text-xl font-bold">${totalSold.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Total Declarado</p>
+                <p className="text-xl font-bold">${totalDeclared.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Diferencia</p>
+                <p className={`text-xl font-bold ${isBalanced ? 'text-success' : 'text-destructive'}`}>
+                  {isBalanced ? '✅ $0' : `${difference > 0 ? '+' : ''}$${difference.toFixed(2)}`}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={() => setStep(1)}>← Volver</Button>
+            <Button className="flex-1" disabled={!isBalanced} onClick={handleFinalize}>
+              {isBalanced ? 'Finalizar Turno ✅' : 'Diferencia detectada ❌'}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
