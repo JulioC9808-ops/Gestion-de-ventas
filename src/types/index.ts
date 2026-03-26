@@ -1,0 +1,80 @@
+export type UserRole = 'admin' | 'employee' | 'dev';
+
+export interface User {
+  id: string;
+  username: string;
+  password: string;
+  name: string;
+  role: UserRole;
+  createdAt: string;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  price: number;
+  category: string;
+  unit: string;
+}
+
+export interface StockItem {
+  productId: string;
+  quantity: number;
+  addedAt: string;
+  addedBy: string;
+}
+
+export interface SaleItem {
+  productId: string;
+  productName: string;
+  price: number;
+  quantitySold: number;
+  subtotal: number;
+}
+
+export interface Transfer {
+  id: string;
+  amount: number;
+  code: string;
+}
+
+export interface VipSale {
+  id: string;
+  concept: string;
+  amount: number;
+}
+
+export interface ShiftReport {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  date: string;
+  shift: 'morning' | 'afternoon';
+  items: SaleItem[];
+  cashTotal: number;
+  cashBreakdown: Record<number, number>;
+  transfers: Transfer[];
+  vipSales: VipSale[];
+  totalSold: number;
+  salary: number;
+  status: 'balanced' | 'surplus' | 'deficit';
+  difference: number;
+}
+
+export interface StockMovement {
+  id: string;
+  productId: string;
+  productName: string;
+  quantity: number;
+  movedBy: string;
+  movedAt: string;
+}
+
+export interface AppSettings {
+  businessName: string;
+  logoUrl: string | null;
+  backgroundUrl: string | null;
+  qrUrl: string | null;
+  theme: string;
+  font: string;
+}
