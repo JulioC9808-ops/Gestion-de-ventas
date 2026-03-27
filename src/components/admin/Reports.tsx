@@ -2,12 +2,15 @@ import React, { useState } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function Reports() {
-  const { reports, products } = useData();
+  const { reports } = useData();
   const [tab, setTab] = useState<'period' | 'employee' | 'topProducts' | 'slowProducts'>('period');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [expandedReport, setExpandedReport] = useState<string | null>(null);
 
   const tabs = [
     { key: 'period', label: '📅 Por Período' },
@@ -48,13 +51,23 @@ export default function Reports() {
     employeeSales[r.employeeId].shifts += 1;
   });
 
+  const toggleExpand = (id: string) => {
+    setExpandedReport(prev => prev === id ? null : id);
+  };
+
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">Reportes</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="page-title">Reportes</h1>
+          <Tooltip>
+            <TooltipTrigger><HelpCircle className="w-5 h-5 text-muted-foreground" /></TooltipTrigger>
+            <TooltipContent><p className="max-w-xs">Consulta reportes detallados de ventas. Haz clic en un reporte para ver el desglose completo de efectivo, transferencias y VIP.</p></TooltipContent>
+          </Tooltip>
+        </div>
       </div>
 
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-6 flex-wrap">
         {tabs.map(t => (
           <Button
             key={t.key}
@@ -85,27 +98,79 @@ export default function Reports() {
             {filteredReports.length === 0 ? (
               <p className="text-muted-foreground">No hay ventas en este período.</p>
             ) : (
-              <table className="data-table">
-                <thead>
-                  <tr><th>Fecha</th><th>Empleado</th><th>Turno</th><th>Total</th><th>Salario</th></tr>
-                </thead>
-                <tbody>
-                  {filteredReports.map(r => (
-                    <tr key={r.id}>
-                      <td>{new Date(r.date).toLocaleDateString()}</td>
-                      <td className="font-medium">{r.employeeName}</td>
-                      <td className="capitalize">{r.shift === 'morning' ? 'Mañana' : 'Tarde'}</td>
-                      <td className="font-semibold">${r.totalSold.toLocaleString()}</td>
-                      <td className="text-success font-medium">${r.salary.toFixed(2)}</td>
-                    </tr>
-                  ))}
-                  <tr className="font-bold">
-                    <td colSpan={3}>Total</td>
-                    <td>${filteredReports.reduce((s, r) => s + r.totalSold, 0).toLocaleString()}</td>
-                    <td className="text-success">${filteredReports.reduce((s, r) => s + r.salary, 0).toFixed(2)}</td>
-                  </tr>
-                </tbody>
-              </table>
+              <div className="space-y-2">
+                {filteredReports.map(r => (
+                  <div key={r.id} className="border border-border rounded-lg overflow-hidden">
+                    <button
+                      onClick={() => toggleExpand(r.id)}
+                      className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-6 text-sm">
+                        <span>{new Date(r.date).toLocaleDateString()}</span>
+                        <span className="font-medium">{r.employeeName}</span>
+                        <span className="capitalize">{r.shift === 'morning' ? 'Mañana' : 'Tarde'}</span>
+                        <span className="font-semibold">${r.totalSold.toLocaleString()}</span>
+                        <span className="text-success font-medium">${r.salary.toFixed(2)}</span>
+                      </div>
+                      {expandedReport === r.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </button>
+                    
+                    {expandedReport === r.id && (
+                      <div className="border-t border-border p-4 bg-muted/20 space-y-3">
+                        {/* Products */}
+                        <div>
+                          <p className="text-sm font-bold mb-1">📋 Productos Vendidos:</p>
+                          {r.items.map(item => (
+                            <p key={item.productId} className="text-sm ml-4">• {item.productName}: {item.quantitySold} × ${item.price} = ${item.subtotal.toLocaleString()}</p>
+                          ))}
+                        </div>
+                        {/* Cash breakdown */}
+                        <div>
+                          <p className="text-sm font-bold mb-1">💵 Desglose Efectivo (${r.cashTotal.toLocaleString()}):</p>
+                          <div className="flex flex-wrap gap-1 ml-4">
+                            {Object.entries(r.cashBreakdown || {}).filter(([_, count]) => count > 0).map(([denom, count]) => (
+                              <span key={denom} className="bg-secondary/50 rounded px-2 py-0.5 text-xs">${denom} × {count}</span>
+                            ))}
+                          </div>
+                        </div>
+                        {/* Transfers */}
+                        {r.transfers.length > 0 && (
+                          <div>
+                            <p className="text-sm font-bold mb-1">💳 Transferencias (${r.transfers.reduce((s, t) => s + t.amount, 0).toLocaleString()}):</p>
+                            {r.transfers.map(t => (
+                              <p key={t.id} className="text-sm ml-4">• ${t.amount} — ID: {t.code}</p>
+                            ))}
+                          </div>
+                        )}
+                        {/* VIP */}
+                        {r.vipSales.length > 0 && (
+                          <div>
+                            <p className="text-sm font-bold mb-1">👑 VIP (${r.vipSales.reduce((s, v) => s + v.amount, 0).toLocaleString()}):</p>
+                            {r.vipSales.map(v => (
+                              <p key={v.id} className="text-sm ml-4">• {v.concept} — ${v.amount}</p>
+                            ))}
+                          </div>
+                        )}
+                        {/* Status */}
+                        <div className={`text-sm font-medium ${
+                          r.status === 'balanced' ? 'text-success' : r.status === 'surplus' ? 'text-warning' : 'text-destructive'
+                        }`}>
+                          {r.status === 'balanced' ? '✅ Todo cuadrado' :
+                           r.status === 'surplus' ? `⬆️ Sobrante: $${r.difference.toFixed(2)}` :
+                           `⬇️ Faltante: $${Math.abs(r.difference).toFixed(2)}`}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                <div className="border-t-2 border-border pt-3 mt-3 flex justify-between font-bold text-sm">
+                  <span>Total del Período</span>
+                  <div className="flex gap-6">
+                    <span>${filteredReports.reduce((s, r) => s + r.totalSold, 0).toLocaleString()}</span>
+                    <span className="text-success">${filteredReports.reduce((s, r) => s + r.salary, 0).toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
             )}
           </>
         )}

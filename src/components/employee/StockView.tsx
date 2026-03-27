@@ -1,5 +1,7 @@
 import React from 'react';
 import { useData } from '@/contexts/DataContext';
+import { HelpCircle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function StockView() {
   const { products, getStockQuantity } = useData();
@@ -12,7 +14,13 @@ export default function StockView() {
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">Stock Disponible</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="page-title">Stock Disponible</h1>
+          <Tooltip>
+            <TooltipTrigger><HelpCircle className="w-5 h-5 text-muted-foreground" /></TooltipTrigger>
+            <TooltipContent><p className="max-w-xs">Estos son los productos disponibles para la venta en tu turno actual.</p></TooltipContent>
+          </Tooltip>
+        </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {stockItems.length === 0 ? (

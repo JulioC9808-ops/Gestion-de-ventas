@@ -2,48 +2,90 @@ import React, { useState } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, HelpCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { User } from '@/types';
 
 export default function UserManagement() {
-  const { users, addUser, updateUser, deleteUser } = useData();
+  const { users, addUser, updateUser, deleteUser, settings, updateSettings } = useData();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
-  const [form, setForm] = useState({ username: '', password: '', name: '', role: 'employee' as const });
+  const [form, setForm] = useState({ username: '', password: '', name: '', role: 'employee' as 'employee' | 'admin', salaryPercent: '' });
+  const [navPosition, setNavPosition] = useState(settings.navPosition || 'top');
+  const [defaultSalary, setDefaultSalary] = useState(String(settings.defaultSalaryPercent || 2));
 
   const visibleUsers = users.filter(u => u.role !== 'dev');
 
   const openNew = () => {
     setEditing(null);
-    setForm({ username: '', password: '', name: '', role: 'employee' });
+    setForm({ username: '', password: '', name: '', role: 'employee', salaryPercent: String(settings.defaultSalaryPercent || 2) });
     setDialogOpen(true);
   };
 
   const openEdit = (u: User) => {
     setEditing(u);
-    setForm({ username: u.username, password: u.password, name: u.name, role: u.role as 'employee' });
+    setForm({ username: u.username, password: u.password, name: u.name, role: u.role as 'employee' | 'admin', salaryPercent: String(u.salaryPercent ?? settings.defaultSalaryPercent ?? 2) });
     setDialogOpen(true);
   };
 
   const handleSave = () => {
     if (!form.username || !form.password || !form.name) return;
+    const userData = { ...form, salaryPercent: Number(form.salaryPercent) || 2 };
     if (editing) {
-      updateUser({ ...editing, ...form });
+      updateUser({ ...editing, ...userData });
     } else {
-      addUser(form);
+      addUser(userData);
     }
     setDialogOpen(false);
+  };
+
+  const handleSaveSettings = () => {
+    updateSettings({ navPosition, defaultSalaryPercent: Number(defaultSalary) || 2 });
   };
 
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">Gestión de Usuarios</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="page-title">Gestión de Usuarios</h1>
+          <Tooltip>
+            <TooltipTrigger><HelpCircle className="w-5 h-5 text-muted-foreground" /></TooltipTrigger>
+            <TooltipContent><p className="max-w-xs">Crea y administra cuentas. Puedes configurar el porcentaje de salario individual y la posición de la barra de navegación.</p></TooltipContent>
+          </Tooltip>
+        </div>
         <Button onClick={openNew}>
           <Plus className="w-4 h-4 mr-2" />
           Nuevo Usuario
         </Button>
+      </div>
+
+      {/* Admin settings */}
+      <div className="glass-card p-4 mb-6 flex flex-wrap gap-6 items-end">
+        <div>
+          <label className="text-sm font-medium">Posición del Menú</label>
+          <select
+            value={navPosition}
+            onChange={e => setNavPosition(e.target.value as 'side' | 'top')}
+            className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm mt-1"
+          >
+            <option value="top">Arriba (Horizontal)</option>
+            <option value="side">Lateral (Sidebar)</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-sm font-medium">Salario por Defecto (%)</label>
+          <Input
+            type="number"
+            min="0"
+            max="100"
+            step="0.5"
+            value={defaultSalary}
+            onChange={e => setDefaultSalary(e.target.value)}
+            className="w-28 mt-1"
+          />
+        </div>
+        <Button size="sm" onClick={handleSaveSettings}>Guardar Configuración</Button>
       </div>
 
       <div className="glass-card p-6">
@@ -53,6 +95,7 @@ export default function UserManagement() {
               <th>Nombre</th>
               <th>Usuario</th>
               <th>Rol</th>
+              <th>Salario %</th>
               <th>Fecha Creación</th>
               <th className="text-right">Acciones</th>
             </tr>
@@ -69,6 +112,7 @@ export default function UserManagement() {
                     {u.role === 'admin' ? 'Administrador' : 'Empleado'}
                   </span>
                 </td>
+                <td className="text-success font-medium">{u.salaryPercent ?? settings.defaultSalaryPercent ?? 2}%</td>
                 <td className="text-sm text-muted-foreground">{new Date(u.createdAt).toLocaleDateString()}</td>
                 <td className="text-right">
                   <Button variant="ghost" size="sm" onClick={() => openEdit(u)}>
@@ -108,12 +152,23 @@ export default function UserManagement() {
               <label className="text-sm font-medium">Rol</label>
               <select
                 value={form.role}
-                onChange={e => setForm({ ...form, role: e.target.value as 'employee' })}
+                onChange={e => setForm({ ...form, role: e.target.value as 'employee' | 'admin' })}
                 className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
               >
                 <option value="employee">Empleado</option>
                 <option value="admin">Administrador</option>
               </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Porcentaje de Salario (%)</label>
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                step="0.5"
+                value={form.salaryPercent}
+                onChange={e => setForm({ ...form, salaryPercent: e.target.value })}
+              />
             </div>
             <Button onClick={handleSave} className="w-full">{editing ? 'Guardar' : 'Crear'}</Button>
           </div>

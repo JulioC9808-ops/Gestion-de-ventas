@@ -7,6 +7,7 @@ export interface User {
   name: string;
   role: UserRole;
   createdAt: string;
+  salaryPercent?: number;
 }
 
 export interface Product {
@@ -15,6 +16,7 @@ export interface Product {
   price: number;
   category: string;
   unit: string;
+  inventoryQty: number; // total in warehouse/almacen
 }
 
 export interface StockItem {
@@ -57,6 +59,7 @@ export interface ShiftReport {
   vipSales: VipSale[];
   totalSold: number;
   salary: number;
+  salaryPercent: number;
   status: 'balanced' | 'surplus' | 'deficit';
   difference: number;
 }
@@ -77,4 +80,6 @@ export interface AppSettings {
   qrUrl: string | null;
   theme: string;
   font: string;
+  navPosition: 'side' | 'top';
+  defaultSalaryPercent: number;
 }

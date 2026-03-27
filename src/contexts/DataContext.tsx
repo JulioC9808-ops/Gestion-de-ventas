@@ -11,7 +11,7 @@ interface DataContextType {
   addProduct: (p: Omit<Product, 'id'>) => void;
   updateProduct: (p: Product) => void;
   deleteProduct: (id: string) => void;
-  addToStock: (productId: string, qty: number, userId: string) => void;
+  addToStock: (productId: string, qty: number, userId: string) => boolean;
   getStockQuantity: (productId: string) => number;
   reduceStock: (productId: string, qty: number) => void;
   addReport: (r: ShiftReport) => void;
@@ -20,6 +20,7 @@ interface DataContextType {
   deleteUser: (id: string) => void;
   updateSettings: (s: Partial<AppSettings>) => void;
   getProductById: (id: string) => Product | undefined;
+  deleteMovement: (id: string) => void;
 }
 
 const DataContext = createContext<DataContextType | null>(null);
@@ -34,12 +35,12 @@ function save<T>(key: string, data: T) {
 }
 
 const DEFAULT_PRODUCTS: Product[] = [
-  { id: 'p1', name: 'Café Americano', price: 35, category: 'Bebidas', unit: 'taza' },
-  { id: 'p2', name: 'Cappuccino', price: 45, category: 'Bebidas', unit: 'taza' },
-  { id: 'p3', name: 'Latte', price: 50, category: 'Bebidas', unit: 'taza' },
-  { id: 'p4', name: 'Pan de Chocolate', price: 25, category: 'Panadería', unit: 'pieza' },
-  { id: 'p5', name: 'Croissant', price: 30, category: 'Panadería', unit: 'pieza' },
-  { id: 'p6', name: 'Sandwich Club', price: 65, category: 'Alimentos', unit: 'pieza' },
+  { id: 'p1', name: 'Café Americano', price: 35, category: 'Bebidas', unit: 'taza', inventoryQty: 100 },
+  { id: 'p2', name: 'Cappuccino', price: 45, category: 'Bebidas', unit: 'taza', inventoryQty: 80 },
+  { id: 'p3', name: 'Latte', price: 50, category: 'Bebidas', unit: 'taza', inventoryQty: 80 },
+  { id: 'p4', name: 'Pan de Chocolate', price: 25, category: 'Panadería', unit: 'pieza', inventoryQty: 50 },
+  { id: 'p5', name: 'Croissant', price: 30, category: 'Panadería', unit: 'pieza', inventoryQty: 40 },
+  { id: 'p6', name: 'Sandwich Club', price: 65, category: 'Alimentos', unit: 'pieza', inventoryQty: 30 },
 ];
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -49,6 +50,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   qrUrl: null,
   theme: 'default',
   font: 'Source Sans 3',
+  navPosition: 'top',
+  defaultSalaryPercent: 2,
 };
 
 const DEFAULT_USERS: User[] = [
@@ -92,8 +95,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setP(prev => prev.filter(x => x.id !== id));
   }, []);
 
-  const addToStock = useCallback((productId: string, qty: number, userId: string) => {
+  // addToStock now deducts from product inventoryQty
+  const addToStock = useCallback((productId: string, qty: number, userId: string): boolean => {
     const product = products.find(p => p.id === productId);
+    if (!product || product.inventoryQty < qty) return false;
+
+    // Deduct from inventory
+    setP(prev => prev.map(p => p.id === productId ? { ...p, inventoryQty: p.inventoryQty - qty } : p));
+
     setS(prev => {
       const existing = prev.find(s => s.productId === productId);
       if (existing) {
@@ -109,6 +118,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       movedBy: userId,
       movedAt: new Date().toISOString(),
     }]);
+    return true;
   }, [products]);
 
   const getStockQuantity = useCallback((productId: string) => {
@@ -141,13 +151,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const getProductById = useCallback((id: string) => products.find(p => p.id === id), [products]);
 
+  const deleteMovement = useCallback((id: string) => {
+    setM(prev => prev.filter(x => x.id !== id));
+  }, []);
+
   return (
     <DataContext.Provider value={{
       products, stock, reports, movements, users, settings,
       addProduct, updateProduct, deleteProduct,
       addToStock, getStockQuantity, reduceStock,
       addReport, addUser, updateUser, deleteUser,
-      updateSettings, getProductById,
+      updateSettings, getProductById, deleteMovement,
     }}>
       {children}
     </DataContext.Provider>

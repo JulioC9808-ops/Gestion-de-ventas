@@ -5,14 +5,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import type { SaleItem, Transfer, VipSale, ShiftReport } from '@/types';
-import { Check, Trash2, Plus, Printer, LogOut } from 'lucide-react';
+import { Check, Trash2, Plus, Printer, LogOut, HelpCircle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
-const DENOMINATIONS = [1, 3, 5, 10, 20, 50, 100, 200, 500, 1000];
+const DENOMINATIONS = [1000, 500, 200, 100, 50, 20, 10, 5, 3, 1];
 
 export default function ShiftClose() {
-  const { products, getStockQuantity, reduceStock, addReport } = useData();
+  const { products, getStockQuantity, reduceStock, addReport, settings } = useData();
   const { currentUser, logout } = useAuth();
   const [step, setStep] = useState(1);
+
+  const salaryPercent = currentUser?.salaryPercent ?? settings.defaultSalaryPercent ?? 2;
 
   // Step 1: remaining quantities
   const stockProducts = useMemo(() =>
@@ -75,7 +78,7 @@ export default function ShiftClose() {
   };
 
   const handleFinalize = () => {
-    const salary = totalSold * 0.02;
+    const salary = totalSold * (salaryPercent / 100);
     const report: ShiftReport = {
       id: crypto.randomUUID(),
       employeeId: currentUser?.id || '',
@@ -89,6 +92,7 @@ export default function ShiftClose() {
       vipSales,
       totalSold,
       salary,
+      salaryPercent,
       status: isBalanced ? 'balanced' : difference > 0 ? 'surplus' : 'deficit',
       difference,
     };
@@ -121,7 +125,7 @@ export default function ShiftClose() {
               <p className="text-2xl font-bold font-display">${finalReport.totalSold.toLocaleString()}</p>
             </div>
             <div className="stat-card text-center">
-              <p className="text-sm text-muted-foreground">Salario (2%)</p>
+              <p className="text-sm text-muted-foreground">Salario ({finalReport.salaryPercent}%)</p>
               <p className="text-2xl font-bold font-display text-success">${finalReport.salary.toFixed(2)}</p>
             </div>
           </div>
@@ -130,38 +134,60 @@ export default function ShiftClose() {
             <div>
               <h3 className="font-display font-bold mb-2">📋 Productos Vendidos</h3>
               <table className="data-table text-sm">
-                <thead><tr><th>Producto</th><th>Cant.</th><th>Subtotal</th></tr></thead>
+                <thead><tr><th>Producto</th><th>Cant.</th><th>Precio</th><th>Subtotal</th></tr></thead>
                 <tbody>
                   {finalReport.items.map(item => (
                     <tr key={item.productId}>
                       <td>{item.productName}</td>
                       <td>{item.quantitySold}</td>
+                      <td>${item.price}</td>
                       <td>${item.subtotal.toLocaleString()}</td>
                     </tr>
                   ))}
+                  <tr className="font-bold border-t-2 border-border">
+                    <td colSpan={3}>Total Liquidación Productos</td>
+                    <td>${finalReport.totalSold.toLocaleString()}</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
 
             <div>
               <h3 className="font-display font-bold mb-2">💰 Desglose de Pagos</h3>
-              <p className="text-sm">Efectivo: <span className="font-bold">${finalReport.cashTotal.toLocaleString()}</span></p>
-              {finalReport.transfers.length > 0 && (
-                <div className="mt-1">
-                  <p className="text-sm font-medium">Transferencias:</p>
-                  {finalReport.transfers.map(t => (
-                    <p key={t.id} className="text-sm ml-4">• ${t.amount} — Código: {t.code}</p>
+              
+              {/* Cash breakdown */}
+              <div className="mb-2">
+                <p className="text-sm font-medium mb-1">💵 Efectivo:</p>
+                <div className="grid grid-cols-5 gap-1 text-xs ml-4 mb-1">
+                  {Object.entries(finalReport.cashBreakdown).filter(([_, count]) => count > 0).map(([denom, count]) => (
+                    <span key={denom} className="bg-secondary/50 rounded px-2 py-1 text-center">${denom} × {count}</span>
                   ))}
+                </div>
+                <p className="text-sm font-bold ml-4">Subtotal: ${finalReport.cashTotal.toLocaleString()}</p>
+              </div>
+
+              {finalReport.transfers.length > 0 && (
+                <div className="mb-2">
+                  <p className="text-sm font-medium">💳 Transferencias:</p>
+                  {finalReport.transfers.map(t => (
+                    <p key={t.id} className="text-sm ml-4">• ${t.amount} — ID: {t.code}</p>
+                  ))}
+                  <p className="text-sm font-bold ml-4">Subtotal: ${transferTotal.toLocaleString()}</p>
                 </div>
               )}
               {finalReport.vipSales.length > 0 && (
-                <div className="mt-1">
-                  <p className="text-sm font-medium">VIP:</p>
+                <div className="mb-2">
+                  <p className="text-sm font-medium">👑 VIP:</p>
                   {finalReport.vipSales.map(v => (
-                    <p key={v.id} className="text-sm ml-4">• ${v.amount} — {v.concept}</p>
+                    <p key={v.id} className="text-sm ml-4">• {v.concept} — ${v.amount}</p>
                   ))}
+                  <p className="text-sm font-bold ml-4">Subtotal: ${vipTotal.toLocaleString()}</p>
                 </div>
               )}
+
+              <div className="border-t-2 border-border pt-2 mt-2">
+                <p className="text-base font-bold">Total General: ${finalReport.totalSold.toLocaleString()}</p>
+              </div>
             </div>
 
             <div className={`p-3 rounded-lg text-sm font-medium ${
@@ -193,7 +219,13 @@ export default function ShiftClose() {
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">Cierre de Turno</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="page-title">Cierre de Turno</h1>
+          <Tooltip>
+            <TooltipTrigger><HelpCircle className="w-5 h-5 text-muted-foreground" /></TooltipTrigger>
+            <TooltipContent><p className="max-w-xs">Registra lo que queda de cada producto para calcular lo vendido, luego desglosa los pagos recibidos. El turno solo se cierra si los montos cuadran.</p></TooltipContent>
+          </Tooltip>
+        </div>
         <div className="step-indicator">
           <div className={`step-dot ${step === 1 ? 'active' : step > 1 ? 'completed' : 'pending'}`}>1</div>
           <div className="w-8 h-0.5 bg-border" />
@@ -204,10 +236,10 @@ export default function ShiftClose() {
       {step === 1 && (
         <div className="glass-card p-6 animate-fade-in-up">
           <h2 className="text-lg font-display font-bold mb-4">Paso 1: Rebajar Productos</h2>
-          <p className="text-sm text-muted-foreground mb-4">Ingresa la cantidad que <strong>queda</strong> de cada producto.</p>
+          <p className="text-sm text-muted-foreground mb-4">Ingresa la cantidad que <strong>entregas/queda</strong> de cada producto. Stock - Entregado = Total Vendido.</p>
           <table className="data-table">
             <thead>
-              <tr><th>Producto</th><th>Stock Inicial</th><th>Quedan</th><th>Vendidos</th><th>Subtotal</th></tr>
+              <tr><th>Producto</th><th>Stock Inicial</th><th>Entregas</th><th>Vendidos</th><th>Subtotal</th></tr>
             </thead>
             <tbody>
               {stockProducts.map(p => {
@@ -236,7 +268,10 @@ export default function ShiftClose() {
             </tbody>
           </table>
           <div className="flex items-center justify-between mt-6">
-            <p className="text-lg font-bold font-display">Total Vendido: <span className="text-primary">${totalSold.toLocaleString()}</span></p>
+            <div>
+              <p className="text-lg font-bold font-display">Total Vendido: <span className="text-primary">${totalSold.toLocaleString()}</span></p>
+              <p className="text-sm text-muted-foreground">Salario ({salaryPercent}%): <span className="text-success font-bold">${(totalSold * salaryPercent / 100).toFixed(2)}</span></p>
+            </div>
             <Button onClick={() => setStep(2)}>Continuar →</Button>
           </div>
         </div>
@@ -272,12 +307,12 @@ export default function ShiftClose() {
             <h3 className="font-semibold mb-3">💳 Transferencias</h3>
             <div className="flex gap-2 mb-2">
               <Input placeholder="Monto" type="number" value={newTransfer.amount} onChange={e => setNewTransfer(prev => ({ ...prev, amount: e.target.value }))} className="w-28" />
-              <Input placeholder="Código" value={newTransfer.code} onChange={e => setNewTransfer(prev => ({ ...prev, code: e.target.value }))} />
+              <Input placeholder="ID de Transferencia" value={newTransfer.code} onChange={e => setNewTransfer(prev => ({ ...prev, code: e.target.value }))} />
               <Button size="sm" onClick={addTransfer}><Plus className="w-4 h-4" /></Button>
             </div>
             {transfers.map(t => (
               <div key={t.id} className="flex items-center justify-between bg-secondary/50 rounded-lg px-3 py-2 mb-1">
-                <span className="text-sm">${t.amount} — <span className="text-muted-foreground">{t.code}</span></span>
+                <span className="text-sm">${t.amount} — <span className="text-muted-foreground">ID: {t.code}</span></span>
                 <Button variant="ghost" size="sm" onClick={() => setTransfers(prev => prev.filter(x => x.id !== t.id))}>
                   <Trash2 className="w-3 h-3 text-destructive" />
                 </Button>
@@ -290,7 +325,7 @@ export default function ShiftClose() {
           <div className="mb-6">
             <h3 className="font-semibold mb-3">👑 VIP</h3>
             <div className="flex gap-2 mb-2">
-              <Input placeholder="Concepto" value={newVip.concept} onChange={e => setNewVip(prev => ({ ...prev, concept: e.target.value }))} />
+              <Input placeholder="Nombre del Cliente" value={newVip.concept} onChange={e => setNewVip(prev => ({ ...prev, concept: e.target.value }))} />
               <Input placeholder="Monto" type="number" value={newVip.amount} onChange={e => setNewVip(prev => ({ ...prev, amount: e.target.value }))} className="w-28" />
               <Button size="sm" onClick={addVip}><Plus className="w-4 h-4" /></Button>
             </div>
@@ -303,6 +338,12 @@ export default function ShiftClose() {
               </div>
             ))}
             <p className="text-sm font-medium">Subtotal VIP: <span className="text-primary">${vipTotal.toLocaleString()}</span></p>
+          </div>
+
+          {/* Totals summary */}
+          <div className="bg-muted/50 rounded-lg p-4 mb-4">
+            <p className="text-sm">Total Productos Vendidos: <span className="font-bold">${totalSold.toLocaleString()}</span></p>
+            <p className="text-sm">Salario ({salaryPercent}%): <span className="font-bold text-success">${(totalSold * salaryPercent / 100).toFixed(2)}</span></p>
           </div>
 
           {/* Verification */}
