@@ -3,16 +3,19 @@ import Login from '@/pages/Login';
 import AdminDashboard from '@/pages/AdminDashboard';
 import EmployeeDashboard from '@/pages/EmployeeDashboard';
 import DevPanel from '@/pages/DevPanel';
+import LicenseGate from '@/pages/LicenseGate';
 
 export default function Index() {
   const { currentUser } = useAuth();
 
-  if (!currentUser) return <Login />;
-
-  switch (currentUser.role) {
-    case 'admin': return <AdminDashboard />;
-    case 'employee': return <EmployeeDashboard />;
-    case 'dev': return <DevPanel />;
-    default: return <Login />;
-  }
+  return (
+    <LicenseGate>
+      {!currentUser ? <Login /> : (
+        currentUser.role === 'admin' ? <AdminDashboard /> :
+        currentUser.role === 'employee' ? <EmployeeDashboard /> :
+        currentUser.role === 'dev' ? <DevPanel /> :
+        <Login />
+      )}
+    </LicenseGate>
+  );
 }
