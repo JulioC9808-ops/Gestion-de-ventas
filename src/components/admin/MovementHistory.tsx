@@ -1,14 +1,23 @@
 import React from 'react';
 import { useData } from '@/contexts/DataContext';
+import { Trash2, HelpCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function MovementHistory() {
-  const { movements } = useData();
+  const { movements, deleteMovement } = useData();
   const sorted = [...movements].reverse();
 
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">Historial de Movimientos</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="page-title">Historial de Movimientos</h1>
+          <Tooltip>
+            <TooltipTrigger><HelpCircle className="w-5 h-5 text-muted-foreground" /></TooltipTrigger>
+            <TooltipContent><p className="max-w-xs">Registro de todas las entradas de productos al stock de venta. Puedes eliminar registros incorrectos.</p></TooltipContent>
+          </Tooltip>
+        </div>
       </div>
       <div className="glass-card p-6">
         {sorted.length === 0 ? (
@@ -16,7 +25,7 @@ export default function MovementHistory() {
         ) : (
           <table className="data-table">
             <thead>
-              <tr><th>Fecha</th><th>Producto</th><th>Cantidad</th><th>Registrado por</th></tr>
+              <tr><th>Fecha</th><th>Producto</th><th>Cantidad</th><th>Registrado por</th><th className="text-right">Acción</th></tr>
             </thead>
             <tbody>
               {sorted.map(m => (
@@ -25,6 +34,11 @@ export default function MovementHistory() {
                   <td className="font-medium">{m.productName}</td>
                   <td className="font-semibold">+{m.quantity}</td>
                   <td className="text-muted-foreground">{m.movedBy}</td>
+                  <td className="text-right">
+                    <Button variant="ghost" size="sm" onClick={() => deleteMovement(m.id)} className="text-destructive">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </td>
                 </tr>
               ))}
             </tbody>
