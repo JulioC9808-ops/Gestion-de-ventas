@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import type { SaleItem, Transfer, VipSale, ShiftReport } from '@/types';
-import { Check, Trash2, Plus, Printer, LogOut, HelpCircle } from 'lucide-react';
+import { Check, Trash2, Plus, Printer, LogOut, HelpCircle, Pencil, ArrowLeft } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const DENOMINATIONS = [1000, 500, 200, 100, 50, 20, 10, 5, 3, 1];
@@ -32,6 +32,8 @@ export default function ShiftClose() {
   );
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [newTransfer, setNewTransfer] = useState({ amount: '', code: '' });
+  const [editingTransfer, setEditingTransfer] = useState<string | null>(null);
+  const [editTransferData, setEditTransferData] = useState({ amount: '', code: '' });
   const [vipSales, setVipSales] = useState<VipSale[]>([]);
   const [newVip, setNewVip] = useState({ concept: '', amount: '' });
 
@@ -66,9 +68,14 @@ export default function ShiftClose() {
   };
 
   const addTransfer = () => {
-    if (!newTransfer.amount || !newTransfer.code) return;
-    setTransfers(prev => [...prev, { id: crypto.randomUUID(), amount: Number(newTransfer.amount), code: newTransfer.code }]);
+    if (!newTransfer.amount) return;
+    setTransfers(prev => [...prev, { id: crypto.randomUUID(), amount: Number(newTransfer.amount), code: newTransfer.code || '' }]);
     setNewTransfer({ amount: '', code: '' });
+  };
+
+  const saveEditTransfer = (id: string) => {
+    setTransfers(prev => prev.map(t => t.id === id ? { ...t, amount: Number(editTransferData.amount), code: editTransferData.code } : t));
+    setEditingTransfer(null);
   };
 
   const addVip = () => {
@@ -103,6 +110,11 @@ export default function ShiftClose() {
     setFinalReport(report);
     setStep(3);
     toast.success('Turno cerrado exitosamente');
+  };
+
+  const handleGoBack = () => {
+    setFinalReport(null);
+    setStep(2);
   };
 
   if (step === 3 && finalReport) {
@@ -170,7 +182,7 @@ export default function ShiftClose() {
                 <div className="mb-2">
                   <p className="text-sm font-medium">💳 Transferencias:</p>
                   {finalReport.transfers.map(t => (
-                    <p key={t.id} className="text-sm ml-4">• ${t.amount} — ID: {t.code}</p>
+                    <p key={t.id} className="text-sm ml-4">• ${t.amount}{t.code ? ` — ID: ${t.code}` : ''}</p>
                   ))}
                   <p className="text-sm font-bold ml-4">Subtotal: ${transferTotal.toLocaleString()}</p>
                 </div>
@@ -202,7 +214,11 @@ export default function ShiftClose() {
           </div>
 
           <div className="flex gap-3 mt-6">
-            <Button variant="outline" className="flex-1" onClick={() => window.print()}>
+            <Button variant="outline" onClick={handleGoBack}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Volver a Corregir
+            </Button>
+            <Button variant="outline" onClick={() => window.print()}>
               <Printer className="w-4 h-4 mr-2" />
               Imprimir
             </Button>
@@ -306,16 +322,33 @@ export default function ShiftClose() {
           <div className="mb-6">
             <h3 className="font-semibold mb-3">💳 Transferencias</h3>
             <div className="flex gap-2 mb-2">
-              <Input placeholder="Monto" type="number" value={newTransfer.amount} onChange={e => setNewTransfer(prev => ({ ...prev, amount: e.target.value }))} className="w-28" />
-              <Input placeholder="ID de Transferencia" value={newTransfer.code} onChange={e => setNewTransfer(prev => ({ ...prev, code: e.target.value }))} />
+              <Input placeholder="Monto *" type="number" value={newTransfer.amount} onChange={e => setNewTransfer(prev => ({ ...prev, amount: e.target.value }))} className="w-28" />
+              <Input placeholder="ID (opcional)" value={newTransfer.code} onChange={e => setNewTransfer(prev => ({ ...prev, code: e.target.value }))} />
               <Button size="sm" onClick={addTransfer}><Plus className="w-4 h-4" /></Button>
             </div>
             {transfers.map(t => (
               <div key={t.id} className="flex items-center justify-between bg-secondary/50 rounded-lg px-3 py-2 mb-1">
-                <span className="text-sm">${t.amount} — <span className="text-muted-foreground">ID: {t.code}</span></span>
-                <Button variant="ghost" size="sm" onClick={() => setTransfers(prev => prev.filter(x => x.id !== t.id))}>
-                  <Trash2 className="w-3 h-3 text-destructive" />
-                </Button>
+                {editingTransfer === t.id ? (
+                  <div className="flex gap-2 flex-1 mr-2">
+                    <Input type="number" value={editTransferData.amount} onChange={e => setEditTransferData(prev => ({ ...prev, amount: e.target.value }))} className="w-24" />
+                    <Input value={editTransferData.code} onChange={e => setEditTransferData(prev => ({ ...prev, code: e.target.value }))} placeholder="ID (opcional)" />
+                    <Button size="sm" variant="outline" onClick={() => saveEditTransfer(t.id)}>
+                      <Check className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <span className="text-sm">${t.amount}{t.code ? ` — ID: ${t.code}` : ''}</span>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="sm" onClick={() => { setEditingTransfer(t.id); setEditTransferData({ amount: String(t.amount), code: t.code }); }}>
+                        <Pencil className="w-3 h-3" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setTransfers(prev => prev.filter(x => x.id !== t.id))}>
+                        <Trash2 className="w-3 h-3 text-destructive" />
+                      </Button>
+                    </div>
+                  </>
+                )}
               </div>
             ))}
             <p className="text-sm font-medium">Subtotal Transferencias: <span className="text-primary">${transferTotal.toLocaleString()}</span></p>
