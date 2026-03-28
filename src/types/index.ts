@@ -14,6 +14,7 @@ export interface Product {
   id: string;
   name: string;
   price: number;
+  costPrice: number; // precio de costo
   category: string;
   unit: string;
   inventoryQty: number; // total in warehouse/almacen
