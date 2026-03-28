@@ -35,12 +35,12 @@ function save<T>(key: string, data: T) {
 }
 
 const DEFAULT_PRODUCTS: Product[] = [
-  { id: 'p1', name: 'Café Americano', price: 35, category: 'Bebidas', unit: 'taza', inventoryQty: 100 },
-  { id: 'p2', name: 'Cappuccino', price: 45, category: 'Bebidas', unit: 'taza', inventoryQty: 80 },
-  { id: 'p3', name: 'Latte', price: 50, category: 'Bebidas', unit: 'taza', inventoryQty: 80 },
-  { id: 'p4', name: 'Pan de Chocolate', price: 25, category: 'Panadería', unit: 'pieza', inventoryQty: 50 },
-  { id: 'p5', name: 'Croissant', price: 30, category: 'Panadería', unit: 'pieza', inventoryQty: 40 },
-  { id: 'p6', name: 'Sandwich Club', price: 65, category: 'Alimentos', unit: 'pieza', inventoryQty: 30 },
+  { id: 'p1', name: 'Café Americano', price: 35, costPrice: 10, category: 'Bebidas', unit: 'taza', inventoryQty: 100 },
+  { id: 'p2', name: 'Cappuccino', price: 45, costPrice: 15, category: 'Bebidas', unit: 'taza', inventoryQty: 80 },
+  { id: 'p3', name: 'Latte', price: 50, costPrice: 18, category: 'Bebidas', unit: 'taza', inventoryQty: 80 },
+  { id: 'p4', name: 'Pan de Chocolate', price: 25, costPrice: 8, category: 'Panadería', unit: 'pieza', inventoryQty: 50 },
+  { id: 'p5', name: 'Croissant', price: 30, costPrice: 10, category: 'Panadería', unit: 'pieza', inventoryQty: 40 },
+  { id: 'p6', name: 'Sandwich Club', price: 65, costPrice: 25, category: 'Alimentos', unit: 'pieza', inventoryQty: 30 },
 ];
 
 const DEFAULT_SETTINGS: AppSettings = {
