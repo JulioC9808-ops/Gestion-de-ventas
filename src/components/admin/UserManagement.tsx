@@ -8,12 +8,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import type { User } from '@/types';
 
 export default function UserManagement() {
-  const { users, addUser, updateUser, deleteUser, settings, updateSettings } = useData();
+  const { users, addUser, updateUser, deleteUser, settings } = useData();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
   const [form, setForm] = useState({ username: '', password: '', name: '', role: 'employee' as 'employee' | 'admin', salaryPercent: '' });
-  const [navPosition, setNavPosition] = useState(settings.navPosition || 'top');
-  const [defaultSalary, setDefaultSalary] = useState(String(settings.defaultSalaryPercent || 2));
 
   const visibleUsers = users.filter(u => u.role !== 'dev');
 
@@ -40,9 +38,6 @@ export default function UserManagement() {
     setDialogOpen(false);
   };
 
-  const handleSaveSettings = () => {
-    updateSettings({ navPosition, defaultSalaryPercent: Number(defaultSalary) || 2 });
-  };
 
   return (
     <div>
@@ -60,33 +55,6 @@ export default function UserManagement() {
         </Button>
       </div>
 
-      {/* Admin settings */}
-      <div className="glass-card p-4 mb-6 flex flex-wrap gap-6 items-end">
-        <div>
-          <label className="text-sm font-medium">Posición del Menú</label>
-          <select
-            value={navPosition}
-            onChange={e => setNavPosition(e.target.value as 'side' | 'top')}
-            className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm mt-1"
-          >
-            <option value="top">Arriba (Horizontal)</option>
-            <option value="side">Lateral (Sidebar)</option>
-          </select>
-        </div>
-        <div>
-          <label className="text-sm font-medium">Salario por Defecto (%)</label>
-          <Input
-            type="number"
-            min="0"
-            max="100"
-            step="0.5"
-            value={defaultSalary}
-            onChange={e => setDefaultSalary(e.target.value)}
-            className="w-28 mt-1"
-          />
-        </div>
-        <Button size="sm" onClick={handleSaveSettings}>Guardar Configuración</Button>
-      </div>
 
       <div className="glass-card p-6">
         <table className="data-table">
