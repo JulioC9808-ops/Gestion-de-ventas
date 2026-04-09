@@ -84,9 +84,9 @@ export default function ShiftClose() {
     setNewVip({ concept: '', amount: '' });
   };
 
-  const handleFinalize = () => {
+  const buildReport = (): ShiftReport => {
     const salary = totalSold * (salaryPercent / 100);
-    const report: ShiftReport = {
+    return {
       id: crypto.randomUUID(),
       employeeId: currentUser?.id || '',
       employeeName: currentUser?.name || '',
@@ -103,18 +103,24 @@ export default function ShiftClose() {
       status: isBalanced ? 'balanced' : difference > 0 ? 'surplus' : 'deficit',
       difference,
     };
+  };
 
-    // Reduce stock
-    saleItems.forEach(item => reduceStock(item.productId, item.quantitySold));
-    addReport(report);
-    setFinalReport(report);
+  const handleFinalize = () => {
+    setFinalReport(buildReport());
     setStep(3);
-    toast.success('Turno cerrado exitosamente');
   };
 
   const handleGoBack = () => {
     setFinalReport(null);
     setStep(2);
+  };
+
+  const handleCloseAndLogout = () => {
+    const report = buildReport();
+    saleItems.forEach(item => reduceStock(item.productId, item.quantitySold));
+    addReport(report);
+    toast.success('Turno cerrado exitosamente');
+    logout();
   };
 
   if (step === 3 && finalReport) {
