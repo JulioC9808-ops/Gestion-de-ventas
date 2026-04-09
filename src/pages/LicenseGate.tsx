@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Shield, Key } from 'lucide-react';
+import { Shield, Key, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 const VALID_LICENSE = '08022664107';
+const DEV_WHATSAPP = '+5351616816';
 
 interface LicenseGateProps {
   children: React.ReactNode;
@@ -29,7 +30,7 @@ export default function LicenseGate({ children }: LicenseGateProps) {
   if (licensed) return <>{children}</>;
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, hsl(25 60% 28%), hsl(25 30% 15%), hsl(30 40% 20%))' }}>
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, hsl(0 0% 6%), hsl(0 0% 14%), hsl(0 0% 22%))' }}>
       <div className="w-full max-w-md mx-4 animate-fade-in-up">
         <div className="glass-card p-8 sm:p-10" style={{ background: 'rgba(255,255,255,0.95)' }}>
           <div className="flex flex-col items-center mb-8">
@@ -66,6 +67,15 @@ export default function LicenseGate({ children }: LicenseGateProps) {
               Activar Licencia
             </Button>
           </form>
+
+          <Button
+            variant="outline"
+            className="w-full mt-4"
+            onClick={() => window.open(`https://wa.me/${DEV_WHATSAPP.replace(/[^0-9]/g, '')}`, '_blank')}
+          >
+            <MessageCircle className="w-4 h-4 mr-2" />
+            Contactar al Desarrollador
+          </Button>
 
           <p className="text-center text-xs text-muted-foreground mt-6">
             Contacta al desarrollador para obtener tu clave de producto.
