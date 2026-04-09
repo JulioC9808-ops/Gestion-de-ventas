@@ -13,16 +13,16 @@ import VipSalesView from '@/components/admin/VipSalesView';
 import AdminSettings from '@/components/admin/AdminSettings';
 
 const NAV = [
-  { label: 'Panel', icon: LayoutDashboard, key: 'overview', tip: 'Resumen general del negocio: ventas, stock y empleados.' },
-  { label: 'Productos', icon: Package, key: 'products', tip: 'Agrega, edita o elimina productos del almacén. Incluye precio de costo y ganancia.' },
-  { label: 'Usuarios', icon: Users, key: 'users', tip: 'Crea y administra cuentas de empleados y administradores.' },
-  { label: 'Entrada Stock', icon: ArrowRightLeft, key: 'stock', tip: 'Mueve productos del almacén al stock de venta. Descuenta del inventario.' },
-  { label: 'Cierre de Turno', icon: ClipboardCheck, key: 'shift', tip: 'Registra tus ventas del turno y liquida el efectivo.' },
-  { label: 'Ventas VIP', icon: Crown, key: 'vip', tip: 'Revisa todas las ventas VIP registradas por empleados para verificación.' },
-  { label: 'Reportes', icon: ClipboardList, key: 'reports', tip: 'Consulta reportes de ventas por período, empleado y producto con desglose completo.' },
-  { label: 'Salarios', icon: DollarSign, key: 'salaries', tip: 'Historial de salarios pagados a todos los empleados.' },
-  { label: 'Movimientos', icon: Clock, key: 'movements', tip: 'Registro de entradas de productos al stock con opción de eliminar.' },
-  { label: 'Ajustes', icon: Settings, key: 'settings', tip: 'Cambia el tema de colores, fuente, posición de navegación y porcentaje de salario.' },
+  { label: 'Panel', icon: LayoutDashboard, key: 'overview', tip: 'Aquí ves un resumen rápido de todo tu negocio.' },
+  { label: 'Productos', icon: Package, key: 'products', tip: 'Agrega o edita los productos que vendes y su precio.' },
+  { label: 'Usuarios', icon: Users, key: 'users', tip: 'Crea cuentas para tus empleados o administradores.' },
+  { label: 'Entrada Stock', icon: ArrowRightLeft, key: 'stock', tip: 'Pasa productos del almacén al punto de venta.' },
+  { label: 'Cierre de Turno', icon: ClipboardCheck, key: 'shift', tip: 'Registra lo que vendiste y cuadra el dinero del turno.' },
+  { label: 'Ventas VIP', icon: Crown, key: 'vip', tip: 'Revisa las ventas a crédito o VIP de tus empleados.' },
+  { label: 'Reportes', icon: ClipboardList, key: 'reports', tip: 'Consulta las ventas por fecha, empleado o producto.' },
+  { label: 'Salarios', icon: DollarSign, key: 'salaries', tip: 'Mira cuánto se le ha pagado a cada empleado.' },
+  { label: 'Movimientos', icon: Clock, key: 'movements', tip: 'Historial de productos que se pasaron al stock.' },
+  { label: 'Ajustes', icon: Settings, key: 'settings', tip: 'Cambia colores, fuente y la posición del menú.' },
 ];
 
 export default function AdminDashboard() {
