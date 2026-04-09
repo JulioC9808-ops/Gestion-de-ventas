@@ -213,7 +213,11 @@ export default function ShiftClose() {
             </div>
           </div>
 
-          <div className="flex gap-3 mt-6">
+          <div className="bg-warning/10 border border-warning/30 rounded-lg p-3 mt-6 text-center">
+            <p className="text-sm font-medium text-warning">⚠️ Revise bien todos los datos antes de cerrar el turno. Una vez cerrada la sesión no podrá modificar este reporte.</p>
+          </div>
+
+          <div className="flex gap-3 mt-4">
             <Button variant="outline" onClick={handleGoBack}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Volver a Corregir
