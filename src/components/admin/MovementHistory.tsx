@@ -5,8 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function MovementHistory() {
-  const { movements, deleteMovement } = useData();
+  const { movements, deleteMovement, users } = useData();
   const sorted = [...movements].reverse();
+
+  const getUserName = (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    return user ? user.name : userId;
+  };
 
   return (
     <div>
@@ -33,7 +38,7 @@ export default function MovementHistory() {
                   <td className="text-sm">{new Date(m.movedAt).toLocaleString()}</td>
                   <td className="font-medium">{m.productName}</td>
                   <td className="font-semibold">+{m.quantity}</td>
-                  <td className="text-muted-foreground">{m.movedBy}</td>
+                  <td className="text-muted-foreground">{getUserName(m.movedBy)}</td>
                   <td className="text-right">
                     <Button variant="ghost" size="sm" onClick={() => deleteMovement(m.id)} className="text-destructive">
                       <Trash2 className="w-4 h-4" />
