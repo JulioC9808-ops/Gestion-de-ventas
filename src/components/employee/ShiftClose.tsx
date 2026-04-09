@@ -232,7 +232,7 @@ export default function ShiftClose() {
               <Printer className="w-4 h-4 mr-2" />
               Imprimir
             </Button>
-            <Button className="flex-1" onClick={logout}>
+            <Button className="flex-1" onClick={handleCloseAndLogout}>
               <LogOut className="w-4 h-4 mr-2" />
               Cerrar Sesión
             </Button>
