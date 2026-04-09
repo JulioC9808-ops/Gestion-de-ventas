@@ -6,9 +6,9 @@ import StockView from '@/components/employee/StockView';
 import ShiftClose from '@/components/employee/ShiftClose';
 
 const NAV = [
-  { label: 'Stock Disponible', icon: Package, key: 'stock-view', tip: 'Consulta los productos disponibles para la venta en tu turno.' },
-  { label: 'Entrada Stock', icon: ArrowRightLeft, key: 'stock-entry', tip: 'Mueve productos del almacén al stock de venta. Se descuenta del almacén.' },
-  { label: 'Cierre de Turno', icon: ClipboardCheck, key: 'shift', tip: 'Registra lo vendido, desglosa los pagos y cierra tu turno.' },
+  { label: 'Stock Disponible', icon: Package, key: 'stock-view', tip: 'Mira qué productos tienes disponibles para vender.' },
+  { label: 'Entrada Stock', icon: ArrowRightLeft, key: 'stock-entry', tip: 'Pasa productos del almacén a tu punto de venta.' },
+  { label: 'Cierre de Turno', icon: ClipboardCheck, key: 'shift', tip: 'Al terminar tu turno, registra aquí lo que vendiste y cuadra el dinero.' },
 ];
 
 export default function EmployeeDashboard() {
