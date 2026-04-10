@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import type { SaleItem, Transfer, VipSale, ShiftReport } from '@/types';
-import { Check, Trash2, Plus, Printer, LogOut, HelpCircle, Pencil, ArrowLeft } from 'lucide-react';
+import { Check, Trash2, Plus, Printer, LogOut, HelpCircle, Pencil, ArrowLeft, Package, Coffee, UtensilsCrossed, Sandwich } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const DENOMINATIONS = [1000, 500, 200, 100, 50, 20, 10, 5, 3, 1];
@@ -273,7 +273,15 @@ export default function ShiftClose() {
                 const sold = Math.max(0, p.stockQty - rem);
                 return (
                   <tr key={p.id}>
-                    <td className="font-medium">{p.name}</td>
+                    <td className="font-medium">
+                      <div className="flex items-center gap-2">
+                        {p.category?.toLowerCase().includes('bebida') ? <Coffee className="w-4 h-4 text-muted-foreground" /> :
+                         p.category?.toLowerCase().includes('alimento') ? <UtensilsCrossed className="w-4 h-4 text-muted-foreground" /> :
+                         p.category?.toLowerCase().includes('panadería') || p.category?.toLowerCase().includes('panaderia') ? <Sandwich className="w-4 h-4 text-muted-foreground" /> :
+                         <Package className="w-4 h-4 text-muted-foreground" />}
+                        {p.name}
+                      </div>
+                    </td>
                     <td>{p.stockQty}</td>
                     <td>
                       <Input
