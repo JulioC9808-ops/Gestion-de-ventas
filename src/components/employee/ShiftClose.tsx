@@ -11,11 +11,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 const DENOMINATIONS = [1000, 500, 200, 100, 50, 20, 10, 5, 3, 1];
 
 export default function ShiftClose() {
-  const { products, getStockQuantity, reduceStock, addReport, settings } = useData();
+  const { products, getStockQuantity, reduceStock, addReport, settings, users } = useData();
   const { currentUser, logout } = useAuth();
   const [step, setStep] = useState(1);
 
-  const salaryPercent = currentUser?.salaryPercent ?? settings.defaultSalaryPercent ?? 2;
+  // Get fresh user data from DataContext to pick up salary changes
+  const freshUser = users.find(u => u.id === currentUser?.id);
+  const salaryPercent = freshUser?.salaryPercent ?? settings.defaultSalaryPercent ?? 2;
 
   // Step 1: remaining quantities
   const stockProducts = useMemo(() =>
@@ -302,10 +304,7 @@ export default function ShiftClose() {
             </tbody>
           </table>
           <div className="flex items-center justify-between mt-6">
-            <div>
-              <p className="text-lg font-bold font-display">Total Vendido: <span className="text-primary">${totalSold.toLocaleString()}</span></p>
-              <p className="text-sm text-muted-foreground">Salario ({salaryPercent}%): <span className="text-success font-bold">${(totalSold * salaryPercent / 100).toFixed(2)}</span></p>
-            </div>
+            <p className="text-lg font-bold font-display">Total Vendido: <span className="text-primary">${totalSold.toLocaleString()}</span></p>
             <Button onClick={() => setStep(2)}>Continuar →</Button>
           </div>
         </div>
@@ -313,6 +312,20 @@ export default function ShiftClose() {
 
       {step === 2 && (
         <div className="glass-card p-6 animate-fade-in-up">
+          {/* Salary & Total at top */}
+          <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Vendido</p>
+                <p className="text-xl font-bold font-display">${totalSold.toLocaleString()}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-muted-foreground">Tu Salario ({salaryPercent}%)</p>
+                <p className="text-xl font-bold font-display text-success">${(totalSold * salaryPercent / 100).toFixed(2)}</p>
+              </div>
+            </div>
+          </div>
+
           <h2 className="text-lg font-display font-bold mb-4">Paso 2: Desglose de Pagos</h2>
 
           {/* Cash */}
@@ -394,7 +407,6 @@ export default function ShiftClose() {
           {/* Totals summary */}
           <div className="bg-muted/50 rounded-lg p-4 mb-4">
             <p className="text-sm">Total Productos Vendidos: <span className="font-bold">${totalSold.toLocaleString()}</span></p>
-            <p className="text-sm">Salario ({salaryPercent}%): <span className="font-bold text-success">${(totalSold * salaryPercent / 100).toFixed(2)}</span></p>
           </div>
 
           {/* Verification */}
