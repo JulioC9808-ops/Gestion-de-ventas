@@ -304,10 +304,7 @@ export default function ShiftClose() {
             </tbody>
           </table>
           <div className="flex items-center justify-between mt-6">
-            <div>
-              <p className="text-lg font-bold font-display">Total Vendido: <span className="text-primary">${totalSold.toLocaleString()}</span></p>
-              <p className="text-sm text-muted-foreground">Salario ({salaryPercent}%): <span className="text-success font-bold">${(totalSold * salaryPercent / 100).toFixed(2)}</span></p>
-            </div>
+            <p className="text-lg font-bold font-display">Total Vendido: <span className="text-primary">${totalSold.toLocaleString()}</span></p>
             <Button onClick={() => setStep(2)}>Continuar →</Button>
           </div>
         </div>
