@@ -11,11 +11,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 const DENOMINATIONS = [1000, 500, 200, 100, 50, 20, 10, 5, 3, 1];
 
 export default function ShiftClose() {
-  const { products, getStockQuantity, reduceStock, addReport, settings } = useData();
+  const { products, getStockQuantity, reduceStock, addReport, settings, users } = useData();
   const { currentUser, logout } = useAuth();
   const [step, setStep] = useState(1);
 
-  const salaryPercent = currentUser?.salaryPercent ?? settings.defaultSalaryPercent ?? 2;
+  // Get fresh user data from DataContext to pick up salary changes
+  const freshUser = users.find(u => u.id === currentUser?.id);
+  const salaryPercent = freshUser?.salaryPercent ?? settings.defaultSalaryPercent ?? 2;
 
   // Step 1: remaining quantities
   const stockProducts = useMemo(() =>
