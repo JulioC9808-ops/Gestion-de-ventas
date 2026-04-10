@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import type { Product, StockItem, ShiftReport, StockMovement, User, AppSettings } from '@/types';
 
 interface DataContextType {
@@ -34,6 +34,24 @@ function save<T>(key: string, data: T) {
   localStorage.setItem(key, JSON.stringify(data));
 }
 
+function getReportKey(report: ShiftReport) {
+  const date = new Date(report.date);
+  const dayKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  return `${report.employeeId}-${report.shift}-${dayKey}`;
+}
+
+function dedupeReports(reports: ShiftReport[]) {
+  const latestByKey = new Map<string, ShiftReport>();
+
+  reports.forEach(report => {
+    latestByKey.set(getReportKey(report), report);
+  });
+
+  return Array.from(latestByKey.values()).sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+}
+
 const DEFAULT_PRODUCTS: Product[] = [
   { id: 'p1', name: 'Café Americano', price: 35, costPrice: 10, category: 'Bebidas', unit: 'taza', inventoryQty: 100 },
   { id: 'p2', name: 'Cappuccino', price: 45, costPrice: 15, category: 'Bebidas', unit: 'taza', inventoryQty: 80 },
@@ -62,10 +80,58 @@ const DEFAULT_USERS: User[] = [
 export function DataProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState<Product[]>(() => load('products', DEFAULT_PRODUCTS));
   const [stock, setStock] = useState<StockItem[]>(() => load('stock', []));
-  const [reports, setReports] = useState<ShiftReport[]>(() => load('reports', []));
+  const [reports, setReports] = useState<ShiftReport[]>(() => dedupeReports(load('reports', [])));
   const [movements, setMovements] = useState<StockMovement[]>(() => load('movements', []));
   const [users, setUsers] = useState<User[]>(() => load('users', DEFAULT_USERS));
   const [settings, setSettings] = useState<AppSettings>(() => load('settings', DEFAULT_SETTINGS));
+
+  useEffect(() => {
+    setReports(prev => {
+      const next = dedupeReports(prev);
+      save('reports', next);
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === null) {
+        setProducts(load<Product[]>('products', DEFAULT_PRODUCTS));
+        setStock(load<StockItem[]>('stock', []));
+        setReports(dedupeReports(load<ShiftReport[]>('reports', [])));
+        setMovements(load<StockMovement[]>('movements', []));
+        setUsers(load<User[]>('users', DEFAULT_USERS));
+        setSettings(load<AppSettings>('settings', DEFAULT_SETTINGS));
+        return;
+      }
+
+      switch (event.key) {
+        case 'products':
+          setProducts(load<Product[]>('products', DEFAULT_PRODUCTS));
+          break;
+        case 'stock':
+          setStock(load<StockItem[]>('stock', []));
+          break;
+        case 'reports':
+          setReports(dedupeReports(load<ShiftReport[]>('reports', [])));
+          break;
+        case 'movements':
+          setMovements(load<StockMovement[]>('movements', []));
+          break;
+        case 'users':
+          setUsers(load<User[]>('users', DEFAULT_USERS));
+          break;
+        case 'settings':
+          setSettings(load<AppSettings>('settings', DEFAULT_SETTINGS));
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
 
   const persist = <T,>(key: string, setter: React.Dispatch<React.SetStateAction<T>>) =>
     (updater: T | ((prev: T) => T)) => {
@@ -130,7 +196,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addReport = useCallback((r: ShiftReport) => {
-    setR(prev => [...prev, r]);
+    setR(prev => dedupeReports([...prev, r]));
   }, []);
 
   const addUser = useCallback((u: Omit<User, 'id' | 'createdAt'>) => {
@@ -146,8 +212,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateSettings = useCallback((s: Partial<AppSettings>) => {
+    if (s.defaultSalaryPercent !== undefined && s.defaultSalaryPercent !== settings.defaultSalaryPercent) {
+      setU(prev => prev.map(user => {
+        if (user.role !== 'employee') return user;
+        if (user.salaryPercent == null || user.salaryPercent === settings.defaultSalaryPercent) {
+          const { salaryPercent: _salaryPercent, ...nextUser } = user;
+          return nextUser;
+        }
+        return user;
+      }));
+    }
+
     setSt(prev => ({ ...prev, ...s }));
-  }, []);
+  }, [settings.defaultSalaryPercent]);
 
   const getProductById = useCallback((id: string) => products.find(p => p.id === id), [products]);
 
