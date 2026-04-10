@@ -312,6 +312,20 @@ export default function ShiftClose() {
 
       {step === 2 && (
         <div className="glass-card p-6 animate-fade-in-up">
+          {/* Salary & Total at top */}
+          <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Vendido</p>
+                <p className="text-xl font-bold font-display">${totalSold.toLocaleString()}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-muted-foreground">Tu Salario ({salaryPercent}%)</p>
+                <p className="text-xl font-bold font-display text-success">${(totalSold * salaryPercent / 100).toFixed(2)}</p>
+              </div>
+            </div>
+          </div>
+
           <h2 className="text-lg font-display font-bold mb-4">Paso 2: Desglose de Pagos</h2>
 
           {/* Cash */}
