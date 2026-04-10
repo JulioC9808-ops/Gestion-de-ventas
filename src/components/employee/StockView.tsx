@@ -1,6 +1,6 @@
 import React from 'react';
 import { useData } from '@/contexts/DataContext';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, Package, Coffee, UtensilsCrossed, Sandwich } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function StockView() {
@@ -31,7 +31,13 @@ export default function StockView() {
               <span className="text-xs text-muted-foreground uppercase tracking-wider">{p.category}</span>
               <span className="text-xs font-medium text-muted-foreground">${p.price}/{p.unit}</span>
             </div>
-            <h3 className="font-display font-bold text-lg mb-1">{p.name}</h3>
+            <h3 className="font-display font-bold text-lg mb-1 flex items-center gap-2">
+              {p.category?.toLowerCase().includes('bebida') ? <Coffee className="w-5 h-5 text-muted-foreground" /> :
+               p.category?.toLowerCase().includes('alimento') ? <UtensilsCrossed className="w-5 h-5 text-muted-foreground" /> :
+               p.category?.toLowerCase().includes('panadería') || p.category?.toLowerCase().includes('panaderia') ? <Sandwich className="w-5 h-5 text-muted-foreground" /> :
+               <Package className="w-5 h-5 text-muted-foreground" />}
+              {p.name}
+            </h3>
             <p className="text-3xl font-bold text-primary">{p.stock} <span className="text-base font-normal text-muted-foreground">{p.unit}</span></p>
           </div>
         ))}

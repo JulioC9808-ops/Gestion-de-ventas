@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Pencil, Trash2, Search, HelpCircle } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, HelpCircle, Package, Coffee, UtensilsCrossed, Sandwich } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Product } from '@/types';
@@ -124,7 +124,15 @@ export default function ProductManagement() {
                 const profitPct = getProfitPercent(p);
                 return (
                   <tr key={p.id}>
-                    <td className="font-medium">{p.name}</td>
+                    <td className="font-medium">
+                      <div className="flex items-center gap-2">
+                        {p.category?.toLowerCase().includes('bebida') ? <Coffee className="w-4 h-4 text-muted-foreground" /> :
+                         p.category?.toLowerCase().includes('alimento') ? <UtensilsCrossed className="w-4 h-4 text-muted-foreground" /> :
+                         p.category?.toLowerCase().includes('panadería') || p.category?.toLowerCase().includes('panaderia') ? <Sandwich className="w-4 h-4 text-muted-foreground" /> :
+                         <Package className="w-4 h-4 text-muted-foreground" />}
+                        {p.name}
+                      </div>
+                    </td>
                     <td>${p.price.toFixed(2)}</td>
                     <td className="text-muted-foreground">${(p.costPrice || 0).toFixed(2)}</td>
                     <td>

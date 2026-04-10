@@ -3,7 +3,7 @@ import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowRight, HelpCircle } from 'lucide-react';
+import { ArrowRight, HelpCircle, Package, Coffee, UtensilsCrossed, Sandwich } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -53,7 +53,15 @@ export default function StockEntry() {
               const entryQty = Number(quantities[p.id]) || 0;
               return (
                 <tr key={p.id}>
-                  <td className="font-medium">{p.name}</td>
+                  <td className="font-medium">
+                    <div className="flex items-center gap-2">
+                      {p.category?.toLowerCase().includes('bebida') ? <Coffee className="w-4 h-4 text-muted-foreground" /> :
+                       p.category?.toLowerCase().includes('alimento') ? <UtensilsCrossed className="w-4 h-4 text-muted-foreground" /> :
+                       p.category?.toLowerCase().includes('panadería') || p.category?.toLowerCase().includes('panaderia') ? <Sandwich className="w-4 h-4 text-muted-foreground" /> :
+                       <Package className="w-4 h-4 text-muted-foreground" />}
+                      {p.name}
+                    </div>
+                  </td>
                   <td>
                     <span className={`font-bold ${maxQty <= 0 ? 'text-destructive' : 'text-primary'}`}>
                       {maxQty} {p.unit}
