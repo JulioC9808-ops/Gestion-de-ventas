@@ -14,10 +14,11 @@ export default function ShiftClose() {
   const { products, getStockQuantity, reduceStock, addReport, settings, users } = useData();
   const { currentUser, logout } = useAuth();
   const [step, setStep] = useState(1);
+  const [isClosing, setIsClosing] = useState(false);
 
   // Get fresh user data from DataContext to pick up salary changes
   const freshUser = users.find(u => u.id === currentUser?.id);
-  const salaryPercent = freshUser?.salaryPercent ?? settings.defaultSalaryPercent ?? 2;
+  const salaryPercent = freshUser?.salaryPercent ?? settings.defaultSalaryPercent ?? currentUser?.salaryPercent ?? 2;
 
   // Step 1: remaining quantities
   const stockProducts = useMemo(() =>
@@ -57,6 +58,7 @@ export default function ShiftClose() {
     }).filter(item => item.quantitySold > 0), [stockProducts, remaining]);
 
   const totalSold = saleItems.reduce((s, i) => s + i.subtotal, 0);
+  const salaryAmount = totalSold * (salaryPercent / 100);
   const cashTotal = Object.entries(bills).reduce((s, [denom, count]) => s + Number(denom) * count, 0);
   const transferTotal = transfers.reduce((s, t) => s + t.amount, 0);
   const vipTotal = vipSales.reduce((s, v) => s + v.amount, 0);
@@ -87,11 +89,10 @@ export default function ShiftClose() {
   };
 
   const buildReport = (): ShiftReport => {
-    const salary = totalSold * (salaryPercent / 100);
     return {
       id: crypto.randomUUID(),
-      employeeId: currentUser?.id || '',
-      employeeName: currentUser?.name || '',
+      employeeId: freshUser?.id || currentUser?.id || '',
+      employeeName: freshUser?.name || currentUser?.name || '',
       date: new Date().toISOString(),
       shift: currentShift(),
       items: saleItems,
@@ -100,7 +101,7 @@ export default function ShiftClose() {
       transfers,
       vipSales,
       totalSold,
-      salary,
+      salary: salaryAmount,
       salaryPercent,
       status: isBalanced ? 'balanced' : difference > 0 ? 'surplus' : 'deficit',
       difference,
@@ -118,7 +119,10 @@ export default function ShiftClose() {
   };
 
   const handleCloseAndLogout = () => {
-    const report = buildReport();
+    if (isClosing) return;
+
+    setIsClosing(true);
+    const report = finalReport ?? buildReport();
     saleItems.forEach(item => reduceStock(item.productId, item.quantitySold));
     addReport(report);
     toast.success('Turno cerrado exitosamente');
@@ -133,7 +137,7 @@ export default function ShiftClose() {
             <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-3">
               <Check className="w-8 h-8 text-success" />
             </div>
-            <h1 className="text-2xl font-display font-bold">Turno Cerrado</h1>
+            <h1 className="text-2xl font-display font-bold">Revisión Final del Turno</h1>
             <p className="text-muted-foreground">
               {new Date(finalReport.date).toLocaleDateString()} — Turno {finalReport.shift === 'morning' ? 'Mañana' : 'Tarde'}
             </p>
@@ -222,7 +226,7 @@ export default function ShiftClose() {
           </div>
 
           <div className="bg-warning/10 border border-warning/30 rounded-lg p-3 mt-6 text-center">
-            <p className="text-sm font-medium text-warning">⚠️ Revise bien todos los datos antes de cerrar el turno. Una vez cerrada la sesión no podrá modificar este reporte.</p>
+            <p className="text-sm font-medium text-warning">⚠️ Revise bien todos los datos. El reporte solo se guardará cuando confirme y cierre la sesión.</p>
           </div>
 
           <div className="flex gap-3 mt-4">
@@ -234,9 +238,9 @@ export default function ShiftClose() {
               <Printer className="w-4 h-4 mr-2" />
               Imprimir
             </Button>
-            <Button className="flex-1" onClick={handleCloseAndLogout}>
+            <Button className="flex-1" onClick={handleCloseAndLogout} disabled={isClosing}>
               <LogOut className="w-4 h-4 mr-2" />
-              Cerrar Sesión
+              {isClosing ? 'Guardando...' : 'Confirmar y Cerrar Sesión'}
             </Button>
           </div>
         </div>
@@ -321,7 +325,7 @@ export default function ShiftClose() {
               </div>
               <div className="text-right">
                 <p className="text-sm text-muted-foreground">Tu Salario ({salaryPercent}%)</p>
-                <p className="text-xl font-bold font-display text-success">${(totalSold * salaryPercent / 100).toFixed(2)}</p>
+                  <p className="text-xl font-bold font-display text-success">${salaryAmount.toFixed(2)}</p>
               </div>
             </div>
           </div>
@@ -432,7 +436,7 @@ export default function ShiftClose() {
           <div className="flex gap-3">
             <Button variant="outline" onClick={() => setStep(1)}>← Volver</Button>
             <Button className="flex-1" disabled={!isBalanced} onClick={handleFinalize}>
-              {isBalanced ? 'Finalizar Turno ✅' : 'Diferencia detectada ❌'}
+              {isBalanced ? 'Revisar Cierre ✅' : 'Diferencia detectada ❌'}
             </Button>
           </div>
         </div>
