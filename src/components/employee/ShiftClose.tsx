@@ -407,7 +407,6 @@ export default function ShiftClose() {
           {/* Totals summary */}
           <div className="bg-muted/50 rounded-lg p-4 mb-4">
             <p className="text-sm">Total Productos Vendidos: <span className="font-bold">${totalSold.toLocaleString()}</span></p>
-            <p className="text-sm">Salario ({salaryPercent}%): <span className="font-bold text-success">${(totalSold * salaryPercent / 100).toFixed(2)}</span></p>
           </div>
 
           {/* Verification */}
