@@ -3,7 +3,7 @@ import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowRight, HelpCircle, Package, Coffee, UtensilsCrossed, Sandwich } from 'lucide-react';
+import { ArrowRight, Package, Coffee, UtensilsCrossed, Sandwich } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -29,10 +29,7 @@ export default function StockEntry() {
       <div className="page-header">
         <div className="flex items-center gap-3">
           <h1 className="page-title">Entrada de Productos a Stock</h1>
-          <Tooltip>
-            <TooltipTrigger><HelpCircle className="w-5 h-5 text-muted-foreground" /></TooltipTrigger>
-            <TooltipContent><p className="max-w-xs">Mueve productos del almacén al stock de venta. La cantidad se descuenta automáticamente del almacén.</p></TooltipContent>
-          </Tooltip>
+          <HelpTip>Mueve productos del almacén al stock de venta. La cantidad se descuenta automáticamente del almacén.</HelpTip>
         </div>
       </div>
 

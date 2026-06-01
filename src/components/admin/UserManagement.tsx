@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Pencil, Trash2, HelpCircle } from 'lucide-react';
+import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { User } from '@/types';
@@ -44,10 +44,7 @@ export default function UserManagement() {
       <div className="page-header">
         <div className="flex items-center gap-3">
           <h1 className="page-title">Gestión de Usuarios</h1>
-          <Tooltip>
-            <TooltipTrigger><HelpCircle className="w-5 h-5 text-muted-foreground" /></TooltipTrigger>
-            <TooltipContent><p className="max-w-xs">Crea y administra cuentas. Puedes configurar el porcentaje de salario individual y la posición de la barra de navegación.</p></TooltipContent>
-          </Tooltip>
+          <HelpTip>Crea y administra cuentas. Puedes configurar el porcentaje de salario individual y la posición de la barra de navegación.</HelpTip>
         </div>
         <Button onClick={openNew}>
           <Plus className="w-4 h-4 mr-2" />

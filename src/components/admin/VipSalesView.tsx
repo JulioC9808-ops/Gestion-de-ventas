@@ -1,6 +1,6 @@
 import React from 'react';
 import { useData } from '@/contexts/DataContext';
-import { Crown, HelpCircle } from 'lucide-react';
+import { Crown } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function VipSalesView() {
@@ -23,10 +23,7 @@ export default function VipSalesView() {
       <div className="page-header">
         <div className="flex items-center gap-3">
           <h1 className="page-title">Ventas VIP</h1>
-          <Tooltip>
-            <TooltipTrigger><HelpCircle className="w-5 h-5 text-muted-foreground" /></TooltipTrigger>
-            <TooltipContent><p className="max-w-xs">Revisa todas las ventas VIP registradas para verificar que todo esté correcto.</p></TooltipContent>
-          </Tooltip>
+          <HelpTip>Revisa todas las ventas VIP registradas para verificar que todo esté correcto.</HelpTip>
         </div>
       </div>
 
