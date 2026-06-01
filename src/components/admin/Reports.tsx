@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
+import HelpTip from '@/components/HelpTip';
 import { useData } from '@/contexts/DataContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function Reports() {
   const { reports } = useData();
@@ -60,10 +60,7 @@ export default function Reports() {
       <div className="page-header">
         <div className="flex items-center gap-3">
           <h1 className="page-title">Reportes</h1>
-          <Tooltip>
-            <TooltipTrigger><HelpCircle className="w-5 h-5 text-muted-foreground" /></TooltipTrigger>
-            <TooltipContent><p className="max-w-xs">Consulta reportes detallados de ventas. Haz clic en un reporte para ver el desglose completo de efectivo, transferencias y VIP.</p></TooltipContent>
-          </Tooltip>
+          <HelpTip>Consulta reportes detallados de ventas. Haz clic en un reporte para ver el desglose completo de efectivo, transferencias y VIP.</HelpTip>
         </div>
       </div>
 

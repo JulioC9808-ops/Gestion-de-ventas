@@ -1,8 +1,8 @@
 import React from 'react';
+import HelpTip from '@/components/HelpTip';
 import { useData } from '@/contexts/DataContext';
-import { Trash2, HelpCircle } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function MovementHistory() {
   const { movements, deleteMovement, users } = useData();
@@ -18,10 +18,7 @@ export default function MovementHistory() {
       <div className="page-header">
         <div className="flex items-center gap-3">
           <h1 className="page-title">Historial de Movimientos</h1>
-          <Tooltip>
-            <TooltipTrigger><HelpCircle className="w-5 h-5 text-muted-foreground" /></TooltipTrigger>
-            <TooltipContent><p className="max-w-xs">Registro de todas las entradas de productos al stock de venta. Puedes eliminar registros incorrectos.</p></TooltipContent>
-          </Tooltip>
+          <HelpTip>Registro de todas las entradas de productos al stock de venta. Puedes eliminar registros incorrectos.</HelpTip>
         </div>
       </div>
       <div className="glass-card p-6">

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
+import HelpTip from '@/components/HelpTip';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { HelpCircle, Palette, Type, Layout, DollarSign } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Palette, Type, Layout, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 
 const THEMES = [
@@ -46,10 +46,7 @@ export default function AdminSettings() {
       <div className="page-header">
         <div className="flex items-center gap-3">
           <h1 className="page-title">Ajustes</h1>
-          <Tooltip>
-            <TooltipTrigger><HelpCircle className="w-5 h-5 text-muted-foreground" /></TooltipTrigger>
-            <TooltipContent><p className="max-w-xs">Personaliza la apariencia del sistema: tema de colores, fuente, posición de la barra de navegación y porcentaje de salario por defecto.</p></TooltipContent>
-          </Tooltip>
+          <HelpTip>Personaliza la apariencia del sistema: tema de colores, fuente, posición de la barra de navegación y porcentaje de salario por defecto.</HelpTip>
         </div>
       </div>
 

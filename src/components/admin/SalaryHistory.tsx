@@ -1,7 +1,7 @@
 import React from 'react';
+import HelpTip from '@/components/HelpTip';
 import { useData } from '@/contexts/DataContext';
 import { HelpCircle } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function SalaryHistory() {
   const { reports } = useData();
@@ -12,10 +12,7 @@ export default function SalaryHistory() {
       <div className="page-header">
         <div className="flex items-center gap-3">
           <h1 className="page-title">Historial de Salarios</h1>
-          <Tooltip>
-            <TooltipTrigger><HelpCircle className="w-5 h-5 text-muted-foreground" /></TooltipTrigger>
-            <TooltipContent><p className="max-w-xs">Registro completo de salarios pagados por cada cierre de turno.</p></TooltipContent>
-          </Tooltip>
+          <HelpTip>Registro completo de salarios pagados por cada cierre de turno.</HelpTip>
         </div>
       </div>
       <div className="glass-card p-6">

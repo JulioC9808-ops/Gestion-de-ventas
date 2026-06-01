@@ -1,12 +1,12 @@
 import React, { useState, useMemo } from 'react';
+import HelpTip from '@/components/HelpTip';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import type { SaleItem, Transfer, VipSale, ShiftReport } from '@/types';
-import { Check, Trash2, Plus, Printer, LogOut, HelpCircle, Pencil, ArrowLeft, Package, Coffee, UtensilsCrossed, Sandwich } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Check, Trash2, Plus, Printer, LogOut, Pencil, ArrowLeft, Package, Coffee, UtensilsCrossed, Sandwich } from 'lucide-react';
 
 const DENOMINATIONS = [1000, 500, 200, 100, 50, 20, 10, 5, 3, 1];
 
@@ -253,10 +253,7 @@ export default function ShiftClose() {
       <div className="page-header">
         <div className="flex items-center gap-3">
           <h1 className="page-title">Cierre de Turno</h1>
-          <Tooltip>
-            <TooltipTrigger><HelpCircle className="w-5 h-5 text-muted-foreground" /></TooltipTrigger>
-            <TooltipContent><p className="max-w-xs">Registra lo que queda de cada producto para calcular lo vendido, luego desglosa los pagos recibidos. El turno solo se cierra si los montos cuadran.</p></TooltipContent>
-          </Tooltip>
+          <HelpTip>Registra lo que queda de cada producto para calcular lo vendido, luego desglosa los pagos recibidos. El turno solo se cierra si los montos cuadran.</HelpTip>
         </div>
         <div className="step-indicator">
           <div className={`step-dot ${step === 1 ? 'active' : step > 1 ? 'completed' : 'pending'}`}>1</div>

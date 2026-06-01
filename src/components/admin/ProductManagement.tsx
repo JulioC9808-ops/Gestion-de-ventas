@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
+import HelpTip from '@/components/HelpTip';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Pencil, Trash2, Search, HelpCircle, Package, Coffee, UtensilsCrossed, Sandwich } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Package, Coffee, UtensilsCrossed, Sandwich } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Product } from '@/types';
 
 export default function ProductManagement() {
@@ -70,10 +70,7 @@ export default function ProductManagement() {
       <div className="page-header">
         <div className="flex items-center gap-3">
           <h1 className="page-title">Gestión de Productos</h1>
-          <Tooltip>
-            <TooltipTrigger><HelpCircle className="w-5 h-5 text-muted-foreground" /></TooltipTrigger>
-            <TooltipContent><p className="max-w-xs">Aquí puedes agregar, editar y eliminar productos del almacén. La cantidad en almacén se descuenta al mover productos al stock de venta. La ganancia se calcula: Precio - Costo - Salario({salaryPercent}%).</p></TooltipContent>
-          </Tooltip>
+          <HelpTip>Aquí puedes agregar, editar y eliminar productos del almacén. La cantidad en almacén se descuenta al mover productos al stock de venta. La ganancia se calcula: Precio - Costo - Salario({salaryPercent}%).</HelpTip>
         </div>
         <Button onClick={openNew}>
           <Plus className="w-4 h-4 mr-2" />

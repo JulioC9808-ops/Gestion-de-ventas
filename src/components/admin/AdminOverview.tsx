@@ -1,7 +1,7 @@
 import React from 'react';
+import HelpTip from '@/components/HelpTip';
 import { useData } from '@/contexts/DataContext';
-import { Package, Users, TrendingUp, DollarSign, Crown, HelpCircle } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Package, Users, TrendingUp, DollarSign, Crown } from 'lucide-react';
 
 export default function AdminOverview() {
   const { products, stock, reports, users } = useData();
@@ -29,10 +29,7 @@ export default function AdminOverview() {
       <div className="page-header">
         <div className="flex items-center gap-3">
           <h1 className="page-title">Panel de Administración</h1>
-          <Tooltip>
-            <TooltipTrigger><HelpCircle className="w-5 h-5 text-muted-foreground" /></TooltipTrigger>
-            <TooltipContent><p className="max-w-xs">Resumen general de tu negocio: productos, ventas, empleados y VIP.</p></TooltipContent>
-          </Tooltip>
+          <HelpTip>Resumen general de tu negocio: productos, ventas, empleados y VIP.</HelpTip>
         </div>
       </div>
 
