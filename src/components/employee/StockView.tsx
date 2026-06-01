@@ -1,4 +1,5 @@
 import React from 'react';
+import HelpTip from '@/components/HelpTip';
 import { useData } from '@/contexts/DataContext';
 import { Package, Coffee, UtensilsCrossed, Sandwich } from 'lucide-react';
 

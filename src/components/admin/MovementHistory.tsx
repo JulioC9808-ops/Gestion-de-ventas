@@ -1,4 +1,5 @@
 import React from 'react';
+import HelpTip from '@/components/HelpTip';
 import { useData } from '@/contexts/DataContext';
 import { Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';

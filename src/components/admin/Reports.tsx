@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import HelpTip from '@/components/HelpTip';
 import { useData } from '@/contexts/DataContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
