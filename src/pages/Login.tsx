@@ -5,6 +5,7 @@ import { Coffee, Lock, User, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import HelpTip from '@/components/HelpTip';
 
 const DEV_WHATSAPP = '+5351616816';
 
@@ -54,16 +55,16 @@ export default function Login() {
       {settings.backgroundUrl && <div className="absolute inset-0 bg-black/40" />}
 
       <div className="relative z-10 w-full max-w-md mx-4 animate-fade-in-up">
-        <div className="glass-card p-8 sm:p-10" style={{ background: settings.backgroundUrl ? 'rgba(255,255,255,0.9)' : undefined }}>
+        <div className="glass-card p-8 sm:p-10 shadow-2xl">
           <div className="flex flex-col items-center mb-8">
             {settings.logoUrl ? (
-              <img src={settings.logoUrl} alt="Logo" className="w-16 h-16 rounded-2xl object-cover mb-4" />
+              <img src={settings.logoUrl} alt="Logo" className="w-16 h-16 rounded-2xl object-cover mb-4 ring-2 ring-primary/30" />
             ) : (
-              <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mb-4">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center mb-4 shadow-lg">
                 <Coffee className="w-8 h-8 text-primary-foreground" />
               </div>
             )}
-            <h1 className="text-2xl font-bold text-foreground font-display">
+            <h1 className="text-2xl font-bold text-gradient font-display">
               {settings.businessName}
             </h1>
             <p className="text-muted-foreground text-sm mt-1">Sistema de Ventas</p>
@@ -71,7 +72,10 @@ export default function Login() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Usuario</label>
+              <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                Usuario
+                <HelpTip>Escribe el nombre de usuario que te dio el administrador.</HelpTip>
+              </label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -86,7 +90,10 @@ export default function Login() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Contraseña</label>
+              <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                Contraseña
+                <HelpTip>Tu contraseña es secreta. Si la olvidaste, pídele al administrador que te dé una nueva.</HelpTip>
+              </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -101,7 +108,7 @@ export default function Login() {
             </div>
 
             {error && (
-              <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg text-center">
+              <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg text-center border border-destructive/30">
                 {error}
               </div>
             )}
@@ -115,14 +122,17 @@ export default function Login() {
             </Button>
           </form>
 
-          <Button
-            variant="outline"
-            className="w-full mt-4"
-            onClick={handleContact}
-          >
-            <MessageCircle className="w-4 h-4 mr-2" />
-            Contactar al Desarrollador
-          </Button>
+          <div className="mt-4 flex items-center gap-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={handleContact}
+            >
+              <MessageCircle className="w-4 h-4 mr-2" />
+              Contactar al Desarrollador
+            </Button>
+            <HelpTip>Si tienes problemas para entrar o algún error del sistema, contacta al desarrollador por WhatsApp.</HelpTip>
+          </div>
 
           <p className="text-center text-xs text-muted-foreground mt-6">
             © {new Date().getFullYear()} {settings.businessName}. Todos los derechos reservados.
