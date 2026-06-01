@@ -1,7 +1,6 @@
 import React from 'react';
 import { useData } from '@/contexts/DataContext';
 import { HelpCircle } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function SalaryHistory() {
   const { reports } = useData();

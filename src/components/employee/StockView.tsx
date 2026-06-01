@@ -1,7 +1,6 @@
 import React from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Package, Coffee, UtensilsCrossed, Sandwich } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function StockView() {
   const { products, getStockQuantity } = useData();

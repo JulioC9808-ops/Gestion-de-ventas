@@ -1,7 +1,6 @@
 import React from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Crown } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function VipSalesView() {
   const { reports } = useData();

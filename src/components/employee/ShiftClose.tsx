@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import type { SaleItem, Transfer, VipSale, ShiftReport } from '@/types';
 import { Check, Trash2, Plus, Printer, LogOut, Pencil, ArrowLeft, Package, Coffee, UtensilsCrossed, Sandwich } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const DENOMINATIONS = [1000, 500, 200, 100, 50, 20, 10, 5, 3, 1];
 

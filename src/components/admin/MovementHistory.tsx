@@ -2,7 +2,6 @@ import React from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function MovementHistory() {
   const { movements, deleteMovement, users } = useData();
