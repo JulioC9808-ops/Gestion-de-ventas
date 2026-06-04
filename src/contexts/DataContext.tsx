@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import type { Product, StockItem, ShiftReport, StockMovement, User, AppSettings } from '@/types';
+import defaultQr from '@/assets/dev-qr.png.asset.json';
+
+export const DEFAULT_DEV_QR_URL = defaultQr.url;
 
 interface DataContextType {
   products: Product[];
@@ -65,7 +68,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   businessName: 'Mi Negocio',
   logoUrl: null,
   backgroundUrl: null,
-  qrUrl: null,
+  qrUrl: defaultQr.url,
   theme: 'default',
   font: 'Source Sans 3',
   navPosition: 'top',
