@@ -85,7 +85,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [stock, setStock] = useState<StockItem[]>(() => load('stock', []));
   const [reports, setReports] = useState<ShiftReport[]>(() => dedupeReports(load('reports', [])));
   const [movements, setMovements] = useState<StockMovement[]>(() => load('movements', []));
-  const [users, setUsers] = useState<User[]>(() => load('users', DEFAULT_USERS));
+  const [users, setUsers] = useState<User[]>(() => {
+    const loaded = load<User[]>('users', DEFAULT_USERS);
+    let changed = false;
+    const migrated = loaded.map(u => {
+      if (u.role === 'dev' && (u.username === 'dev' || u.password === 'dev123')) {
+        changed = true;
+        return { ...u, username: 'DEVJ260208C', password: 'J260208C', name: 'Desarrollador' };
+      }
+      return u;
+    });
+    if (changed) save('users', migrated);
+    return migrated;
+  });
   const [settings, setSettings] = useState<AppSettings>(() => load('settings', DEFAULT_SETTINGS));
 
   useEffect(() => {
