@@ -4,6 +4,9 @@ import { useData } from '@/contexts/DataContext';
 import { Coffee, LogOut, type LucideIcon, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { isMobileDevice } from '@/lib/platform';
+import { getPendingShift } from '@/lib/syncStore';
+import { toast } from 'sonner';
 
 interface NavItem {
   label: string;
@@ -23,6 +26,18 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
   const { currentUser, logout } = useAuth();
   const { settings } = useData();
   const isTop = settings.navPosition === 'top';
+
+  const handleLogout = () => {
+    if (isMobileDevice() && currentUser?.role === 'employee') {
+      const pending = getPendingShift();
+      if (pending && pending.employeeId === currentUser.id) {
+        toast.error('Debes sincronizar tu turno con el dueño antes de cerrar sesión.');
+        return;
+      }
+    }
+    logout();
+  };
+
 
   if (isTop) {
     return (
