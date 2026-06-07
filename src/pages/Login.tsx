@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
-import { Coffee, Lock, User, MessageCircle } from 'lucide-react';
+import { Coffee, Lock, User, MessageCircle, QrCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import HelpTip from '@/components/HelpTip';
+import { isMobileDevice } from '@/lib/platform';
+import QrScannerModal from '@/components/QrScannerModal';
+import { toast } from 'sonner';
 
 const DEV_WHATSAPP = '+5351616816';
 
@@ -17,6 +20,8 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showQr, setShowQr] = useState(false);
+  const [scanOpen, setScanOpen] = useState(false);
+  const mobile = isMobileDevice();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
