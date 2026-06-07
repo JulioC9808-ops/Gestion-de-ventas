@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import AppLayout from '@/components/AppLayout';
-import { LayoutDashboard, Package, Users, ArrowRightLeft, ClipboardList, DollarSign, Clock, ClipboardCheck, Crown, Settings, Palette, Type } from 'lucide-react';
+import { LayoutDashboard, Package, Users, ArrowRightLeft, ClipboardList, DollarSign, Clock, ClipboardCheck, Crown, Settings, Palette, Type, QrCode } from 'lucide-react';
 import ProductManagement from '@/components/admin/ProductManagement';
 import UserManagement from '@/components/admin/UserManagement';
 import StockEntry from '@/components/admin/StockEntry';
@@ -11,8 +11,10 @@ import AdminOverview from '@/components/admin/AdminOverview';
 import ShiftClose from '@/components/employee/ShiftClose';
 import VipSalesView from '@/components/admin/VipSalesView';
 import AdminSettings from '@/components/admin/AdminSettings';
+import ShiftSync from '@/components/admin/ShiftSync';
+import { isMobileDevice } from '@/lib/platform';
 
-const NAV = [
+const BASE_NAV = [
   { label: 'Panel', icon: LayoutDashboard, key: 'overview', tip: 'Aquí ves un resumen rápido de todo tu negocio.' },
   { label: 'Productos', icon: Package, key: 'products', tip: 'Agrega o edita los productos que vendes y su precio.' },
   { label: 'Usuarios', icon: Users, key: 'users', tip: 'Crea cuentas para tus empleados o administradores.' },
@@ -25,8 +27,11 @@ const NAV = [
   { label: 'Ajustes', icon: Settings, key: 'settings', tip: 'Cambia colores, fuente y la posición del menú.' },
 ];
 
+const SYNC_NAV = { label: 'Sincronizar', icon: QrCode, key: 'sync', tip: 'Escanea el QR del empleado para recibir su cierre de turno desde su celular.' };
+
 export default function AdminDashboard() {
   const [active, setActive] = useState('overview');
+  const NAV = useMemo(() => isMobileDevice() ? [...BASE_NAV, SYNC_NAV] : BASE_NAV, []);
 
   const content: Record<string, React.ReactNode> = {
     overview: <AdminOverview />,
@@ -39,6 +44,7 @@ export default function AdminDashboard() {
     salaries: <SalaryHistory />,
     movements: <MovementHistory />,
     settings: <AdminSettings />,
+    sync: <ShiftSync />,
   };
 
   return (
