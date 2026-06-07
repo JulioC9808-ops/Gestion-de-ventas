@@ -11,7 +11,6 @@ export function isMobileDevice(): boolean {
   }
 
   // Electron => PC
-  // @ts-expect-error - userAgent puede incluir Electron
   if (navigator.userAgent && /Electron/i.test(navigator.userAgent)) {
     return false;
   }
