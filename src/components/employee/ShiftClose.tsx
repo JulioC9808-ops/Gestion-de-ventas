@@ -350,9 +350,9 @@ export default function ShiftClose() {
           <HelpTip>Registra lo que queda de cada producto para calcular lo vendido, luego desglosa los pagos recibidos. El turno solo se cierra si los montos cuadran.</HelpTip>
         </div>
         <div className="step-indicator">
-          <div className={`step-dot ${step === 1 ? 'active' : step > 1 ? 'completed' : 'pending'}`}>1</div>
+          <div className={`step-dot ${step === 1 ? 'active' : (typeof step === 'number' && step > 1) ? 'completed' : 'pending'}`}>1</div>
           <div className="w-8 h-0.5 bg-border" />
-          <div className={`step-dot ${step === 2 ? 'active' : step > 2 ? 'completed' : 'pending'}`}>2</div>
+          <div className={`step-dot ${step === 2 ? 'active' : (typeof step === 'number' && step > 2) ? 'completed' : 'pending'}`}>2</div>
         </div>
       </div>
 
