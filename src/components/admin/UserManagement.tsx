@@ -148,6 +148,30 @@ export default function UserManagement() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!qrUser} onOpenChange={(o) => !o && setQrUser(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display text-center">Credenciales por QR</DialogTitle>
+          </DialogHeader>
+          {qrUser && (
+            <div className="flex flex-col items-center gap-3 py-2">
+              <p className="text-sm text-muted-foreground text-center">
+                Que <strong>{qrUser.name}</strong> escanee este QR desde la pantalla de inicio de sesión.
+              </p>
+              <div className="bg-white p-3 rounded-lg">
+                <QrDisplay
+                  data={`CRED:${JSON.stringify({ u: qrUser.username, p: qrUser.password })}`}
+                  size={240}
+                />
+              </div>
+              <div className="text-xs text-muted-foreground text-center">
+                Usuario: <code className="bg-secondary px-1 rounded">{qrUser.username}</code>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
