@@ -63,6 +63,7 @@ export interface ShiftReport {
   salaryPercent: number;
   status: 'balanced' | 'surplus' | 'deficit';
   difference: number;
+  synced?: boolean;
 }
 
 export interface StockMovement {
