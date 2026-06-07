@@ -127,6 +127,18 @@ export default function Login() {
             </Button>
           </form>
 
+          {mobile && (
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full mt-3"
+              onClick={() => setScanOpen(true)}
+            >
+              <QrCode className="w-4 h-4 mr-2" />
+              Escanear QR de credenciales
+            </Button>
+          )}
+
           <div className="mt-4 flex items-center gap-2">
             <Button
               variant="outline"
@@ -158,6 +170,33 @@ export default function Login() {
           </DialogContent>
         </Dialog>
       )}
+
+      <QrScannerModal
+        open={scanOpen}
+        onClose={() => setScanOpen(false)}
+        onScan={(text) => {
+          setScanOpen(false);
+          if (!text.startsWith('CRED:')) {
+            toast.error('Este QR no contiene credenciales válidas.');
+            return;
+          }
+          try {
+            const { u, p } = JSON.parse(text.slice(5));
+            setUsername(u);
+            setPassword(p);
+            setLoading(true);
+            setTimeout(() => {
+              const ok = login(u, p);
+              if (!ok) setError('Las credenciales del QR no son válidas.');
+              setLoading(false);
+            }, 300);
+          } catch {
+            toast.error('No se pudo leer el QR.');
+          }
+        }}
+        title="Escanear credenciales"
+        hint="Pídele al administrador que te muestre tu QR desde la pestaña Usuarios."
+      />
     </div>
   );
 }
