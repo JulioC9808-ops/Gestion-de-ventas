@@ -3,15 +3,19 @@ import HelpTip from '@/components/HelpTip';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, QrCode } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import type { User } from '@/types';
+import { isMobileDevice } from '@/lib/platform';
+import QrDisplay from '@/components/QrDisplay';
 
 export default function UserManagement() {
   const { users, addUser, updateUser, deleteUser, settings } = useData();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
   const [form, setForm] = useState({ username: '', password: '', name: '', role: 'employee' as 'employee' | 'admin', salaryPercent: '' });
+  const [qrUser, setQrUser] = useState<User | null>(null);
+  const mobile = isMobileDevice();
 
   const visibleUsers = users.filter(u => u.role !== 'dev');
 
@@ -80,6 +84,11 @@ export default function UserManagement() {
                 <td className="text-success font-medium">{u.salaryPercent ?? settings.defaultSalaryPercent ?? 2}%</td>
                 <td className="text-sm text-muted-foreground">{new Date(u.createdAt).toLocaleDateString()}</td>
                 <td className="text-right">
+                  {mobile && (
+                    <Button variant="ghost" size="sm" onClick={() => setQrUser(u)} title="QR de credenciales">
+                      <QrCode className="w-4 h-4" />
+                    </Button>
+                  )}
                   <Button variant="ghost" size="sm" onClick={() => openEdit(u)}>
                     <Pencil className="w-4 h-4" />
                   </Button>
@@ -137,6 +146,30 @@ export default function UserManagement() {
             </div>
             <Button onClick={handleSave} className="w-full">{editing ? 'Guardar' : 'Crear'}</Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!qrUser} onOpenChange={(o) => !o && setQrUser(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display text-center">Credenciales por QR</DialogTitle>
+          </DialogHeader>
+          {qrUser && (
+            <div className="flex flex-col items-center gap-3 py-2">
+              <p className="text-sm text-muted-foreground text-center">
+                Que <strong>{qrUser.name}</strong> escanee este QR desde la pantalla de inicio de sesión.
+              </p>
+              <div className="bg-white p-3 rounded-lg">
+                <QrDisplay
+                  data={`CRED:${JSON.stringify({ u: qrUser.username, p: qrUser.password })}`}
+                  size={240}
+                />
+              </div>
+              <div className="text-xs text-muted-foreground text-center">
+                Usuario: <code className="bg-secondary px-1 rounded">{qrUser.username}</code>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
