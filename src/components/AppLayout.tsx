@@ -97,7 +97,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
                 variant="ghost"
                 size="sm"
                 className="text-sidebar-foreground/60 hover:text-sidebar-foreground"
-                onClick={logout}
+                onClick={handleLogout}
               >
                 <LogOut className="w-4 h-4" />
               </Button>
@@ -172,7 +172,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
           <Button
             variant="ghost"
             className="w-full justify-start text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
-            onClick={logout}
+            onClick={handleLogout}
           >
             <LogOut className="w-4 h-4 mr-2" />
             Cerrar Sesión
