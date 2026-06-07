@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import HelpTip from '@/components/HelpTip';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -6,15 +6,37 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import type { SaleItem, Transfer, VipSale, ShiftReport } from '@/types';
-import { Check, Trash2, Plus, Printer, LogOut, Pencil, ArrowLeft, Package, Coffee, UtensilsCrossed, Sandwich } from 'lucide-react';
+import { Check, Trash2, Plus, Printer, LogOut, Pencil, ArrowLeft, Package, Coffee, UtensilsCrossed, Sandwich, QrCode } from 'lucide-react';
+import { isMobileDevice } from '@/lib/platform';
+import { getPendingShift, setPendingShift, clearPendingShift } from '@/lib/syncStore';
+import QrDisplay from '@/components/QrDisplay';
+import QrScannerModal from '@/components/QrScannerModal';
 
 const DENOMINATIONS = [1000, 500, 200, 100, 50, 20, 10, 5, 3, 1];
 
 export default function ShiftClose() {
-  const { products, getStockQuantity, reduceStock, addReport, settings, users } = useData();
+  const { products, getStockQuantity, reduceStock, addReport, settings, users, reports } = useData();
   const { currentUser, logout } = useAuth();
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 'sync'>(1);
   const [isClosing, setIsClosing] = useState(false);
+  const [scanAckOpen, setScanAckOpen] = useState(false);
+  const mobile = isMobileDevice();
+
+  // If a pending shift exists for this user, jump straight to sync screen
+  useEffect(() => {
+    if (!mobile || !currentUser) return;
+    const pending = getPendingShift();
+    if (pending && pending.employeeId === currentUser.id) {
+      const stored = reports.find(r => r.id === pending.reportId);
+      if (stored && !stored.synced) {
+        setFinalReport(stored);
+        setStep('sync');
+      } else if (stored?.synced) {
+        clearPendingShift();
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser?.id, mobile]);
 
   // Get fresh user data from DataContext to pick up salary changes
   const freshUser = users.find(u => u.id === currentUser?.id);
@@ -122,12 +144,84 @@ export default function ShiftClose() {
     if (isClosing) return;
 
     setIsClosing(true);
-    const report = finalReport ?? buildReport();
+    const baseReport = finalReport ?? buildReport();
     saleItems.forEach(item => reduceStock(item.productId, item.quantitySold));
-    addReport(report);
+
+    if (mobile) {
+      // En móvil: guardar como pendiente y mostrar pantalla de sincronización
+      const pendingReport: ShiftReport = { ...baseReport, synced: false };
+      addReport(pendingReport);
+      setPendingShift({ reportId: pendingReport.id, employeeId: pendingReport.employeeId });
+      setFinalReport(pendingReport);
+      setStep('sync');
+      setIsClosing(false);
+      toast.success('Turno guardado. Sincroniza con el dueño para cerrar sesión.');
+      return;
+    }
+
+    // PC / Electron: flujo original
+    addReport({ ...baseReport, synced: true });
     toast.success('Turno cerrado exitosamente');
     logout();
   };
+
+  const handleAckScan = (text: string) => {
+    setScanAckOpen(false);
+    if (!finalReport) return;
+    if (!text.startsWith('ACK:')) {
+      toast.error('Este QR no es una confirmación válida.');
+      return;
+    }
+    const id = text.slice(4);
+    if (id !== finalReport.id) {
+      toast.error('La confirmación no corresponde a este turno.');
+      return;
+    }
+    addReport({ ...finalReport, synced: true });
+    clearPendingShift();
+    toast.success('Turno sincronizado. Cerrando sesión…');
+    setTimeout(() => logout(), 600);
+  };
+
+  if (step === 'sync' && finalReport) {
+    const payload = `SHIFT:${JSON.stringify(finalReport)}`;
+    return (
+      <div className="max-w-xl mx-auto">
+        <div className="glass-card p-6 animate-fade-in-up text-center space-y-4">
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+            <QrCode className="w-8 h-8 text-primary" />
+          </div>
+          <h1 className="text-xl font-display font-bold">Sincroniza tu turno</h1>
+          <p className="text-sm text-muted-foreground">
+            Muéstrale este QR al dueño/admin para que lo escanee desde su dispositivo.
+            Cuando él te muestre su QR de confirmación, escanéalo aquí para poder cerrar sesión.
+          </p>
+
+          <div className="flex justify-center bg-white p-4 rounded-lg">
+            <QrDisplay data={payload} size={260} />
+          </div>
+
+          <div className="bg-warning/10 border border-warning/30 rounded-lg p-3 text-xs text-warning text-left">
+            ⚠️ <strong>Importante:</strong> mientras no sincronices este turno con el dueño,
+            no podrás cerrar sesión. Tus ventas ya quedaron guardadas en este dispositivo.
+          </div>
+
+          <Button className="w-full" onClick={() => setScanAckOpen(true)}>
+            <QrCode className="w-4 h-4 mr-2" />
+            Escanear confirmación del dueño
+          </Button>
+        </div>
+
+        <QrScannerModal
+          open={scanAckOpen}
+          onClose={() => setScanAckOpen(false)}
+          onScan={handleAckScan}
+          title="Escanear confirmación"
+          hint="Apunta al QR que te muestra el dueño después de recibir tu turno."
+        />
+      </div>
+    );
+  }
 
   if (step === 3 && finalReport) {
     return (
