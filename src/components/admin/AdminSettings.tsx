@@ -31,6 +31,7 @@ export default function AdminSettings() {
   const [defaultSalary, setDefaultSalary] = useState(String(settings.defaultSalaryPercent));
   const [selectedTheme, setSelectedTheme] = useState(settings.theme);
   const [selectedFont, setSelectedFont] = useState(settings.font);
+  const [salaryByPercentEnabled, setSalaryByPercentEnabled] = useState(!!settings.salaryByPercentEnabled);
 
   const handleSave = () => {
     updateSettings({
@@ -38,6 +39,7 @@ export default function AdminSettings() {
       defaultSalaryPercent: Number(defaultSalary) || 2,
       theme: selectedTheme,
       font: selectedFont,
+      salaryByPercentEnabled,
     });
     toast.success('Configuración guardada');
   };
