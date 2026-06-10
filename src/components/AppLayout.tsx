@@ -5,6 +5,7 @@ import { Coffee, LogOut, type LucideIcon, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { isMobileDevice } from '@/lib/platform';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { getPendingShift } from '@/lib/syncStore';
 import { toast } from 'sonner';
 
