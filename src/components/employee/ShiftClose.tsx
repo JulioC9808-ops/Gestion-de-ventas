@@ -238,15 +238,17 @@ export default function ShiftClose() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className={`grid ${salaryByPercent ? 'grid-cols-2' : 'grid-cols-1'} gap-4 mb-6`}>
             <div className="stat-card text-center">
               <p className="text-sm text-muted-foreground">Total Vendido</p>
               <p className="text-2xl font-bold font-display">${finalReport.totalSold.toLocaleString()}</p>
             </div>
-            <div className="stat-card text-center">
-              <p className="text-sm text-muted-foreground">Salario ({finalReport.salaryPercent}%)</p>
-              <p className="text-2xl font-bold font-display text-success">${finalReport.salary.toFixed(2)}</p>
-            </div>
+            {salaryByPercent && (
+              <div className="stat-card text-center">
+                <p className="text-sm text-muted-foreground">Salario ({finalReport.salaryPercent}%)</p>
+                <p className="text-2xl font-bold font-display text-success">${finalReport.salary.toFixed(2)}</p>
+              </div>
+            )}
           </div>
 
           <div className="space-y-4">
