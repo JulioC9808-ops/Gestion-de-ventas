@@ -135,17 +135,19 @@ export default function UserManagement() {
                 <option value="admin">Administrador</option>
               </select>
             </div>
-            <div>
-              <label className="text-sm font-medium">Porcentaje de Salario (%)</label>
-              <Input
-                type="number"
-                min="0"
-                max="100"
-                step="0.5"
-                value={form.salaryPercent}
-                onChange={e => setForm({ ...form, salaryPercent: e.target.value })}
-              />
-            </div>
+            {settings.salaryByPercentEnabled && (
+              <div>
+                <label className="text-sm font-medium">Porcentaje de Salario (%)</label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.5"
+                  value={form.salaryPercent}
+                  onChange={e => setForm({ ...form, salaryPercent: e.target.value })}
+                />
+              </div>
+            )}
             <Button onClick={handleSave} className="w-full">{editing ? 'Guardar' : 'Crear'}</Button>
           </div>
         </DialogContent>
