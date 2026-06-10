@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 
 const THEMES = [
   { value: 'default', label: 'Negro Elegante', preview: 'bg-gray-900' },
+  { value: 'white', label: 'Blanco Puro', preview: 'bg-white border border-gray-300' },
   { value: 'sunset', label: 'Atardecer', preview: 'bg-orange-600' },
   { value: 'forest', label: 'Bosque', preview: 'bg-green-700' },
   { value: 'ocean', label: 'Océano', preview: 'bg-blue-600' },
