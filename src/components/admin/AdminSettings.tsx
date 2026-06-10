@@ -133,23 +133,44 @@ export default function AdminSettings() {
                 </button>
               </div>
             </div>
-            <div>
-              <label className="text-sm font-medium flex items-center gap-2">
-                <DollarSign className="w-4 h-4" />
-                Porcentaje de Salario por Defecto
-              </label>
-              <div className="flex items-center gap-2 mt-1">
-                <Input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={defaultSalary}
-                  onChange={e => setDefaultSalary(e.target.value)}
-                  className="w-24"
+            <div className="border-t border-border pt-4">
+              <label className="flex items-center justify-between gap-3 cursor-pointer">
+                <div>
+                  <p className="text-sm font-medium flex items-center gap-2">
+                    <DollarSign className="w-4 h-4" />
+                    Calcular salario por porcentaje
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Si está apagado, los empleados reciben salario fijo (no se calcula desde las ventas).
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={salaryByPercentEnabled}
+                  onChange={e => setSalaryByPercentEnabled(e.target.checked)}
+                  className="w-5 h-5 accent-primary"
                 />
-                <span className="text-sm text-muted-foreground">%</span>
-              </div>
+              </label>
             </div>
+            {salaryByPercentEnabled && (
+              <div>
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <DollarSign className="w-4 h-4" />
+                  Porcentaje de Salario por Defecto
+                </label>
+                <div className="flex items-center gap-2 mt-1">
+                  <Input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={defaultSalary}
+                    onChange={e => setDefaultSalary(e.target.value)}
+                    className="w-24"
+                  />
+                  <span className="text-sm text-muted-foreground">%</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
