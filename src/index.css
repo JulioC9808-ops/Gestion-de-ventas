@@ -111,7 +111,7 @@
   }
 
   .text-gradient {
-    background: var(--gradient-accent);
+    background: linear-gradient(135deg, hsl(var(--foreground)), hsl(var(--foreground) / 0.7));
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -124,6 +124,7 @@
   .page-title {
     @apply text-3xl font-bold tracking-tight;
     font-family: var(--font-display);
+    color: hsl(var(--foreground));
   }
 
   .data-table {
