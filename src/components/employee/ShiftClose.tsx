@@ -40,6 +40,7 @@ export default function ShiftClose() {
 
   // Get fresh user data from DataContext to pick up salary changes
   const freshUser = users.find(u => u.id === currentUser?.id);
+  const salaryByPercent = !!settings.salaryByPercentEnabled;
   const salaryPercent = freshUser?.salaryPercent ?? settings.defaultSalaryPercent ?? currentUser?.salaryPercent ?? 2;
 
   // Step 1: remaining quantities
