@@ -125,7 +125,7 @@ export default function ShiftClose() {
       vipSales,
       totalSold,
       salary: salaryAmount,
-      salaryPercent,
+      salaryPercent: salaryByPercent ? salaryPercent : 0,
       status: isBalanced ? 'balanced' : difference > 0 ? 'surplus' : 'deficit',
       difference,
     };
