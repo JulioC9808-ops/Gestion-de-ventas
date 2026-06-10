@@ -81,7 +81,7 @@ export default function ShiftClose() {
     }).filter(item => item.quantitySold > 0), [stockProducts, remaining]);
 
   const totalSold = saleItems.reduce((s, i) => s + i.subtotal, 0);
-  const salaryAmount = totalSold * (salaryPercent / 100);
+  const salaryAmount = salaryByPercent ? totalSold * (salaryPercent / 100) : 0;
   const cashTotal = Object.entries(bills).reduce((s, [denom, count]) => s + Number(denom) * count, 0);
   const transferTotal = transfers.reduce((s, t) => s + t.amount, 0);
   const vipTotal = vipSales.reduce((s, v) => s + v.amount, 0);
