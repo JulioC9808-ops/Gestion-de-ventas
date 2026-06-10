@@ -73,6 +73,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   font: 'Source Sans 3',
   navPosition: 'top',
   defaultSalaryPercent: 2,
+  salaryByPercentEnabled: false,
 };
 
 const DEFAULT_USERS: User[] = [

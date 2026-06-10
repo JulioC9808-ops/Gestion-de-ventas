@@ -40,6 +40,7 @@ export default function ShiftClose() {
 
   // Get fresh user data from DataContext to pick up salary changes
   const freshUser = users.find(u => u.id === currentUser?.id);
+  const salaryByPercent = !!settings.salaryByPercentEnabled;
   const salaryPercent = freshUser?.salaryPercent ?? settings.defaultSalaryPercent ?? currentUser?.salaryPercent ?? 2;
 
   // Step 1: remaining quantities
@@ -80,7 +81,7 @@ export default function ShiftClose() {
     }).filter(item => item.quantitySold > 0), [stockProducts, remaining]);
 
   const totalSold = saleItems.reduce((s, i) => s + i.subtotal, 0);
-  const salaryAmount = totalSold * (salaryPercent / 100);
+  const salaryAmount = salaryByPercent ? totalSold * (salaryPercent / 100) : 0;
   const cashTotal = Object.entries(bills).reduce((s, [denom, count]) => s + Number(denom) * count, 0);
   const transferTotal = transfers.reduce((s, t) => s + t.amount, 0);
   const vipTotal = vipSales.reduce((s, v) => s + v.amount, 0);
@@ -124,7 +125,7 @@ export default function ShiftClose() {
       vipSales,
       totalSold,
       salary: salaryAmount,
-      salaryPercent,
+      salaryPercent: salaryByPercent ? salaryPercent : 0,
       status: isBalanced ? 'balanced' : difference > 0 ? 'surplus' : 'deficit',
       difference,
     };
@@ -237,15 +238,17 @@ export default function ShiftClose() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className={`grid ${salaryByPercent ? 'grid-cols-2' : 'grid-cols-1'} gap-4 mb-6`}>
             <div className="stat-card text-center">
               <p className="text-sm text-muted-foreground">Total Vendido</p>
               <p className="text-2xl font-bold font-display">${finalReport.totalSold.toLocaleString()}</p>
             </div>
-            <div className="stat-card text-center">
-              <p className="text-sm text-muted-foreground">Salario ({finalReport.salaryPercent}%)</p>
-              <p className="text-2xl font-bold font-display text-success">${finalReport.salary.toFixed(2)}</p>
-            </div>
+            {salaryByPercent && (
+              <div className="stat-card text-center">
+                <p className="text-sm text-muted-foreground">Salario ({finalReport.salaryPercent}%)</p>
+                <p className="text-2xl font-bold font-display text-success">${finalReport.salary.toFixed(2)}</p>
+              </div>
+            )}
           </div>
 
           <div className="space-y-4">
@@ -414,10 +417,12 @@ export default function ShiftClose() {
                 <p className="text-sm text-muted-foreground">Total Vendido</p>
                 <p className="text-xl font-bold font-display">${totalSold.toLocaleString()}</p>
               </div>
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground">Tu Salario ({salaryPercent}%)</p>
+              {salaryByPercent && (
+                <div className="text-right">
+                  <p className="text-sm text-muted-foreground">Tu Salario ({salaryPercent}%)</p>
                   <p className="text-xl font-bold font-display text-success">${salaryAmount.toFixed(2)}</p>
-              </div>
+                </div>
+              )}
             </div>
           </div>
 

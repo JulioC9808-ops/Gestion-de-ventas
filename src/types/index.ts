@@ -84,4 +84,5 @@ export interface AppSettings {
   font: string;
   navPosition: 'side' | 'top';
   defaultSalaryPercent: number;
+  salaryByPercentEnabled?: boolean;
 }

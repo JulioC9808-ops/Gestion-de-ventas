@@ -64,7 +64,7 @@ export default function UserManagement() {
               <th>Nombre</th>
               <th>Usuario</th>
               <th>Rol</th>
-              <th>Salario %</th>
+              {settings.salaryByPercentEnabled && <th>Salario %</th>}
               <th>Fecha Creación</th>
               <th className="text-right">Acciones</th>
             </tr>
@@ -81,7 +81,9 @@ export default function UserManagement() {
                     {u.role === 'admin' ? 'Administrador' : 'Empleado'}
                   </span>
                 </td>
-                <td className="text-success font-medium">{u.salaryPercent ?? settings.defaultSalaryPercent ?? 2}%</td>
+                {settings.salaryByPercentEnabled && (
+                  <td className="text-success font-medium">{u.salaryPercent ?? settings.defaultSalaryPercent ?? 2}%</td>
+                )}
                 <td className="text-sm text-muted-foreground">{new Date(u.createdAt).toLocaleDateString()}</td>
                 <td className="text-right">
                   {mobile && (
@@ -133,17 +135,19 @@ export default function UserManagement() {
                 <option value="admin">Administrador</option>
               </select>
             </div>
-            <div>
-              <label className="text-sm font-medium">Porcentaje de Salario (%)</label>
-              <Input
-                type="number"
-                min="0"
-                max="100"
-                step="0.5"
-                value={form.salaryPercent}
-                onChange={e => setForm({ ...form, salaryPercent: e.target.value })}
-              />
-            </div>
+            {settings.salaryByPercentEnabled && (
+              <div>
+                <label className="text-sm font-medium">Porcentaje de Salario (%)</label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.5"
+                  value={form.salaryPercent}
+                  onChange={e => setForm({ ...form, salaryPercent: e.target.value })}
+                />
+              </div>
+            )}
             <Button onClick={handleSave} className="w-full">{editing ? 'Guardar' : 'Crear'}</Button>
           </div>
         </DialogContent>

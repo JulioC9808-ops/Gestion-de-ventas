@@ -5,6 +5,7 @@ import { Coffee, LogOut, type LucideIcon, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { isMobileDevice } from '@/lib/platform';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { getPendingShift } from '@/lib/syncStore';
 import { toast } from 'sonner';
 
@@ -25,7 +26,9 @@ interface AppLayoutProps {
 export default function AppLayout({ children, nav, activeKey, onNav }: AppLayoutProps) {
   const { currentUser, logout } = useAuth();
   const { settings } = useData();
-  const isTop = settings.navPosition === 'top';
+  const isMobile = useIsMobile();
+  // On mobile/small screens, force the sidebar layout regardless of saved preference
+  const isTop = isMobile ? false : settings.navPosition === 'top';
 
   const handleLogout = () => {
     if (isMobileDevice() && currentUser?.role === 'employee') {

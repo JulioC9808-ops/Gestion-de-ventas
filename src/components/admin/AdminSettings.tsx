@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 
 const THEMES = [
   { value: 'default', label: 'Negro Elegante', preview: 'bg-gray-900' },
+  { value: 'white', label: 'Blanco Puro', preview: 'bg-white border border-gray-300' },
   { value: 'sunset', label: 'Atardecer', preview: 'bg-orange-600' },
   { value: 'forest', label: 'Bosque', preview: 'bg-green-700' },
   { value: 'ocean', label: 'Océano', preview: 'bg-blue-600' },
@@ -30,6 +31,7 @@ export default function AdminSettings() {
   const [defaultSalary, setDefaultSalary] = useState(String(settings.defaultSalaryPercent));
   const [selectedTheme, setSelectedTheme] = useState(settings.theme);
   const [selectedFont, setSelectedFont] = useState(settings.font);
+  const [salaryByPercentEnabled, setSalaryByPercentEnabled] = useState(!!settings.salaryByPercentEnabled);
 
   const handleSave = () => {
     updateSettings({
@@ -37,6 +39,7 @@ export default function AdminSettings() {
       defaultSalaryPercent: Number(defaultSalary) || 2,
       theme: selectedTheme,
       font: selectedFont,
+      salaryByPercentEnabled,
     });
     toast.success('Configuración guardada');
   };
@@ -130,23 +133,44 @@ export default function AdminSettings() {
                 </button>
               </div>
             </div>
-            <div>
-              <label className="text-sm font-medium flex items-center gap-2">
-                <DollarSign className="w-4 h-4" />
-                Porcentaje de Salario por Defecto
-              </label>
-              <div className="flex items-center gap-2 mt-1">
-                <Input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={defaultSalary}
-                  onChange={e => setDefaultSalary(e.target.value)}
-                  className="w-24"
+            <div className="border-t border-border pt-4">
+              <label className="flex items-center justify-between gap-3 cursor-pointer">
+                <div>
+                  <p className="text-sm font-medium flex items-center gap-2">
+                    <DollarSign className="w-4 h-4" />
+                    Calcular salario por porcentaje
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Si está apagado, los empleados reciben salario fijo (no se calcula desde las ventas).
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={salaryByPercentEnabled}
+                  onChange={e => setSalaryByPercentEnabled(e.target.checked)}
+                  className="w-5 h-5 accent-primary"
                 />
-                <span className="text-sm text-muted-foreground">%</span>
-              </div>
+              </label>
             </div>
+            {salaryByPercentEnabled && (
+              <div>
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <DollarSign className="w-4 h-4" />
+                  Porcentaje de Salario por Defecto
+                </label>
+                <div className="flex items-center gap-2 mt-1">
+                  <Input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={defaultSalary}
+                    onChange={e => setDefaultSalary(e.target.value)}
+                    className="w-24"
+                  />
+                  <span className="text-sm text-muted-foreground">%</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
