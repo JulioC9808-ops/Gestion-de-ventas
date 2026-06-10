@@ -64,7 +64,7 @@ export default function UserManagement() {
               <th>Nombre</th>
               <th>Usuario</th>
               <th>Rol</th>
-              <th>Salario %</th>
+              {settings.salaryByPercentEnabled && <th>Salario %</th>}
               <th>Fecha Creación</th>
               <th className="text-right">Acciones</th>
             </tr>
@@ -81,7 +81,9 @@ export default function UserManagement() {
                     {u.role === 'admin' ? 'Administrador' : 'Empleado'}
                   </span>
                 </td>
-                <td className="text-success font-medium">{u.salaryPercent ?? settings.defaultSalaryPercent ?? 2}%</td>
+                {settings.salaryByPercentEnabled && (
+                  <td className="text-success font-medium">{u.salaryPercent ?? settings.defaultSalaryPercent ?? 2}%</td>
+                )}
                 <td className="text-sm text-muted-foreground">{new Date(u.createdAt).toLocaleDateString()}</td>
                 <td className="text-right">
                   {mobile && (
