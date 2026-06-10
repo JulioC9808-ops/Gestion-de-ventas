@@ -417,10 +417,12 @@ export default function ShiftClose() {
                 <p className="text-sm text-muted-foreground">Total Vendido</p>
                 <p className="text-xl font-bold font-display">${totalSold.toLocaleString()}</p>
               </div>
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground">Tu Salario ({salaryPercent}%)</p>
+              {salaryByPercent && (
+                <div className="text-right">
+                  <p className="text-sm text-muted-foreground">Tu Salario ({salaryPercent}%)</p>
                   <p className="text-xl font-bold font-display text-success">${salaryAmount.toFixed(2)}</p>
-              </div>
+                </div>
+              )}
             </div>
           </div>
 
