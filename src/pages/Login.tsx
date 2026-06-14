@@ -8,9 +8,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import HelpTip from '@/components/HelpTip';
 import { isMobileDevice } from '@/lib/platform';
 import QrScannerModal from '@/components/QrScannerModal';
+import QrDisplay from '@/components/QrDisplay';
 import { toast } from 'sonner';
 
 const DEV_WHATSAPP = '+5351616816';
+const DEV_PHONE_TEL = 'tel:+5351616816';
 
 export default function Login() {
   const { login } = useAuth();
@@ -42,11 +44,7 @@ export default function Login() {
     : {};
 
   const handleContact = () => {
-    if (settings.qrUrl) {
-      setShowQr(true);
-    } else {
-      window.open(`https://wa.me/${DEV_WHATSAPP.replace(/[^0-9]/g, '')}`, '_blank');
-    }
+    setShowQr(true);
   };
 
   return (
@@ -157,19 +155,35 @@ export default function Login() {
         </div>
       </div>
 
-      {settings.qrUrl && (
-        <Dialog open={showQr} onOpenChange={setShowQr}>
-          <DialogContent className="max-w-sm">
-            <DialogHeader>
-              <DialogTitle className="font-display text-center">Contactar al Desarrollador</DialogTitle>
-            </DialogHeader>
-            <div className="flex flex-col items-center gap-4 py-4">
+      <Dialog open={showQr} onOpenChange={setShowQr}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display text-center">Llamar al Desarrollador</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-4">
+            {settings.qrUrl ? (
               <img src={settings.qrUrl} alt="QR de contacto" className="w-64 h-64 rounded-lg object-contain border border-border p-2" />
-              <p className="text-sm text-muted-foreground text-center">Escanea el código QR para contactar al desarrollador del sistema.</p>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
+            ) : (
+              <div className="bg-white p-3 rounded-lg">
+                <QrDisplay data={DEV_PHONE_TEL} size={240} />
+              </div>
+            )}
+            <p className="text-sm text-muted-foreground text-center">
+              Escanea el QR con tu celular y se abrirá el teclado del teléfono con el número del desarrollador listo para llamar.
+            </p>
+            <p className="font-mono text-base font-semibold">{DEV_WHATSAPP}</p>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => window.open(`https://wa.me/${DEV_WHATSAPP.replace(/[^0-9]/g, '')}`, '_blank')}
+            >
+              <MessageCircle className="w-4 h-4 mr-2" />
+              Abrir WhatsApp
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
 
       <QrScannerModal
         open={scanOpen}

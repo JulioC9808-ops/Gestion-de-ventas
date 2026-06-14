@@ -25,12 +25,24 @@ const FONTS = [
   { value: 'Courier New', label: 'Courier New' },
 ];
 
+const FONT_COLORS = [
+  { value: null, label: 'Auto (del tema)', preview: 'linear-gradient(135deg,#fff 50%,#000 50%)' },
+  { value: '#000000', label: 'Negro', preview: '#000000' },
+  { value: '#ffffff', label: 'Blanco', preview: '#ffffff' },
+  { value: '#1f2937', label: 'Gris oscuro', preview: '#1f2937' },
+  { value: '#dc2626', label: 'Rojo', preview: '#dc2626' },
+  { value: '#2563eb', label: 'Azul', preview: '#2563eb' },
+  { value: '#16a34a', label: 'Verde', preview: '#16a34a' },
+  { value: '#d97706', label: 'Ámbar', preview: '#d97706' },
+];
+
 export default function AdminSettings() {
   const { settings, updateSettings } = useData();
   const [navPosition, setNavPosition] = useState(settings.navPosition);
   const [defaultSalary, setDefaultSalary] = useState(String(settings.defaultSalaryPercent));
   const [selectedTheme, setSelectedTheme] = useState(settings.theme);
   const [selectedFont, setSelectedFont] = useState(settings.font);
+  const [fontColor, setFontColor] = useState<string | null>(settings.fontColor ?? null);
   const [salaryByPercentEnabled, setSalaryByPercentEnabled] = useState(!!settings.salaryByPercentEnabled);
 
   const handleSave = () => {
@@ -39,6 +51,7 @@ export default function AdminSettings() {
       defaultSalaryPercent: Number(defaultSalary) || 2,
       theme: selectedTheme,
       font: selectedFont,
+      fontColor,
       salaryByPercentEnabled,
     });
     toast.success('Configuración guardada');
@@ -98,6 +111,56 @@ export default function AdminSettings() {
             ))}
           </div>
         </div>
+
+        {/* Font color */}
+        <div className="glass-card p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Palette className="w-5 h-5 text-primary" />
+            <h3 className="font-display font-bold text-lg">Color de la fuente</h3>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">
+            Si los textos no se ven bien en tu tema, elige un color o personalízalo.
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {FONT_COLORS.map(c => {
+              const active = (fontColor ?? null) === c.value;
+              return (
+                <button
+                  key={c.label}
+                  onClick={() => setFontColor(c.value)}
+                  className={`flex items-center gap-2 p-3 rounded-lg border-2 transition-all ${
+                    active ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                  }`}
+                >
+                  <span className="w-6 h-6 rounded-full border border-border" style={{ background: c.preview }} />
+                  <span className="text-xs font-medium">{c.label}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-4 flex items-center gap-3">
+            <label className="text-sm font-medium">Personalizado:</label>
+            <input
+              type="color"
+              value={fontColor || '#ffffff'}
+              onChange={e => setFontColor(e.target.value)}
+              className="w-12 h-10 rounded cursor-pointer border border-border bg-transparent"
+            />
+            {fontColor && (
+              <button
+                type="button"
+                onClick={() => setFontColor(null)}
+                className="text-xs underline text-muted-foreground"
+              >
+                Restablecer
+              </button>
+            )}
+            <span className="text-sm" style={{ color: fontColor || undefined }}>
+              Vista previa
+            </span>
+          </div>
+        </div>
+
 
         {/* Layout & Salary */}
         <div className="glass-card p-6">

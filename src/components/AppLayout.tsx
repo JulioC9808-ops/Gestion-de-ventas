@@ -8,6 +8,7 @@ import { isMobileDevice } from '@/lib/platform';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getPendingShift } from '@/lib/syncStore';
 import { toast } from 'sonner';
+import Tutorial from '@/components/Tutorial';
 
 interface NavItem {
   label: string;
@@ -111,6 +112,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
         <main className="flex-1 p-8 overflow-auto">
           {children}
         </main>
+        <Tutorial />
       </div>
     );
   }
@@ -186,6 +188,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
       <main className="flex-1 p-8 overflow-auto">
         {children}
       </main>
+      <Tutorial />
     </div>
   );
 }

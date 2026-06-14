@@ -68,9 +68,10 @@ const DEFAULT_SETTINGS: AppSettings = {
   businessName: 'Mi Negocio',
   logoUrl: null,
   backgroundUrl: null,
-  qrUrl: defaultQr.url,
+  qrUrl: null,
   theme: 'default',
   font: 'Source Sans 3',
+  fontColor: null,
   navPosition: 'top',
   defaultSalaryPercent: 2,
   salaryByPercentEnabled: false,
@@ -99,7 +100,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (changed) save('users', migrated);
     return migrated;
   });
-  const [settings, setSettings] = useState<AppSettings>(() => load('settings', DEFAULT_SETTINGS));
+  const [settings, setSettings] = useState<AppSettings>(() => {
+    const loaded = load<AppSettings>('settings', DEFAULT_SETTINGS);
+    // Migración: limpiar el QR por defecto antiguo (apuntaba a WhatsApp)
+    if (loaded.qrUrl === defaultQr.url) {
+      loaded.qrUrl = null;
+      save('settings', loaded);
+    }
+    return loaded;
+  });
 
   useEffect(() => {
     setReports(prev => {
