@@ -44,11 +44,7 @@ export default function Login() {
     : {};
 
   const handleContact = () => {
-    if (settings.qrUrl) {
-      setShowQr(true);
-    } else {
-      window.open(`https://wa.me/${DEV_WHATSAPP.replace(/[^0-9]/g, '')}`, '_blank');
-    }
+    setShowQr(true);
   };
 
   return (
