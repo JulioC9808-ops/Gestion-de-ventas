@@ -55,6 +55,7 @@ export default function LicenseGate({ children }: LicenseGateProps) {
   const [license, setLicense] = useState<LicenseState>(() => readLicense());
   const [key, setKey] = useState('');
   const [error, setError] = useState('');
+  const [showQr, setShowQr] = useState(false);
 
   // re-check daily
   useEffect(() => {
