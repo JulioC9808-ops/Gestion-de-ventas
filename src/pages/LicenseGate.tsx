@@ -145,20 +145,45 @@ export default function LicenseGate({ children }: LicenseGateProps) {
             </Button>
           </form>
 
-          <Button
-            variant="outline"
-            className="w-full mt-4"
-            onClick={() => window.open(`https://wa.me/${DEV_WHATSAPP.replace(/[^0-9]/g, '')}`, '_blank')}
-          >
-            <MessageCircle className="w-4 h-4 mr-2" />
-            Contactar al Desarrollador
-          </Button>
+          <div className="grid grid-cols-2 gap-2 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => window.open(`https://wa.me/${DEV_WHATSAPP.replace(/[^0-9]/g, '')}`, '_blank')}
+            >
+              <MessageCircle className="w-4 h-4 mr-2" />
+              WhatsApp
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowQr(true)}
+            >
+              <QrCode className="w-4 h-4 mr-2" />
+              QR Teléfono
+            </Button>
+          </div>
 
           <p className="text-center text-xs text-muted-foreground mt-6">
             Contacta al desarrollador para obtener tu clave de producto.
           </p>
         </div>
       </div>
+
+      <Dialog open={showQr} onOpenChange={setShowQr}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display text-center">Llamar al Desarrollador</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-4">
+            <div className="bg-white p-3 rounded-lg">
+              <QrDisplay data={DEV_PHONE_TEL} size={240} />
+            </div>
+            <p className="text-sm text-muted-foreground text-center">
+              Escanea este QR con tu celular y se abrirá el teclado del teléfono con el número listo para llamar.
+            </p>
+            <p className="font-mono text-base font-semibold">{DEV_WHATSAPP}</p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
