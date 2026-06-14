@@ -8,6 +8,7 @@ import { isMobileDevice } from '@/lib/platform';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getPendingShift } from '@/lib/syncStore';
 import { toast } from 'sonner';
+import Tutorial from '@/components/Tutorial';
 
 interface NavItem {
   label: string;
