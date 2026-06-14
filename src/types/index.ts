@@ -82,6 +82,7 @@ export interface AppSettings {
   qrUrl: string | null;
   theme: string;
   font: string;
+  fontColor?: string | null; // hex like #ffffff; null = usar el del tema
   navPosition: 'side' | 'top';
   defaultSalaryPercent: number;
   salaryByPercentEnabled?: boolean;
