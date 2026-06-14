@@ -25,12 +25,24 @@ const FONTS = [
   { value: 'Courier New', label: 'Courier New' },
 ];
 
+const FONT_COLORS = [
+  { value: null, label: 'Auto (del tema)', preview: 'linear-gradient(135deg,#fff 50%,#000 50%)' },
+  { value: '#000000', label: 'Negro', preview: '#000000' },
+  { value: '#ffffff', label: 'Blanco', preview: '#ffffff' },
+  { value: '#1f2937', label: 'Gris oscuro', preview: '#1f2937' },
+  { value: '#dc2626', label: 'Rojo', preview: '#dc2626' },
+  { value: '#2563eb', label: 'Azul', preview: '#2563eb' },
+  { value: '#16a34a', label: 'Verde', preview: '#16a34a' },
+  { value: '#d97706', label: 'Ámbar', preview: '#d97706' },
+];
+
 export default function AdminSettings() {
   const { settings, updateSettings } = useData();
   const [navPosition, setNavPosition] = useState(settings.navPosition);
   const [defaultSalary, setDefaultSalary] = useState(String(settings.defaultSalaryPercent));
   const [selectedTheme, setSelectedTheme] = useState(settings.theme);
   const [selectedFont, setSelectedFont] = useState(settings.font);
+  const [fontColor, setFontColor] = useState<string | null>(settings.fontColor ?? null);
   const [salaryByPercentEnabled, setSalaryByPercentEnabled] = useState(!!settings.salaryByPercentEnabled);
 
   const handleSave = () => {
@@ -39,6 +51,7 @@ export default function AdminSettings() {
       defaultSalaryPercent: Number(defaultSalary) || 2,
       theme: selectedTheme,
       font: selectedFont,
+      fontColor,
       salaryByPercentEnabled,
     });
     toast.success('Configuración guardada');
