@@ -188,6 +188,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
       <main className="flex-1 p-8 overflow-auto">
         {children}
       </main>
+      <Tutorial />
     </div>
   );
 }
