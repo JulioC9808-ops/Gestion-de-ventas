@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Shield, Key, MessageCircle, Clock, Infinity as InfinityIcon } from 'lucide-react';
+import { Shield, Key, MessageCircle, Clock, Infinity as InfinityIcon, QrCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import QrDisplay from '@/components/QrDisplay';
 
 const LIFETIME_LICENSE = '08022664107';
 const TIMED_LICENSE = 'J260208c';
 const TIMED_DURATION_DAYS = 37;
 const DEV_WHATSAPP = '+5351616816';
+const DEV_PHONE_TEL = 'tel:+5351616816';
 
 interface LicenseGateProps {
   children: React.ReactNode;
