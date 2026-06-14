@@ -8,9 +8,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import HelpTip from '@/components/HelpTip';
 import { isMobileDevice } from '@/lib/platform';
 import QrScannerModal from '@/components/QrScannerModal';
+import QrDisplay from '@/components/QrDisplay';
 import { toast } from 'sonner';
 
 const DEV_WHATSAPP = '+5351616816';
+const DEV_PHONE_TEL = 'tel:+5351616816';
 
 export default function Login() {
   const { login } = useAuth();
