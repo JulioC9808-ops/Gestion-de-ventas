@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 
 export default function AdminOverview() {
   const { products, stock, reports, users } = useData();
+  const [showInfo, setShowInfo] = useState(false);
 
   const totalProducts = products.length;
   const totalInventory = products.reduce((sum, p) => sum + (p.inventoryQty || 0), 0);
