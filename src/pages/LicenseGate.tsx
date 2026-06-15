@@ -56,6 +56,12 @@ export default function LicenseGate({ children }: LicenseGateProps) {
   const [key, setKey] = useState('');
   const [error, setError] = useState('');
   const [showQr, setShowQr] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(() => !localStorage.getItem('welcome_seen'));
+
+  const closeWelcome = () => {
+    localStorage.setItem('welcome_seen', '1');
+    setShowWelcome(false);
+  };
 
   // re-check daily
   useEffect(() => {
@@ -83,7 +89,23 @@ export default function LicenseGate({ children }: LicenseGateProps) {
     }
   };
 
-  if (licensed) return <>{children}</>;
+  const WelcomeDialog = (
+    <Dialog open={showWelcome} onOpenChange={(o) => { if (!o) closeWelcome(); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="font-display">¡Hola!</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 text-sm leading-relaxed">
+          <p>Este programa es justo lo que necesitas. Aquí podrás gestionar desde tus productos en almacén hasta los precios y ventas de cada uno, y mantenerte al tanto del flujo de dichos productos.</p>
+          <p>Para usar esta aplicación me puedes contactar mediante el código QR que te dejé preparado.</p>
+          <p className="text-muted-foreground">Listo, eso es todo.</p>
+        </div>
+        <Button onClick={closeWelcome} className="w-full">Continuar</Button>
+      </DialogContent>
+    </Dialog>
+  );
+
+  if (licensed) return <>{children}{WelcomeDialog}</>;
 
   const expired = license.type === 'timed' && !isTimedActive(license.activatedAt);
 
@@ -184,6 +206,8 @@ export default function LicenseGate({ children }: LicenseGateProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {WelcomeDialog}
     </div>
   );
 }

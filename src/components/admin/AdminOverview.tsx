@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import HelpTip from '@/components/HelpTip';
 import { useData } from '@/contexts/DataContext';
-import { Package, Users, TrendingUp, DollarSign, Crown } from 'lucide-react';
+import { Package, Users, TrendingUp, DollarSign, Crown, Info } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export default function AdminOverview() {
   const { products, stock, reports, users } = useData();
+  const [showInfo, setShowInfo] = useState(false);
 
   const totalProducts = products.length;
   const totalInventory = products.reduce((sum, p) => sum + (p.inventoryQty || 0), 0);
@@ -30,8 +32,36 @@ export default function AdminOverview() {
         <div className="flex items-center gap-3">
           <h1 className="page-title">Panel de Administración</h1>
           <HelpTip>Resumen general de tu negocio: productos, ventas, empleados y VIP.</HelpTip>
+          <button
+            type="button"
+            onClick={() => setShowInfo(true)}
+            className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors"
+            title="Notas importantes"
+            aria-label="Notas importantes"
+          >
+            <Info className="w-5 h-5 text-primary" />
+          </button>
         </div>
       </div>
+
+      <Dialog open={showInfo} onOpenChange={setShowInfo}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-display italic font-bold">¡Hola, espero que tengas buen día!</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm italic font-bold leading-relaxed">
+            <p className="font-bold italic">(Notas importantes a tener en cuenta)</p>
+            <p><strong className="italic">1-</strong> Este programa existe para evitar fraudes con sus empleados ya que usted tiene el control de todo lo que entra y sale de su negocio, y puede ver el flujo de dinero.</p>
+            <p><strong className="italic">2-</strong> Cualquier error o duda que encuentre <em>CONTÁCTEME</em> (Este servicio será totalmente gratuito si usted ha pagado por la licencia permanente).</p>
+            <p><strong className="italic">3-</strong> Si usted piensa usar su programa para otro negocio tiene que pagar nuevamente por su servicio.</p>
+            <p><strong className="italic">4-</strong> Si usted desea hacer algún cambio <em>¡CONTÁCTEME!</em> Este servicio se le cobrará dependiendo de lo complejo que este sea.</p>
+            <p><strong className="italic">5-</strong> No fuerces el programa (se puede desinstalar y volver a instalar sin problemas ya que este hace un <em>BACKUP</em> en sus archivos internos).</p>
+            <p><strong className="italic">6-</strong> Este programa tiene un sistema <em>¡Anti-Hacking!</em> que si se detecta que intentan configurarlo externamente este borrará archivos necesarios dentro de sí mismo para su funcionamiento adecuado.</p>
+            <p className="pt-2 border-t border-border italic">Muchas gracias por su atención, y le deseo buena suerte. Espero que me vuelva a contactar y si le gustó la aplicación me encantaría que me recomendara… no intentes copiarlo porque no va a dejar usarlo.</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
         {stats.map((stat, i) => {

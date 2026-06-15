@@ -28,13 +28,47 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | null>(null);
 
+// ---- Anti-tamper: huella simple por clave ----
+function fingerprint(value: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < value.length; i++) {
+    h ^= value.charCodeAt(i);
+    h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+  }
+  return h.toString(16);
+}
+
+const PROTECTED_KEYS = ['products', 'stock', 'reports', 'movements', 'users', 'settings'];
+
+function verifyIntegrity() {
+  try {
+    for (const key of PROTECTED_KEYS) {
+      const raw = localStorage.getItem(key);
+      const fp = localStorage.getItem(`__fp_${key}`);
+      if (raw && fp && fingerprint(raw) !== fp) {
+        // Manipulación externa detectada: wipe defensivo
+        PROTECTED_KEYS.forEach(k => {
+          localStorage.removeItem(k);
+          localStorage.removeItem(`__fp_${k}`);
+        });
+        console.warn('[Anti-Hacking] Manipulación externa detectada. Datos restablecidos.');
+        return;
+      }
+    }
+  } catch {}
+}
+
+verifyIntegrity();
+
 function load<T>(key: string, fallback: T): T {
   const saved = localStorage.getItem(key);
   return saved ? JSON.parse(saved) : fallback;
 }
 
 function save<T>(key: string, data: T) {
-  localStorage.setItem(key, JSON.stringify(data));
+  const serialized = JSON.stringify(data);
+  localStorage.setItem(key, serialized);
+  localStorage.setItem(`__fp_${key}`, fingerprint(serialized));
 }
 
 function getReportKey(report: ShiftReport) {
