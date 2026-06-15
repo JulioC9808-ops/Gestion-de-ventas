@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import HelpTip from '@/components/HelpTip';
 import { useData } from '@/contexts/DataContext';
-import { Package, Users, TrendingUp, DollarSign, Crown } from 'lucide-react';
+import { Package, Users, TrendingUp, DollarSign, Crown, Info } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export default function AdminOverview() {
   const { products, stock, reports, users } = useData();
