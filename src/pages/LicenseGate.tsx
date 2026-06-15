@@ -56,6 +56,12 @@ export default function LicenseGate({ children }: LicenseGateProps) {
   const [key, setKey] = useState('');
   const [error, setError] = useState('');
   const [showQr, setShowQr] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(() => !localStorage.getItem('welcome_seen'));
+
+  const closeWelcome = () => {
+    localStorage.setItem('welcome_seen', '1');
+    setShowWelcome(false);
+  };
 
   // re-check daily
   useEffect(() => {
