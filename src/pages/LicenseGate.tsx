@@ -206,6 +206,8 @@ export default function LicenseGate({ children }: LicenseGateProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {WelcomeDialog}
     </div>
   );
 }
