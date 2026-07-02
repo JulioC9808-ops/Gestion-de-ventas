@@ -259,6 +259,69 @@ export default function AdminSettings() {
           </div>
         </div>
 
+        {/* Intro de la app (video) */}
+        <div className="glass-card p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Film className="w-5 h-5 text-primary" />
+            <h3 className="font-display font-bold text-lg">Intro de la aplicación</h3>
+            <HelpTip>Este video se reproduce una vez al abrir la app (con botón para saltar).</HelpTip>
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer mb-4">
+            <input
+              type="checkbox"
+              checked={introEnabled}
+              onChange={e => setIntroEnabled(e.target.checked)}
+              className="w-5 h-5 accent-primary"
+            />
+            <span className="text-sm">Reproducir intro al abrir la aplicación</span>
+          </label>
+          <div className="flex flex-wrap items-center gap-3">
+            <input
+              ref={videoInputRef}
+              type="file"
+              accept="video/mp4,video/webm,video/quicktime"
+              className="hidden"
+              onChange={e => handleVideoFile(e.target.files?.[0] || null)}
+            />
+            <Button variant="outline" size="sm" onClick={() => videoInputRef.current?.click()}>
+              {introVideoUrl ? 'Reemplazar video' : 'Subir video de intro'}
+            </Button>
+            {introVideoUrl && (
+              <>
+                <span className="text-xs text-success">✓ Video cargado</span>
+                <Button variant="ghost" size="sm" onClick={() => setIntroVideoUrl(null)} className="text-destructive">
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </>
+            )}
+          </div>
+          {introVideoUrl && (
+            <video src={introVideoUrl} controls muted className="mt-4 max-h-48 rounded-md border border-border" />
+          )}
+          <p className="text-xs text-muted-foreground mt-3">
+            Formatos: MP4, WebM, MOV. Máximo 25 MB. El video se guarda dentro de la app (no se sube a internet).
+          </p>
+        </div>
+
+        {/* EULA */}
+        <div className="glass-card p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <FileText className="w-5 h-5 text-primary" />
+            <h3 className="font-display font-bold text-lg">Acuerdo de Usuario Final (EULA)</h3>
+            <HelpTip>Este texto se muestra la primera vez que alguien abre la app. Debe presionar "Acepto" para continuar.</HelpTip>
+          </div>
+          <textarea
+            value={eulaText}
+            onChange={e => setEulaText(e.target.value)}
+            placeholder="Escribe aquí el acuerdo de usuario final. Se mostrará la primera vez que se abra la app (déjalo vacío para desactivarlo)."
+            rows={8}
+            className="w-full p-3 rounded-md border border-input bg-background text-sm text-foreground resize-y"
+          />
+          <p className="text-xs text-muted-foreground mt-2">
+            Si guardas cambios en el texto, se volverá a mostrar el EULA la próxima vez que alguien abra la app.
+          </p>
+        </div>
+
         <Button onClick={handleSave} className="w-full" size="lg">
           Guardar Configuración
         </Button>
