@@ -166,8 +166,19 @@ export function useThemeApplier() {
       root.style.setProperty(key, value);
     });
 
-    // Aplicar color de fuente personalizado encima del tema
-    const overrides = ['--foreground', '--card-foreground', '--popover-foreground', '--secondary-foreground', '--muted-foreground'];
+    // color-scheme: hace que los inputs nativos (date, number, time, checkbox)
+    // adopten el color del sistema (claro/oscuro) para que no se vean blancos en temas oscuros.
+    const bg = vars['--background'] || '0 0% 100%';
+    const lightness = parseInt(bg.split(' ')[2] || '100', 10);
+    root.style.colorScheme = lightness < 50 ? 'dark' : 'light';
+
+    // Aplicar color de fuente personalizado a TODAS las variables de texto
+    const overrides = [
+      '--foreground', '--card-foreground', '--popover-foreground',
+      '--secondary-foreground', '--muted-foreground', '--accent-foreground',
+      '--primary-foreground', '--sidebar-foreground', '--sidebar-accent-foreground',
+      '--sidebar-primary-foreground'
+    ];
     if (settings.fontColor) {
       const hsl = hexToHsl(settings.fontColor);
       if (hsl) overrides.forEach(k => root.style.setProperty(k, hsl));

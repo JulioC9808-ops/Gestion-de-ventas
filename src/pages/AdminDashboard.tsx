@@ -34,7 +34,7 @@ export default function AdminDashboard() {
   const NAV = useMemo(() => isMobileDevice() ? [...BASE_NAV, SYNC_NAV] : BASE_NAV, []);
 
   const content: Record<string, React.ReactNode> = {
-    overview: <AdminOverview />,
+    overview: <AdminOverview onNav={setActive} />,
     products: <ProductManagement />,
     users: <UserManagement />,
     stock: <StockEntry />,

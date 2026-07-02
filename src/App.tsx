@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DataProvider } from "@/contexts/DataContext";
+import IntroPlayer from "@/components/IntroPlayer";
+import EulaGate from "@/components/EulaGate";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
@@ -17,6 +19,8 @@ const App = () => (
       <Sonner />
       <DataProvider>
         <AuthProvider>
+          <IntroPlayer />
+          <EulaGate />
           <HashRouter>
             <Routes>
               <Route path="/" element={<Index />} />

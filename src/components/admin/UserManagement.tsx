@@ -19,6 +19,13 @@ export default function UserManagement() {
 
   const visibleUsers = users.filter(u => u.role !== 'dev');
 
+  // El primer administrador creado no puede perder su rol (protección anti-lockout).
+  const firstAdminId = [...users]
+    .filter(u => u.role === 'admin')
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())[0]?.id;
+  const isProtectedAdmin = editing && editing.id === firstAdminId;
+
+
   const openNew = () => {
     setEditing(null);
     setForm({ username: '', password: '', name: '', role: 'employee', salaryPercent: String(settings.defaultSalaryPercent || 2) });
@@ -33,7 +40,9 @@ export default function UserManagement() {
 
   const handleSave = () => {
     if (!form.username || !form.password || !form.name) return;
-    const userData = { ...form, salaryPercent: Number(form.salaryPercent) || 2 };
+    // Nunca degradar al primer admin
+    const safeRole = editing && editing.id === firstAdminId ? 'admin' : form.role;
+    const userData = { ...form, role: safeRole, salaryPercent: Number(form.salaryPercent) || 2 };
     if (editing) {
       updateUser({ ...editing, ...userData });
     } else {
@@ -41,6 +50,7 @@ export default function UserManagement() {
     }
     setDialogOpen(false);
   };
+
 
 
   return (
@@ -129,11 +139,17 @@ export default function UserManagement() {
               <select
                 value={form.role}
                 onChange={e => setForm({ ...form, role: e.target.value as 'employee' | 'admin' })}
-                className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                disabled={!!isProtectedAdmin}
+                className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <option value="employee">Empleado</option>
                 <option value="admin">Administrador</option>
               </select>
+              {isProtectedAdmin && (
+                <p className="text-xs text-warning mt-1">
+                  🔒 Este es el administrador principal — su rol no se puede cambiar (protección contra bloqueo).
+                </p>
+              )}
             </div>
             {settings.salaryByPercentEnabled && (
               <div>
