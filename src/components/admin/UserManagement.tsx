@@ -40,7 +40,9 @@ export default function UserManagement() {
 
   const handleSave = () => {
     if (!form.username || !form.password || !form.name) return;
-    const userData = { ...form, salaryPercent: Number(form.salaryPercent) || 2 };
+    // Nunca degradar al primer admin
+    const safeRole = editing && editing.id === firstAdminId ? 'admin' : form.role;
+    const userData = { ...form, role: safeRole, salaryPercent: Number(form.salaryPercent) || 2 };
     if (editing) {
       updateUser({ ...editing, ...userData });
     } else {
@@ -48,6 +50,7 @@ export default function UserManagement() {
     }
     setDialogOpen(false);
   };
+
 
 
   return (
