@@ -139,11 +139,17 @@ export default function UserManagement() {
               <select
                 value={form.role}
                 onChange={e => setForm({ ...form, role: e.target.value as 'employee' | 'admin' })}
-                className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                disabled={!!isProtectedAdmin}
+                className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <option value="employee">Empleado</option>
                 <option value="admin">Administrador</option>
               </select>
+              {isProtectedAdmin && (
+                <p className="text-xs text-warning mt-1">
+                  🔒 Este es el administrador principal — su rol no se puede cambiar (protección contra bloqueo).
+                </p>
+              )}
             </div>
             {settings.salaryByPercentEnabled && (
               <div>
