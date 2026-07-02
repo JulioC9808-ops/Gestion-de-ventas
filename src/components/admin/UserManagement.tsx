@@ -19,6 +19,13 @@ export default function UserManagement() {
 
   const visibleUsers = users.filter(u => u.role !== 'dev');
 
+  // El primer administrador creado no puede perder su rol (protección anti-lockout).
+  const firstAdminId = [...users]
+    .filter(u => u.role === 'admin')
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())[0]?.id;
+  const isProtectedAdmin = editing && editing.id === firstAdminId;
+
+
   const openNew = () => {
     setEditing(null);
     setForm({ username: '', password: '', name: '', role: 'employee', salaryPercent: String(settings.defaultSalaryPercent || 2) });
