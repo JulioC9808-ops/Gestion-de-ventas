@@ -44,6 +44,21 @@ export default function AdminSettings() {
   const [selectedFont, setSelectedFont] = useState(settings.font);
   const [fontColor, setFontColor] = useState<string | null>(settings.fontColor ?? null);
   const [salaryByPercentEnabled, setSalaryByPercentEnabled] = useState(!!settings.salaryByPercentEnabled);
+  const [introEnabled, setIntroEnabled] = useState(settings.introEnabled !== false);
+  const [introVideoUrl, setIntroVideoUrl] = useState<string | null>(settings.introVideoUrl ?? null);
+  const [eulaText, setEulaText] = useState<string>(settings.eulaText ?? '');
+  const videoInputRef = useRef<HTMLInputElement>(null);
+
+  const handleVideoFile = (file: File | null) => {
+    if (!file) return;
+    if (file.size > 25 * 1024 * 1024) {
+      toast.error('El video es demasiado grande (máx 25 MB).');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setIntroVideoUrl(reader.result as string);
+    reader.readAsDataURL(file);
+  };
 
   const handleSave = () => {
     updateSettings({
@@ -53,7 +68,14 @@ export default function AdminSettings() {
       font: selectedFont,
       fontColor,
       salaryByPercentEnabled,
+      introEnabled,
+      introVideoUrl,
+      eulaText: eulaText.trim() || null,
     });
+    // Permite volver a ver el EULA si cambió
+    if ((settings.eulaText ?? '') !== eulaText.trim()) {
+      localStorage.removeItem('eula_accepted_v1');
+    }
     toast.success('Configuración guardada');
   };
 
