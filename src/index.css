@@ -70,6 +70,18 @@
     @apply border-border;
   }
 
+  /* Que los inputs nativos (date, number, time, color) hereden el esquema del tema */
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"],
+  input[type="number"],
+  input[type="month"],
+  input[type="week"] {
+    color-scheme: inherit;
+    color: hsl(var(--foreground));
+    background-color: hsl(var(--input) / 0.4);
+  }
+
   body {
     @apply text-foreground;
     font-family: var(--font-body);
