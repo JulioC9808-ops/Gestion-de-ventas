@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import HelpTip from '@/components/HelpTip';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Palette, Type, Layout, DollarSign } from 'lucide-react';
+import { Palette, Type, Layout, DollarSign, Film, FileText, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const THEMES = [
