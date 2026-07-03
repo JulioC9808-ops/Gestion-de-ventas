@@ -54,14 +54,14 @@
     --font-display: 'Playfair Display', Georgia, serif;
     --font-body: 'Source Sans 3', system-ui, sans-serif;
 
-    --gradient-bg: radial-gradient(ellipse at top, hsl(0 0% 14%) 0%, hsl(0 0% 5%) 60%);
-    --gradient-card: linear-gradient(135deg, hsl(0 0% 11% / 0.85), hsl(0 0% 7% / 0.85));
-    --gradient-accent: linear-gradient(135deg, hsl(0 0% 98%), hsl(0 0% 70%));
+    --gradient-bg: linear-gradient(180deg, hsl(0 0% 100%), hsl(0 0% 98%));
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(0 0% 98%));
+    --gradient-accent: linear-gradient(135deg, hsl(0 0% 0%), hsl(0 0% 25%));
 
-    --shadow-soft: 0 2px 15px -3px hsl(0 0% 0% / 0.4), 0 4px 6px -4px hsl(0 0% 0% / 0.3);
-    --shadow-card: 0 8px 30px -8px hsl(0 0% 0% / 0.55), 0 4px 12px -4px hsl(0 0% 0% / 0.35);
-    --shadow-elevated: 0 20px 50px -10px hsl(0 0% 0% / 0.7), 0 10px 25px -5px hsl(0 0% 0% / 0.4);
-    --shadow-glow: 0 0 40px hsl(0 0% 100% / 0.08);
+    --shadow-soft: 0 2px 15px -3px hsl(0 0% 0% / 0.08), 0 4px 6px -4px hsl(0 0% 0% / 0.06);
+    --shadow-card: 0 8px 30px -8px hsl(0 0% 0% / 0.12), 0 4px 12px -4px hsl(0 0% 0% / 0.08);
+    --shadow-elevated: 0 20px 50px -10px hsl(0 0% 0% / 0.18), 0 10px 25px -5px hsl(0 0% 0% / 0.1);
+    --shadow-glow: 0 0 40px hsl(0 0% 0% / 0.05);
   }
 }
 
