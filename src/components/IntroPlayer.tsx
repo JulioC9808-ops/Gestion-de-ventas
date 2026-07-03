@@ -23,7 +23,7 @@ export default function IntroPlayer() {
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black flex items-center justify-center animate-fade-in">
+    <div className="fixed inset-0 z-[9999] bg-black flex items-center justify-center">
       <video
         ref={videoRef}
         src={introAsset.url}

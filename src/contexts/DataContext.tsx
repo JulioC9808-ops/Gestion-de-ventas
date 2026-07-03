@@ -136,11 +136,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
   });
   const [settings, setSettings] = useState<AppSettings>(() => {
     const loaded = load<AppSettings>('settings', DEFAULT_SETTINGS);
+    let dirty = false;
     // Migración: limpiar el QR por defecto antiguo (apuntaba a WhatsApp)
     if (loaded.qrUrl === defaultQr.url) {
       loaded.qrUrl = null;
-      save('settings', loaded);
+      dirty = true;
     }
+    // Migración: forzar tema blanco predeterminado (los temas oscuros antiguos daban ilegibilidad)
+    if (!loaded.theme || loaded.theme === 'default' || loaded.theme === 'night') {
+      loaded.theme = 'white';
+      dirty = true;
+    }
+    if (loaded.fontColor && loaded.fontColor.toLowerCase() !== '#000000') {
+      // no forzamos, respetamos elección; solo aseguramos que existe algo legible por defecto
+    }
+    if (dirty) save('settings', loaded);
     return loaded;
   });
 
