@@ -117,9 +117,9 @@
   .login-container {
     @apply min-h-screen flex items-center justify-center;
     background:
-      radial-gradient(ellipse at 20% 10%, hsl(0 0% 22% / 0.6) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 90%, hsl(0 0% 30% / 0.4) 0%, transparent 50%),
-      linear-gradient(135deg, hsl(0 0% 4%), hsl(0 0% 10%) 50%, hsl(0 0% 4%));
+      radial-gradient(ellipse at 20% 10%, hsl(0 0% 94%) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 90%, hsl(0 0% 92%) 0%, transparent 55%),
+      linear-gradient(135deg, hsl(0 0% 100%), hsl(0 0% 98%) 50%, hsl(0 0% 100%));
   }
 
   .text-gradient {
