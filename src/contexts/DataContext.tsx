@@ -103,7 +103,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   logoUrl: null,
   backgroundUrl: null,
   qrUrl: null,
-  theme: 'default',
+  theme: 'white',
   font: 'Source Sans 3',
   fontColor: null,
   navPosition: 'top',
