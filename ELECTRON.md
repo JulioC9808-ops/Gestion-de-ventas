@@ -1,49 +1,64 @@
-# Empaquetado Electron / Electron Fiddle
+# Empaquetado — Windows (.exe) y Android (.apk)
 
-Este proyecto está listo para correr y empaquetarse como app de escritorio.
+## 🪟 Windows — instalador con wizard (NSIS)
 
-## Cambios clave ya aplicados
-- `vite.config.ts` usa `base: "./"` (obligatorio para `file://`).
-- `src/App.tsx` usa `HashRouter` (evita errores 404 con `file://`).
-- `electron/main.cjs` carga `dist/index.html` con `loadFile()`.
-- `package.json` ya tiene `"main": "electron/main.cjs"` y scripts listos.
+**En tu PC con Node.js instalado:**
 
-## Pasos (clonar → empaquetar)
 ```bash
-git clone <repo>
-cd <repo>
+git clone <tu-repo>
+cd <tu-repo>
 npm install
-npm install --save-dev electron @electron/packager
-npm run build
-npx @electron/packager . GestionDeVentas --overwrite --out=electron-release \
-  --ignore="^/src$" --ignore="^/public$" --ignore="^/electron-release$"
+npm run electron:installer
 ```
-El `.exe` (Windows) o binario (Linux/Mac) queda en `electron-release/`.
 
-### Atajos npm
-- `npm run electron` — abre la app ya compilada.
-- `npm run electron:dev` — build + abrir Electron.
-- `npm run electron:package` — build + empaquetar.
+El instalador queda en `dist-installer/GestionDeVentas-Setup-1.0.0.exe`.
 
-## Con Electron Fiddle
-1. File → Open Folder → seleccionar este proyecto.
-2. Fiddle detecta `package.json` y usa `electron/main.cjs` como entrada.
-3. Antes de "Run" o "Package", ejecuta una vez en terminal:
-   ```bash
-   npm install
-   npm run build
-   ```
-   (Fiddle no compila Vite; necesita `/dist` generado.)
-4. Run ▶ para probar, Package para generar binario.
+**Antes de empaquetar coloca tus imágenes en `build/`** (ver `build/README.md`
+para tamaños exactos). Si faltan, se usan las por defecto de electron-builder.
 
-## ¿Pantalla en negro?
-Casi siempre es uno de estos:
-- Olvidaste `npm run build` antes de abrir Electron → no existe `/dist/index.html`.
-- `base` distinto de `"./"` en `vite.config.ts` → assets con rutas absolutas rotas.
-- Router `BrowserRouter` en lugar de `HashRouter` → 404 al cargar.
+### Variante "carpeta suelta" (sin instalador)
 
-Para depurar, descomenta en `electron/main.cjs`:
-```js
-mainWindow.webContents.openDevTools({ mode: 'detach' });
+```bash
+npm run electron:package
 ```
-Verás errores reales en la consola de DevTools.
+Sale en `electron-release/`.
+
+---
+
+## 📱 Android — APK sin Android Studio
+
+**Método: GitHub Actions (compila en la nube).**
+
+1. Sube el proyecto a un repo de GitHub (Lovable puede hacerlo desde el botón
+   "Export to GitHub").
+2. En GitHub abre la pestaña **Actions** → activa los workflows si te lo pide.
+3. Cada `push` a `main` dispara la build automáticamente. También puedes
+   dispararla manualmente: **Actions → Build Android APK → Run workflow**.
+4. Cuando termine (5-8 min), abre la ejecución y descarga el artifact
+   **GestionDeVentas-debug-apk**. Dentro está `app-debug.apk`.
+5. Copia el APK al celular e instálalo (permite "orígenes desconocidos").
+
+El workflow (`.github/workflows/android-apk.yml`) hace todo:
+`npm install → vite build → npx cap add android → npx cap sync → gradle assembleDebug`.
+
+> **Importante:** el workflow **no toca tu proyecto ni requiere que instales
+> nada local**. Todo corre en un runner efímero de GitHub.
+
+---
+
+## 🔐 Protección anti-copia (Windows)
+
+Cada instalación calcula una huella de hardware (hostname + usuario + MACs)
+y la guarda junto a la licencia. Si alguien copia
+`C:\Users\...\AppData\Roaming\GestionDeVentas` a otra PC, la huella no coincide
+y la app pide reactivar la clave. Tu propia licencia sigue funcionando
+donde la activaste.
+
+---
+
+## Depurar pantalla negra en Electron
+
+- Ejecutar `npm run build` antes de abrir Electron.
+- Verificar `base: "./"` en `vite.config.ts`.
+- Verificar `HashRouter` en `src/App.tsx`.
+- Descomentar `openDevTools` en `electron/main.cjs`.

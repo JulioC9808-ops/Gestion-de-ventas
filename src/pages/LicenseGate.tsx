@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Shield, Key, MessageCircle, Clock, Infinity as InfinityIcon, QrCode } from 'lucide-react';
+import { Shield, Key, MessageCircle, Clock, Infinity as InfinityIcon, QrCode, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import QrDisplay from '@/components/QrDisplay';
+import { getMachineId, isDesktop } from '@/lib/machine';
 
 const LIFETIME_LICENSE = '08022664107';
 const TIMED_LICENSE = 'J260208c';
@@ -17,27 +18,42 @@ interface LicenseGateProps {
 
 type LicenseState =
   | { type: 'none' }
-  | { type: 'lifetime' }
-  | { type: 'timed'; activatedAt: number };
+  | { type: 'lifetime'; machineId?: string | null }
+  | { type: 'timed'; activatedAt: number; machineId?: string | null };
 
 function readLicense(): LicenseState {
   try {
     const raw = localStorage.getItem('license_state');
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed?.type === 'lifetime') return { type: 'lifetime' };
+      if (parsed?.type === 'lifetime') return { type: 'lifetime', machineId: parsed.machineId ?? null };
       if (parsed?.type === 'timed' && typeof parsed.activatedAt === 'number') {
-        return { type: 'timed', activatedAt: parsed.activatedAt };
+        return { type: 'timed', activatedAt: parsed.activatedAt, machineId: parsed.machineId ?? null };
       }
     }
-    // backward compat
     if (localStorage.getItem('license_key') === LIFETIME_LICENSE) {
-      const state: LicenseState = { type: 'lifetime' };
+      const state: LicenseState = { type: 'lifetime', machineId: getMachineId() };
       localStorage.setItem('license_state', JSON.stringify(state));
       return state;
     }
   } catch {}
   return { type: 'none' };
+}
+
+/**
+ * Verifica que la licencia guardada corresponda a esta máquina.
+ * Solo aplica en Electron (desktop). En web/dev retorna true siempre.
+ * Si la carpeta AppData se copia a otra PC, el machineId no coincidirá
+ * y la licencia se invalida automáticamente.
+ */
+function isSameMachine(state: LicenseState): boolean {
+  if (!isDesktop()) return true;
+  if (state.type === 'none') return true;
+  const current = getMachineId();
+  // Si la licencia guardada no tiene machineId (versión antigua) la "adoptamos"
+  // vinculándola a esta máquina en la próxima escritura.
+  if (!state.machineId) return true;
+  return state.machineId === current;
 }
 
 function isTimedActive(activatedAt: number) {
@@ -69,19 +85,45 @@ export default function LicenseGate({ children }: LicenseGateProps) {
     return () => clearInterval(id);
   }, []);
 
-  const licensed =
+  // Verificar máquina en cada render/tick
+  const sameMachine = isSameMachine(license);
+
+  // Si la licencia fue copiada de otra PC (machineId no coincide), invalidamos.
+  useEffect(() => {
+    if (!sameMachine && license.type !== 'none') {
+      localStorage.removeItem('license_state');
+      setLicense({ type: 'none' });
+    }
+  }, [sameMachine, license.type]);
+
+  // Adopción: si estamos en desktop y la licencia guardada NO tiene machineId
+  // (versión antigua), le añadimos el actual sin pedir reactivación.
+  useEffect(() => {
+    if (!isDesktop()) return;
+    if (license.type === 'none') return;
+    if (license.machineId) return;
+    const id = getMachineId();
+    if (!id) return;
+    const next: LicenseState = { ...license, machineId: id };
+    localStorage.setItem('license_state', JSON.stringify(next));
+    setLicense(next);
+  }, [license]);
+
+  const licensed = sameMachine && (
     license.type === 'lifetime' ||
-    (license.type === 'timed' && isTimedActive(license.activatedAt));
+    (license.type === 'timed' && isTimedActive(license.activatedAt))
+  );
 
   const handleActivate = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = key.trim();
+    const mid = getMachineId();
     if (trimmed === LIFETIME_LICENSE) {
-      const state: LicenseState = { type: 'lifetime' };
+      const state: LicenseState = { type: 'lifetime', machineId: mid };
       localStorage.setItem('license_state', JSON.stringify(state));
       setLicense(state);
     } else if (trimmed === TIMED_LICENSE) {
-      const state: LicenseState = { type: 'timed', activatedAt: Date.now() };
+      const state: LicenseState = { type: 'timed', activatedAt: Date.now(), machineId: mid };
       localStorage.setItem('license_state', JSON.stringify(state));
       setLicense(state);
     } else {

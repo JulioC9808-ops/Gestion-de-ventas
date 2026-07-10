@@ -7,12 +7,12 @@ import { Palette, Type, Layout, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 
 const THEMES = [
-  { value: 'default', label: 'Negro Elegante', preview: 'bg-gray-900' },
   { value: 'white', label: 'Blanco Puro', preview: 'bg-white border border-gray-300' },
+  { value: 'black', label: 'Negro Total', preview: 'bg-black' },
   { value: 'sunset', label: 'Atardecer', preview: 'bg-orange-600' },
   { value: 'forest', label: 'Bosque', preview: 'bg-green-700' },
   { value: 'ocean', label: 'Océano', preview: 'bg-blue-600' },
-  { value: 'night', label: 'Noche', preview: 'bg-indigo-900' },
+  { value: 'night', label: 'Noche Índigo', preview: 'bg-indigo-900' },
   { value: 'coffee', label: 'Café', preview: 'bg-amber-800' },
 ];
 

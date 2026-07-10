@@ -11,12 +11,14 @@ function createWindow() {
     height: 800,
     minWidth: 900,
     minHeight: 600,
-    backgroundColor: '#0d0d0d',
+    backgroundColor: '#ffffff',
     autoHideMenuBar: true,
+    icon: path.join(__dirname, '..', 'build', 'icon.png'),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
+      sandbox: false, // requerido para que el preload cargue os/crypto
+      preload: path.join(__dirname, 'preload.cjs'),
     },
   });
 
@@ -25,7 +27,6 @@ function createWindow() {
     console.error('Error cargando index.html:', err);
   });
 
-  // Abrir enlaces externos (WhatsApp, etc.) en el navegador del sistema
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('mailto:')) {
       shell.openExternal(url);
@@ -33,9 +34,6 @@ function createWindow() {
     }
     return { action: 'allow' };
   });
-
-  // Útil para depurar pantalla en negro: descomenta para abrir DevTools
-  // mainWindow.webContents.openDevTools({ mode: 'detach' });
 
   mainWindow.on('closed', () => { mainWindow = null; });
 }
