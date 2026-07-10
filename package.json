@@ -1,7 +1,10 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "gestion-ventas",
+  "productName": "GestionDeVentas",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Sistema de gestión de ventas para pequeños negocios",
+  "author": "DevJ260208C",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -14,9 +17,49 @@
     "test:watch": "vitest",
     "electron": "electron .",
     "electron:dev": "npm run build && electron .",
-    "electron:package": "npm run build && npx @electron/packager . GestionDeVentas --overwrite --out=electron-release --ignore=\"^/src$\" --ignore=\"^/public$\" --ignore=\"^/electron-release$\" --ignore=\"^/dev-server$\""
+    "electron:package": "npm run build && npx @electron/packager . GestionDeVentas --overwrite --out=electron-release --ignore=\"^/src$\" --ignore=\"^/public$\" --ignore=\"^/electron-release$\" --ignore=\"^/dev-server$\" --ignore=\"^/dist-installer$\" --ignore=\"^/android$\"",
+    "electron:installer": "npm run build && electron-builder --win nsis --publish never",
+    "cap:sync": "npm run build && npx cap sync android",
+    "cap:add:android": "npx cap add android"
+  },
+  "build": {
+    "appId": "app.lovable.7b113e7c315e4432bc9cae4b8cf017db",
+    "productName": "GestionDeVentas",
+    "directories": {
+      "output": "dist-installer",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "GestionDeVentas",
+      "license": "build/LICENSE.txt",
+      "installerHeader": "build/installerHeader.bmp",
+      "installerSidebar": "build/installerSidebar.bmp",
+      "uninstallerSidebar": "build/uninstallerSidebar.bmp",
+      "installerIcon": "build/installer.ico",
+      "uninstallerIcon": "build/installer.ico",
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    }
   },
   "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/core": "^6.1.2",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
@@ -70,6 +113,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@capacitor/cli": "^6.1.2",
     "@eslint/js": "^9.32.0",
     "@playwright/test": "^1.57.0",
     "@tailwindcss/typography": "^0.5.16",
@@ -81,6 +125,7 @@
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react-swc": "^3.11.0",
     "autoprefixer": "^10.4.21",
+    "electron-builder": "^25.1.8",
     "eslint": "^9.32.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
