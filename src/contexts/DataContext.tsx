@@ -18,6 +18,7 @@ interface DataContextType {
   getStockQuantity: (productId: string) => number;
   reduceStock: (productId: string, qty: number) => void;
   addReport: (r: ShiftReport) => void;
+  clearReports: () => void;
   addUser: (u: Omit<User, 'id' | 'createdAt'>) => void;
   updateUser: (u: User) => void;
   deleteUser: (id: string) => void;
@@ -268,6 +269,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setR(prev => dedupeReports([...prev, r]));
   }, []);
 
+  const clearReports = useCallback(() => {
+    setR(() => []);
+  }, []);
+
   const addUser = useCallback((u: Omit<User, 'id' | 'createdAt'>) => {
     setU(prev => [...prev, { ...u, id: crypto.randomUUID(), createdAt: new Date().toISOString() }]);
   }, []);
@@ -306,7 +311,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       products, stock, reports, movements, users, settings,
       addProduct, updateProduct, deleteProduct,
       addToStock, getStockQuantity, reduceStock,
-      addReport, addUser, updateUser, deleteUser,
+      addReport, clearReports, addUser, updateUser, deleteUser,
       updateSettings, getProductById, deleteMovement,
     }}>
       {children}
