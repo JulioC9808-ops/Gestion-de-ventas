@@ -2,19 +2,28 @@
 
 ## 🪟 Windows — instalador con wizard (NSIS)
 
-**En tu PC con Node.js instalado:**
+**Requisitos únicos en tu PC:** Node.js 20+ y npm.
 
 ```bash
 git clone <tu-repo>
 cd <tu-repo>
-npm install
+npm ci             # instala EXACTAMENTE las versiones del package-lock.json
 npm run electron:installer
 ```
 
+`npm ci` (no `npm install`) es lo que evita conflictos de dependencias:
+borra `node_modules` y reinstala todo desde `package-lock.json` de forma
+reproducible. Si algún día vuelve a fallar el empaquetado, borra
+`node_modules` y `dist-installer/` y repite el comando.
+
 El instalador queda en `dist-installer/GestionDeVentas-Setup-1.0.0.exe`.
 
-**Antes de empaquetar coloca tus imágenes en `build/`** (ver `build/README.md`
-para tamaños exactos). Si faltan, se usan las por defecto de electron-builder.
+**Imágenes e iconos del instalador ya incluidos en `build/`:**
+- `installerHeader.bmp` — banner superior (150×57).
+- `icon.ico` + `installer.ico` — icono del programa y del instalador.
+- `LICENSE.txt` — EULA que aparece en la 2ª página del wizard.
+- `CHANGELOG.txt` — Novedades que aparece en la 3ª página del wizard.
+- `installer.nsh` — script que añade la página de novedades.
 
 ### Variante "carpeta suelta" (sin instalador)
 
@@ -22,6 +31,8 @@ para tamaños exactos). Si faltan, se usan las por defecto de electron-builder.
 npm run electron:package
 ```
 Sale en `electron-release/`.
+
+
 
 ---
 

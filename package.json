@@ -3,8 +3,8 @@
   "productName": "GestionDeVentas",
   "private": true,
   "version": "1.0.0",
-  "description": "Sistema de gestión de ventas para pequeños negocios",
-  "author": "DevJ260208C",
+  "description": "Sistema de Gestión de Ventas y Cafetería, para un trabajo mas sencillo, rapido y organizado",
+  "author": "Julio_GE",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -50,10 +50,9 @@
       "shortcutName": "GestionDeVentas",
       "license": "build/LICENSE.txt",
       "installerHeader": "build/installerHeader.bmp",
-      "installerSidebar": "build/installerSidebar.bmp",
-      "uninstallerSidebar": "build/uninstallerSidebar.bmp",
       "installerIcon": "build/installer.ico",
       "uninstallerIcon": "build/installer.ico",
+      "include": "build/installer.nsh",
       "artifactName": "${productName}-Setup-${version}.${ext}"
     }
   },
