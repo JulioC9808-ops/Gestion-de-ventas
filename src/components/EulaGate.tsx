@@ -5,13 +5,23 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 const EULA_STORAGE_KEY = 'eula_accepted_v2';
 
+// Fecha inyectada en tiempo de compilación (ver vite.config.ts → define.__BUILD_DATE__)
+const BUILD_DATE = (() => {
+  try {
+    const d = new Date(__BUILD_DATE__);
+    return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  } catch {
+    return new Date().toLocaleDateString('es-ES');
+  }
+})();
+
 const EULA_TEXT = `POR FAVOR LEA DETENIDAMENTE EL ACUERDO DE LICENCIA SIGUIENTE ANTES DE CONTINUAR CON LA INSTALACION.
 
 Acuerdo de Licencia de Usuario Final
 
 Sistema de Ventas – Julio_GE Software
 
-Última actualización: 06/26
+Última actualización: ${BUILD_DATE}
 
 Este Acuerdo de Licencia de Usuario Final ("EULA") es un contrato legal entre usted y Julio_GE Software que es el desarrollador para el uso del sistema de ventas y gestión comercial (el "Software").
 

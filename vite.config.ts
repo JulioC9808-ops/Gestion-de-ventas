@@ -7,6 +7,10 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => ({
   // base relativo es OBLIGATORIO para que el build funcione bajo file:// (Electron)
   base: "./",
+  define: {
+    // Fecha en que se compiló el bundle (se inyecta en tiempo de build)
+    __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
+  },
   server: {
     host: "::",
     port: 8080,
