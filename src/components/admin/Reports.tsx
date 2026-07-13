@@ -3,10 +3,11 @@ import HelpTip from '@/components/HelpTip';
 import { useData } from '@/contexts/DataContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function Reports() {
-  const { reports } = useData();
+  const { reports, clearReports } = useData();
   const [tab, setTab] = useState<'period' | 'employee' | 'topProducts' | 'slowProducts'>('period');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -236,6 +237,31 @@ export default function Reports() {
           </>
         )}
       </div>
+
+      {/* Zona peligrosa: borrar todo el historial */}
+      {reports.length > 0 && (
+        <div className="mt-8 border-2 border-destructive/40 rounded-xl p-5 bg-destructive/5">
+          <h3 className="font-display font-bold text-destructive flex items-center gap-2 mb-2">
+            <Trash2 className="w-4 h-4" /> Zona peligrosa
+          </h3>
+          <p className="text-sm text-muted-foreground mb-3">
+            Elimina de forma permanente <strong>TODO</strong> el historial de cierres de turno. Esta acción no se puede deshacer.
+          </p>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => {
+              if (!confirm('¿Seguro que quieres BORRAR TODO el historial de ventas? Esta acción es irreversible.')) return;
+              if (!confirm('Confirmación final: se eliminarán todos los cierres. ¿Continuar?')) return;
+              clearReports();
+              toast.success('Historial de ventas eliminado');
+            }}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Borrar todo el historial
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
