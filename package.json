@@ -48,11 +48,8 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "GestionDeVentas",
-      "license": "build/LICENSE.txt",
-      "installerHeader": "build/installerHeader.bmp",
-      "installerIcon": "build/installer.ico",
-      "uninstallerIcon": "build/installer.ico",
-      "include": "build/installer.nsh",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
       "artifactName": "${productName}-Setup-${version}.${ext}"
     }
   },

@@ -97,18 +97,31 @@ export default function Reports() {
               <p className="text-muted-foreground">No hay ventas en este período.</p>
             ) : (
               <div className="space-y-2">
-                {filteredReports.map(r => (
+                {filteredReports.map(r => {
+                  const transferTot = r.transfers.reduce((s, t) => s + t.amount, 0);
+                  const vipTot = r.vipSales.reduce((s, v) => s + v.amount, 0);
+                  const methods = [
+                    { name: 'Efectivo', amount: r.cashTotal },
+                    { name: 'Transferencia', amount: transferTot },
+                    { name: 'VIP', amount: vipTot },
+                  ];
+                  const top = methods.reduce((a, b) => (b.amount > a.amount ? b : a));
+                  const topMethod = top.amount > 0 ? top.name : '—';
+                  return (
                   <div key={r.id} className="border border-border rounded-lg overflow-hidden">
                     <button
                       onClick={() => toggleExpand(r.id)}
                       className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
                     >
-                      <div className="flex items-center gap-6 text-sm">
+                      <div className="flex items-center gap-6 text-sm flex-wrap">
                         <span>{new Date(r.date).toLocaleDateString()}</span>
                         <span className="font-medium">{r.employeeName}</span>
                         <span className="capitalize">{r.shift === 'morning' ? 'Mañana' : 'Tarde'}</span>
                         <span className="font-semibold">${r.totalSold.toLocaleString()}</span>
                         <span className="text-success font-medium">${r.salary.toFixed(2)}</span>
+                        <span className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary">
+                          Método de Pago: <strong>{topMethod}</strong>
+                        </span>
                       </div>
                       {expandedReport === r.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </button>
@@ -160,7 +173,8 @@ export default function Reports() {
                       </div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
                 <div className="border-t-2 border-border pt-3 mt-3 flex justify-between font-bold text-sm">
                   <span>Total del Período</span>
                   <div className="flex gap-6">
