@@ -173,7 +173,8 @@ export default function Reports() {
                       </div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
                 <div className="border-t-2 border-border pt-3 mt-3 flex justify-between font-bold text-sm">
                   <span>Total del Período</span>
                   <div className="flex gap-6">
