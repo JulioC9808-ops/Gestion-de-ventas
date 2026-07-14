@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import HelpTip from '@/components/HelpTip';
+import QrDisplay from '@/components/QrDisplay';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -240,6 +241,26 @@ export default function AdminSettings() {
         <Button onClick={handleSave} className="w-full" size="lg">
           Guardar Configuración
         </Button>
+
+        {/* Actualizaciones */}
+        <div className="glass-card p-6 text-center">
+          <h3 className="font-display font-bold text-lg mb-2">Actualizaciones</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Escanea el código QR para unirte al canal de Telegram donde se publican
+            las últimas actualizaciones y novedades del sistema.
+          </p>
+          <div className="flex justify-center bg-white p-4 rounded-lg mx-auto w-fit">
+            <QrDisplay data="https://telegram.me/+Agu7IJDwGU4NGM5" size={220} />
+          </div>
+          <a
+            href="https://telegram.me/+Agu7IJDwGU4NGM5"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-block mt-3 text-sm text-primary underline"
+          >
+            telegram.me/+Agu7IJDwGU4NGM5
+          </a>
+        </div>
       </div>
     </div>
   );
