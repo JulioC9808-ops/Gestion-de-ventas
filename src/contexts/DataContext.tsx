@@ -72,22 +72,17 @@ function save<T>(key: string, data: T) {
   localStorage.setItem(`__fp_${key}`, fingerprint(serialized));
 }
 
-function getReportKey(report: ShiftReport) {
-  const date = new Date(report.date);
-  const dayKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  return `${report.employeeId}-${report.shift}-${dayKey}`;
-}
-
+// Se conservan TODOS los turnos cerrados (histórico completo).
+// La única deduplicación real es por id, para evitar duplicados exactos por doble-clic.
 function dedupeReports(reports: ShiftReport[]) {
-  const latestByKey = new Map<string, ShiftReport>();
-
-  reports.forEach(report => {
-    latestByKey.set(getReportKey(report), report);
-  });
-
-  return Array.from(latestByKey.values()).sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-  );
+  const seen = new Set<string>();
+  const out: ShiftReport[] = [];
+  for (const r of reports) {
+    if (!r?.id || seen.has(r.id)) continue;
+    seen.add(r.id);
+    out.push(r);
+  }
+  return out.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 }
 
 const DEFAULT_PRODUCTS: Product[] = [
