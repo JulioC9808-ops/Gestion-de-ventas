@@ -113,7 +113,7 @@ export default function AdminOverview({ onNav }: Props) {
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <PieIcon className="w-5 h-5 text-primary" />
-            <h2 className="text-xl font-display font-bold">Ventas por método</h2>
+            <h2 className="text-xl font-display font-bold">Método de Pago</h2>
             <HelpTip>Muestra la proporción de ventas en efectivo, transferencia y VIP desde el último reinicio.</HelpTip>
           </div>
           <Button variant="outline" size="sm" onClick={handleResetChart}>
