@@ -20,6 +20,7 @@ const App = () => (
       <Sonner />
       <DataProvider>
         <AuthProvider>
+          <TitleBar />
           <IntroPlayer />
           <EulaGate />
           <HashRouter>
