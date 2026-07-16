@@ -11,7 +11,6 @@ interface Props {
 
 export default function AdminOverview({ onNav }: Props) {
   const { products, stock, reports, users, settings, updateSettings } = useData();
-  const [showInfo, setShowInfo] = useState(false);
 
   const totalProducts = products.length;
   const totalInventory = products.reduce((sum, p) => sum + (p.inventoryQty || 0), 0);
