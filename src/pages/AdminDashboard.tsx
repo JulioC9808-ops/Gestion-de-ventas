@@ -35,7 +35,6 @@ export default function AdminDashboard() {
   const content: Record<string, React.ReactNode> = {
     overview: <AdminOverview onNav={setActive} />,
     products: <ProductManagement />,
-    users: <UserManagement />,
     stock: <StockEntry />,
     shift: <ShiftClose />,
     vip: <VipSalesView />,
