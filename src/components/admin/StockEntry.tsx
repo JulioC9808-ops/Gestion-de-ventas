@@ -4,8 +4,9 @@ import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowRight, Package, Coffee, UtensilsCrossed, Sandwich } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { getCategoryEmoji } from '@/lib/catalog';
 
 export default function StockEntry() {
   const { products, getStockQuantity, addToStock } = useData();
