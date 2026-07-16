@@ -1,7 +1,7 @@
 // Preload seguro: expone al renderer solo lo estrictamente necesario.
-// Aquí generamos una "huella de hardware" (hostname + usuario + plataforma + arch + MACs)
-// y la hasheamos en SHA-256 hex. El renderer NUNCA ve los datos crudos.
-const { contextBridge } = require('electron');
+// - machineId: huella de hardware (SHA-256) para licencia anti-copia.
+// - windowControls: control de ventana frameless (minimize/maximize/close).
+const { contextBridge, ipcRenderer } = require('electron');
 const os = require('os');
 const crypto = require('crypto');
 
@@ -12,7 +12,6 @@ function computeMachineId() {
       os.userInfo().username,
       os.platform(),
       os.arch(),
-      // MAC address estable
       Object.values(os.networkInterfaces())
         .flat()
         .filter(Boolean)
@@ -33,4 +32,15 @@ contextBridge.exposeInMainWorld('desktopBridge', {
   isElectron: true,
   machineId: MACHINE_ID,
   platform: process.platform,
+  windowControls: {
+    minimize: () => ipcRenderer.invoke('window:minimize'),
+    toggleMaximize: () => ipcRenderer.invoke('window:toggle-maximize'),
+    close: () => ipcRenderer.invoke('window:close'),
+    isMaximized: () => ipcRenderer.invoke('window:is-maximized'),
+    onMaximizeChange: (cb) => {
+      const listener = (_e, value) => cb(!!value);
+      ipcRenderer.on('window:maximized', listener);
+      return () => ipcRenderer.removeListener('window:maximized', listener);
+    },
+  },
 });
