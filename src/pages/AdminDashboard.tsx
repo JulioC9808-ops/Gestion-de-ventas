@@ -1,8 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import AppLayout from '@/components/AppLayout';
-import { LayoutDashboard, Package, Users, ArrowRightLeft, ClipboardList, DollarSign, Clock, ClipboardCheck, Crown, Settings, Palette, Type, QrCode } from 'lucide-react';
+import { LayoutDashboard, Package, ArrowRightLeft, ClipboardList, DollarSign, Clock, ClipboardCheck, Crown, Settings, QrCode } from 'lucide-react';
 import ProductManagement from '@/components/admin/ProductManagement';
-import UserManagement from '@/components/admin/UserManagement';
 import StockEntry from '@/components/admin/StockEntry';
 import Reports from '@/components/admin/Reports';
 import SalaryHistory from '@/components/admin/SalaryHistory';
