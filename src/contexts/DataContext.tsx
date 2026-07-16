@@ -297,8 +297,28 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const getProductById = useCallback((id: string) => products.find(p => p.id === id), [products]);
 
+  // Al eliminar un movimiento REVERTIMOS la acción:
+  //   - quita del stock de venta la cantidad (nunca por debajo de 0)
+  //   - devuelve la cantidad completa al almacén (inventoryQty del producto)
   const deleteMovement = useCallback((id: string) => {
-    setM(prev => prev.filter(x => x.id !== id));
+    setM(prev => {
+      const mov = prev.find(x => x.id === id);
+      if (mov) {
+        // Restar del stock de venta (nunca negativo)
+        setS(stPrev => stPrev.map(s =>
+          s.productId === mov.productId
+            ? { ...s, quantity: Math.max(0, s.quantity - mov.quantity) }
+            : s
+        ));
+        // Devolver al almacén
+        setP(pPrev => pPrev.map(p =>
+          p.id === mov.productId
+            ? { ...p, inventoryQty: (p.inventoryQty || 0) + mov.quantity }
+            : p
+        ));
+      }
+      return prev.filter(x => x.id !== id);
+    });
   }, []);
 
   return (

@@ -18,6 +18,7 @@
     "electron": "electron .",
     "electron:dev": "npm run build && electron .",
     "electron:package": "npm run build && npx @electron/packager . GestionDeVentas --overwrite --out=electron-release --ignore=\"^/src$\" --ignore=\"^/public$\" --ignore=\"^/electron-release$\" --ignore=\"^/dev-server$\" --ignore=\"^/dist-installer$\" --ignore=\"^/android$\"",
+    "electron:build": "npm run build && electron-builder",
     "electron:installer": "npm run build && electron-builder --win nsis --publish never",
     "cap:sync": "npm run build && npx cap sync android",
     "cap:add:android": "npx cap add android"
@@ -50,7 +51,16 @@
       "shortcutName": "GestionDeVentas",
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico",
-      "artifactName": "${productName}-Setup-${version}.${ext}"
+      "installerHeader": "build/installerHeader.bmp",
+      "installerHeaderIcon": "build/icon.ico",
+      "installerSidebar": "build/installerSidebar.bmp",
+      "uninstallerSidebar": "build/installerSidebar.bmp",
+      "license": "build/LICENSE.txt",
+      "include": "build/installer.nsh",
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true,
+      "menuCategory": "GestionDeVentas"
     }
   },
   "dependencies": {

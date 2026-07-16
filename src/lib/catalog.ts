@@ -1,0 +1,39 @@
+// Catálogo de categorías con emoji y unidades sugeridas.
+// Si un producto no coincide con ninguna categoría, se marca como "Otros" 📦.
+
+export interface CategoryOption {
+  value: string;
+  emoji: string;
+  keywords?: string[];
+}
+
+export const CATEGORY_OPTIONS: CategoryOption[] = [
+  { value: 'Bebidas', emoji: '🥤', keywords: ['bebida', 'jugo', 'refresco', 'café', 'cafe', 'té', 'te', 'agua'] },
+  { value: 'Botellas', emoji: '🍾', keywords: ['botella', 'vino', 'licor', 'ron', 'whisky', 'cerveza'] },
+  { value: 'Latas', emoji: '🥫', keywords: ['lata', 'conserva', 'enlatado'] },
+  { value: 'Alimentos', emoji: '🍽️', keywords: ['alimento', 'comida', 'plato', 'sandwich', 'hamburguesa', 'pizza'] },
+  { value: 'Panadería', emoji: '🥖', keywords: ['pan', 'panadería', 'panaderia', 'croissant', 'bolleria'] },
+  { value: 'Caramelos', emoji: '🍬', keywords: ['caramelo', 'dulce', 'chocolate', 'bombón', 'bombon', 'chicle'] },
+  { value: 'Helados', emoji: '🍦', keywords: ['helado', 'nieve', 'paleta'] },
+  { value: 'Snacks', emoji: '🍿', keywords: ['snack', 'papas', 'chips', 'palomitas', 'galleta'] },
+  { value: 'Cigarros', emoji: '🚬', keywords: ['cigarro', 'tabaco', 'cigarrillo'] },
+  { value: 'Limpieza', emoji: '🧴', keywords: ['limpieza', 'jabón', 'jabon', 'detergente', 'cloro'] },
+  { value: 'Otros', emoji: '📦' },
+];
+
+export const UNIT_OPTIONS = [
+  'c/u', 'pieza', 'taza', 'botella', 'lata', 'paquete', 'caja', 'kg', 'g', 'L', 'ml',
+];
+
+export function getCategoryEmoji(rawCategory: string | undefined | null): string {
+  if (!rawCategory) return '📦';
+  const cat = rawCategory.trim().toLowerCase();
+  // Coincidencia exacta con el nombre
+  const exact = CATEGORY_OPTIONS.find(c => c.value.toLowerCase() === cat);
+  if (exact) return exact.emoji;
+  // Coincidencia parcial por palabras clave
+  const partial = CATEGORY_OPTIONS.find(c =>
+    c.keywords?.some(k => cat.includes(k) || k.includes(cat))
+  );
+  return partial ? partial.emoji : '📦';
+}

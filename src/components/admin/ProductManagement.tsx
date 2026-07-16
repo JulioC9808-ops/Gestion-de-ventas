@@ -3,8 +3,9 @@ import HelpTip from '@/components/HelpTip';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Pencil, Trash2, Search, Package, Coffee, UtensilsCrossed, Sandwich } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { CATEGORY_OPTIONS, UNIT_OPTIONS, getCategoryEmoji } from '@/lib/catalog';
 import type { Product } from '@/types';
 
 export default function ProductManagement() {
@@ -21,7 +22,6 @@ export default function ProductManagement() {
 
   const totalProducts = products.length;
   const totalInventory = products.reduce((s, p) => s + (p.inventoryQty || 0), 0);
-
   const salaryPercent = settings.defaultSalaryPercent ?? 2;
 
   const getProfit = (p: Product) => {
@@ -29,11 +29,7 @@ export default function ProductManagement() {
     const salaryPerUnit = p.price * (salaryPercent / 100);
     return p.price - cost - salaryPerUnit;
   };
-
-  const getProfitPercent = (p: Product) => {
-    if (!p.price) return 0;
-    return (getProfit(p) / p.price) * 100;
-  };
+  const getProfitPercent = (p: Product) => (!p.price ? 0 : (getProfit(p) / p.price) * 100);
 
   const openNew = () => {
     setEditing(null);
@@ -53,15 +49,12 @@ export default function ProductManagement() {
       name: form.name,
       price: Number(form.price),
       costPrice: Number(form.costPrice) || 0,
-      category: form.category,
-      unit: form.unit,
+      category: form.category || 'Otros',
+      unit: form.unit || 'c/u',
       inventoryQty: Number(form.inventoryQty) || 0,
     };
-    if (editing) {
-      updateProduct({ ...editing, ...data });
-    } else {
-      addProduct(data);
-    }
+    if (editing) updateProduct({ ...editing, ...data });
+    else addProduct(data);
     setDialogOpen(false);
   };
 
@@ -70,7 +63,7 @@ export default function ProductManagement() {
       <div className="page-header">
         <div className="flex items-center gap-3">
           <h1 className="page-title">Gestión de Productos</h1>
-          <HelpTip>Aquí puedes agregar, editar y eliminar productos del almacén. La cantidad en almacén se descuenta al mover productos al stock de venta. La ganancia se calcula: Precio - Costo - Salario({salaryPercent}%).</HelpTip>
+          <HelpTip>Agrega, edita y elimina productos del almacén. La cantidad se descuenta al mover al stock de venta. Ganancia = Precio − Costo − Salario({salaryPercent}%).</HelpTip>
         </div>
         <Button onClick={openNew}>
           <Plus className="w-4 h-4 mr-2" />
@@ -78,7 +71,6 @@ export default function ProductManagement() {
         </Button>
       </div>
 
-      {/* Summary stats */}
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div className="stat-card text-center">
           <p className="text-sm text-muted-foreground">Total Productos</p>
@@ -93,12 +85,7 @@ export default function ProductManagement() {
       <div className="glass-card p-6">
         <div className="relative mb-5">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar productos..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-10"
-          />
+          <Input placeholder="Buscar productos..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
         </div>
 
         <div className="overflow-x-auto">
@@ -123,24 +110,19 @@ export default function ProductManagement() {
                   <tr key={p.id}>
                     <td className="font-medium">
                       <div className="flex items-center gap-2">
-                        {p.category?.toLowerCase().includes('bebida') ? <Coffee className="w-4 h-4 text-muted-foreground" /> :
-                         p.category?.toLowerCase().includes('alimento') ? <UtensilsCrossed className="w-4 h-4 text-muted-foreground" /> :
-                         p.category?.toLowerCase().includes('panadería') || p.category?.toLowerCase().includes('panaderia') ? <Sandwich className="w-4 h-4 text-muted-foreground" /> :
-                         <Package className="w-4 h-4 text-muted-foreground" />}
+                        <span className="text-lg">{getCategoryEmoji(p.category)}</span>
                         {p.name}
                       </div>
                     </td>
                     <td>${p.price.toFixed(2)}</td>
                     <td className="text-muted-foreground">${(p.costPrice || 0).toFixed(2)}</td>
                     <td>
-                      <span className={`font-bold ${profit >= 0 ? 'text-success' : 'text-destructive'}`}>
-                        ${profit.toFixed(2)}
-                      </span>
+                      <span className={`font-bold ${profit >= 0 ? 'text-success' : 'text-destructive'}`}>${profit.toFixed(2)}</span>
                       <span className="text-xs text-muted-foreground ml-1">({profitPct.toFixed(1)}%)</span>
                     </td>
                     <td>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
-                        {p.category}
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
+                        {getCategoryEmoji(p.category)} {p.category}
                       </span>
                     </td>
                     <td className="text-muted-foreground">{p.unit}</td>
@@ -163,9 +145,7 @@ export default function ProductManagement() {
             </tbody>
           </table>
         </div>
-        {filtered.length === 0 && (
-          <p className="text-center text-muted-foreground py-8">No se encontraron productos.</p>
-        )}
+        {filtered.length === 0 && <p className="text-center text-muted-foreground py-8">No se encontraron productos.</p>}
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -195,14 +175,54 @@ export default function ProductManagement() {
                 </span> por unidad (descontando {salaryPercent}% de salario)</p>
               </div>
             )}
+
             <div>
               <label className="text-sm font-medium">Categoría</label>
-              <Input value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} />
+              <select
+                value={CATEGORY_OPTIONS.some(c => c.value === form.category) ? form.category : ''}
+                onChange={e => setForm({ ...form, category: e.target.value })}
+                className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm mb-2"
+              >
+                <option value="">— Selecciona una categoría —</option>
+                {CATEGORY_OPTIONS.map(c => (
+                  <option key={c.value} value={c.value}>{c.emoji} {c.value}</option>
+                ))}
+              </select>
+              <Input
+                placeholder="O escribe una categoría personalizada"
+                value={form.category}
+                onChange={e => setForm({ ...form, category: e.target.value })}
+                list="cat-list"
+              />
+              <datalist id="cat-list">
+                {CATEGORY_OPTIONS.map(c => <option key={c.value} value={c.value} />)}
+              </datalist>
+              <p className="text-xs text-muted-foreground mt-1">
+                Se mostrará: <span className="text-base">{getCategoryEmoji(form.category)}</span> {form.category || 'Otros'}
+              </p>
             </div>
+
             <div>
               <label className="text-sm font-medium">Unidad</label>
-              <Input value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} />
+              <select
+                value={UNIT_OPTIONS.includes(form.unit) ? form.unit : ''}
+                onChange={e => setForm({ ...form, unit: e.target.value })}
+                className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm mb-2"
+              >
+                <option value="">— Selecciona una unidad —</option>
+                {UNIT_OPTIONS.map(u => <option key={u} value={u}>{u}</option>)}
+              </select>
+              <Input
+                placeholder="O escribe una unidad personalizada"
+                value={form.unit}
+                onChange={e => setForm({ ...form, unit: e.target.value })}
+                list="unit-list"
+              />
+              <datalist id="unit-list">
+                {UNIT_OPTIONS.map(u => <option key={u} value={u} />)}
+              </datalist>
             </div>
+
             <div>
               <label className="text-sm font-medium">Cantidad en Almacén</label>
               <Input type="number" min="0" value={form.inventoryQty} onChange={e => setForm({ ...form, inventoryQty: e.target.value })} />
