@@ -1,8 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import HelpTip from '@/components/HelpTip';
 import { useData } from '@/contexts/DataContext';
-import { Package, Users, TrendingUp, DollarSign, Crown, Info, PieChart as PieIcon, RefreshCw, ClipboardList } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Package, Users, TrendingUp, DollarSign, Crown, PieChart as PieIcon, RefreshCw, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
