@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { DataProvider } from "@/contexts/DataContext";
 import IntroPlayer from "@/components/IntroPlayer";
 import EulaGate from "@/components/EulaGate";
+import TitleBar from "@/components/TitleBar";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
