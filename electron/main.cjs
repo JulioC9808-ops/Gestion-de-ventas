@@ -1,6 +1,6 @@
 // Electron main process (CommonJS)
-// Carga la app empaquetada desde /dist/index.html usando file://
-const { app, BrowserWindow, shell } = require('electron');
+// Ventana frameless con controles personalizados via IPC.
+const { app, BrowserWindow, shell, ipcMain } = require('electron');
 const path = require('path');
 
 let mainWindow = null;
@@ -13,11 +13,13 @@ function createWindow() {
     minHeight: 600,
     backgroundColor: '#ffffff',
     autoHideMenuBar: true,
+    frame: false, // sin marco nativo — usamos una barra propia
+    titleBarStyle: 'hidden',
     icon: path.join(__dirname, '..', 'build', 'icon.png'),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false, // requerido para que el preload cargue os/crypto
+      sandbox: false,
       preload: path.join(__dirname, 'preload.cjs'),
     },
   });
@@ -35,15 +37,22 @@ function createWindow() {
     return { action: 'allow' };
   });
 
+  mainWindow.on('maximize', () => mainWindow?.webContents.send('window:maximized', true));
+  mainWindow.on('unmaximize', () => mainWindow?.webContents.send('window:maximized', false));
   mainWindow.on('closed', () => { mainWindow = null; });
 }
 
+// IPC: controles de ventana desde el renderer (barra custom)
+ipcMain.handle('window:minimize', () => mainWindow?.minimize());
+ipcMain.handle('window:toggle-maximize', () => {
+  if (!mainWindow) return false;
+  if (mainWindow.isMaximized()) mainWindow.unmaximize();
+  else mainWindow.maximize();
+  return mainWindow.isMaximized();
+});
+ipcMain.handle('window:close', () => mainWindow?.close());
+ipcMain.handle('window:is-maximized', () => !!mainWindow?.isMaximized());
+
 app.whenReady().then(createWindow);
-
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
-});
-
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) createWindow();
-});
+app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
+app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
