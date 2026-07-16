@@ -53,10 +53,7 @@ export default function StockEntry() {
                 <tr key={p.id}>
                   <td className="font-medium">
                     <div className="flex items-center gap-2">
-                      {p.category?.toLowerCase().includes('bebida') ? <Coffee className="w-4 h-4 text-muted-foreground" /> :
-                       p.category?.toLowerCase().includes('alimento') ? <UtensilsCrossed className="w-4 h-4 text-muted-foreground" /> :
-                       p.category?.toLowerCase().includes('panadería') || p.category?.toLowerCase().includes('panaderia') ? <Sandwich className="w-4 h-4 text-muted-foreground" /> :
-                       <Package className="w-4 h-4 text-muted-foreground" />}
+                      <span className="text-lg">{getCategoryEmoji(p.category)}</span>
                       {p.name}
                     </div>
                   </td>
