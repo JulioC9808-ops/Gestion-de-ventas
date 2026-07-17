@@ -31,6 +31,13 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Install Android SDK packages
+        run: |
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses
+
       - name: Install dependencies
         run: npm install
 
@@ -49,9 +56,6 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x android/gradlew
 
-      - name: Accept Android SDK licenses
-        run: yes | sdkmanager --licenses
-
       - name: Build APK (debug)
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon
@@ -63,3 +67,4 @@ jobs:
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
+
