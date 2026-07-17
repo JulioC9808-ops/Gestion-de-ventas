@@ -73,6 +73,7 @@
   "devDependencies": {
     "electron-builder": "^25.1.8",
     "vite": "^5.4.19",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "@vitejs/plugin-react-swc": "^3.5.0"
   }
 }
