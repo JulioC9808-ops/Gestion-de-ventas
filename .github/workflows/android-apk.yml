@@ -33,7 +33,11 @@ jobs:
 
       - name: Install Android SDK packages
         run: |
-          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+          sdkmanager "platform-tools" \
+                     "platforms;android-33" \
+                     "platforms;android-34" \
+                     "build-tools;33.0.2" \
+                     "build-tools;34.0.0"
 
       - name: Accept Android SDK licenses
         run: yes | sdkmanager --licenses
