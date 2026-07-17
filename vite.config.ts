@@ -17,7 +17,9 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
-  plugins: [react(),
+  plugins: [
+    react()
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -30,3 +32,4 @@ export default defineConfig(({ mode }) => ({
     emptyOutDir: true,
   },
 }));
+
