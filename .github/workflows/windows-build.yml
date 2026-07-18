@@ -1,8 +1,9 @@
-name: Build Windows Installer
+name: Build and Release
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -11,10 +12,10 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
           node-version: 18
 
@@ -24,11 +25,7 @@ jobs:
       - name: Build app
         run: npm run build
 
-      - name: Build installer
+      - name: Package Electron app
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: npm run electron:build
-
-      - name: Upload installer
-        uses: actions/upload-artifact@v4
-        with:
-          name: Windows-Installer
-          path: dist-installer/*.exe
