@@ -57,9 +57,12 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x android/gradlew
 
+      - name: Clean Gradle cache
+        run: rm -rf ~/.gradle/caches
+
       - name: Build Android APK
         working-directory: android
-        run: ./gradlew assembleRelease --no-daemon
+        run: ./gradlew assembleRelease --no-daemon --refresh-dependencies
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -68,4 +71,3 @@ jobs:
           path: android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 30
-
