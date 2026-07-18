@@ -18,15 +18,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
+          cache: 'false'   # desactiva cache para evitar estados rotos
 
       - name: Install dependencies
         run: npm install
+
+      - name: Install Capacitor CLI
+        run: npm install @capacitor/cli --save-dev
 
       - name: Build web assets
         run: npm run build
 
       - name: Sync Capacitor
-        run: npx cap sync android
+        run: npx --no-install cap sync android
 
       - name: Setup JDK
         uses: actions/setup-java@v4
@@ -34,13 +38,30 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Build Android APK
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
         run: |
-          cd android
-          ./gradlew assembleRelease
+          sdkmanager "platform-tools" \
+                     "platforms;android-33" \
+                     "platforms;android-34" \
+                     "build-tools;33.0.2" \
+                     "build-tools;34.0.0"
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x android/gradlew
+
+      - name: Build Android APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Gestion de Sistema
+          name: GestionDeSistema-release-apk
           path: android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 30
