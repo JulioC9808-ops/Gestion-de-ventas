@@ -57,15 +57,15 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x android/gradlew
 
-      - name: Clean Gradle cache
-        run: rm -rf ~/.gradle/caches ~/.gradle/daemon ~/.gradle/native ~/.gradle/wrapper
-
-      - name: Remove corrupt bcprov jar
-        run: rm -f ~/.gradle/caches/jars-9/*/bcprov-jdk18on-1.79.jar || true
+      - name: Download BouncyCastle
+        run: |
+          mkdir -p android/app/libs
+          curl -L https://repo1.maven.org/maven2/org/bouncycastle/bcprov-jdk18on/1.79/bcprov-jdk18on-1.79.jar \
+            -o android/app/libs/bcprov-jdk18on-1.79.jar
 
       - name: Build Android APK
         working-directory: android
-        run: ./gradlew assembleRelease --no-daemon --refresh-dependencies --stacktrace
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -74,5 +74,3 @@ jobs:
           path: android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 30
-
-
