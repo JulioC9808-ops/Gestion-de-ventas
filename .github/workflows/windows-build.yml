@@ -1,4 +1,4 @@
-name: Build and Release
+name: Build and Release Windows
 
 on:
   push:
@@ -21,6 +21,20 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+
+      - name: Build app
+        run: npm run build
+
+      - name: Package Electron app
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: npm run electron:build
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-installer
+          path: dist-installer/*.exe
 
       - name: Build app
         run: npm run build
