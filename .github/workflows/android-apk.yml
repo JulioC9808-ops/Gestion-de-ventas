@@ -25,6 +25,9 @@ jobs:
       - name: Install Capacitor CLI
         run: npm install @capacitor/cli --save-dev
 
+      - name: Install Capacitor Android
+        run: npm install @capacitor/android --save
+
       - name: Build web assets
         run: npm run build
 
@@ -65,3 +68,4 @@ jobs:
           path: android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 30
+
