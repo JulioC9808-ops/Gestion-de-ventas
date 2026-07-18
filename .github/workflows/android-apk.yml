@@ -38,7 +38,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '21'
+          java-version: '11'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -58,11 +58,11 @@ jobs:
         run: chmod +x android/gradlew
 
       - name: Clean Gradle cache
-        run: rm -rf ~/.gradle/caches
+        run: rm -rf ~/.gradle/caches ~/.gradle/daemon ~/.gradle/native ~/.gradle/wrapper
 
       - name: Build Android APK
         working-directory: android
-        run: ./gradlew assembleRelease --no-daemon --refresh-dependencies
+        run: ./gradlew assembleRelease --no-daemon --refresh-dependencies --stacktrace
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -71,3 +71,4 @@ jobs:
           path: android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 30
+
