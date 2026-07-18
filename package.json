@@ -24,8 +24,8 @@
     "cap:add:android": "npx cap add android"
   },
   "build": {
-    "appId": "app.lovable.7b113e7c315e4432bc9cae4b8cf017db",
-    "productName": "GestionDeVentas",
+    "appId": "app.ventas.julio",
+    "productName": "Gestion De Ventas",
     "directories": {
       "output": "dist-installer",
       "buildResources": "build"
@@ -48,7 +48,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "GestionDeVentas",
+      "shortcutName": "Gestion De Ventas",
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico",
       "installerHeader": "build/installerHeader.bmp",
