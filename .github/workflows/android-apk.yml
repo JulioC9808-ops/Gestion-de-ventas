@@ -38,7 +38,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -59,6 +59,9 @@ jobs:
 
       - name: Clean Gradle cache
         run: rm -rf ~/.gradle/caches ~/.gradle/daemon ~/.gradle/native ~/.gradle/wrapper
+
+      - name: Remove corrupt bcprov jar
+        run: rm -f ~/.gradle/caches/jars-9/*/bcprov-jdk18on-1.79.jar || true
 
       - name: Build Android APK
         working-directory: android
