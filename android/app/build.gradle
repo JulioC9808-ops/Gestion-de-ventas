@@ -25,9 +25,11 @@ android {
 }
 
 repositories {
-    flatDir{
+    flatDir {
         dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
     }
+    // Aseguramos que Maven Central esté disponible
+    mavenCentral()
 }
 
 dependencies {
@@ -40,6 +42,16 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
+
+    // 🔑 Forzamos BouncyCastle a una versión estable
+    implementation "org.bouncycastle:bcprov-jdk18on:1.78"
+}
+
+configurations.all {
+    resolutionStrategy {
+        // Obliga a Gradle a usar esta versión y no la 1.79 corrupta
+        force "org.bouncycastle:bcprov-jdk18on:1.78"
+    }
 }
 
 apply from: 'capacitor.build.gradle'
