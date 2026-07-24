@@ -1,4 +1,4 @@
-nname: Build Android APK
+name: Build Android APK
 
 on:
   push:
@@ -88,4 +88,3 @@ jobs:
           path: android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 30
-
