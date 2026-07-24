@@ -1,4 +1,4 @@
-name: Build Android APK
+nname: Build Android APK
 
 on:
   push:
@@ -11,11 +11,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # 2. Node
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -30,21 +28,18 @@ jobs:
       - name: Install Capacitor Android
         run: npm install @capacitor/android --save
 
-      # 3. Build web
       - name: Build web assets
         run: npm run build
 
       - name: Sync Capacitor
         run: npx --no-install cap sync android
 
-      # 4. Java (usar Java 17, NO 21)
       - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 5. Android SDK
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
@@ -53,11 +48,9 @@ jobs:
           log-accepted-android-sdk-licenses: true
           packages: tools platform-tools
 
-      # 6. Aceptar TODAS las licencias (tu error real)
       - name: Accept ALL Android SDK licenses
         run: yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses
 
-      # 7. Instalar SDKs necesarios
       - name: Install Android SDK packages
         run: |
           sdkmanager "platform-tools" \
@@ -66,20 +59,28 @@ jobs:
                      "build-tools;33.0.2" \
                      "build-tools;34.0.0"
 
-      # 8. Permisos gradlew
+      # 🔥 FIX DEFINITIVO CONTRA EL ERROR DE BOUNCYCASTLE
+      - name: Disable Gradle JAR caching
+        run: |
+          echo "org.gradle.caching=false" >> ~/.gradle/gradle.properties
+          echo "org.gradle.java.installations.auto-detect=false" >> ~/.gradle/gradle.properties
+
+      - name: Pre-download BouncyCastle
+        run: |
+          mkdir -p ~/.gradle/caches/modules-2/files-2.1/org.bouncycastle/bcprov-jdk18on/1.79
+          curl -L -o ~/.gradle/caches/modules-2/files-2.1/org.bouncycastle/bcprov-jdk18on/1.79/bcprov.jar \
+            https://repo1.maven.org/maven2/org/bouncycastle/bcprov-jdk18on/1.79/bcprov-jdk18on-1.79.jar
+
       - name: Grant execute permission for gradlew
         run: chmod +x android/gradlew
 
-      # 9. Limpiar cachés Gradle
       - name: Clean Gradle cache
         run: rm -rf ~/.gradle/caches ~/.gradle/daemon ~/.gradle/native ~/.gradle/wrapper
 
-      # 10. Build APK
       - name: Build Android APK
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon --refresh-dependencies --stacktrace
 
-      # 11. Subir APK
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
