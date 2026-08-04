@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { useData } from '@/contexts/DataContext';
 import introAsset from '@/assets/intro.mp4.asset.json';
 
 /**
@@ -8,6 +9,7 @@ import introAsset from '@/assets/intro.mp4.asset.json';
  * en 2.5s o falla, se salta automáticamente para no dejar pantalla negra.
  */
 export default function IntroPlayer() {
+  const { settings } = useData();
   const [show, setShow] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -35,7 +37,7 @@ export default function IntroPlayer() {
 
   // Construir URL absoluta hacia el CDN cuando estamos en Electron/file://
   const src = (() => {
-    const rel = introAsset.url;
+    const rel = settings.introVideoUrl || introAsset.url;
     if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
       return `https://cdn.lovable.dev${rel}`;
     }

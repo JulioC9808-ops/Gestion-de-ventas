@@ -26,7 +26,7 @@ export default function AdminOverview({ onNav }: Props) {
     { label: 'En Stock Venta', value: totalStock, icon: TrendingUp, color: 'text-success', nav: 'stock' },
     { label: 'Total Vendido', value: `$${totalSales.toLocaleString()}`, icon: DollarSign, color: 'text-accent', nav: 'reports' },
     { label: 'VIP Total', value: `$${totalVip.toLocaleString()}`, icon: Crown, color: 'text-warning', nav: 'vip' },
-    { label: 'Empleados', value: totalEmployees, icon: Users, color: 'text-primary', nav: 'users' },
+    { label: 'Empleados', value: totalEmployees, icon: Users, color: 'text-primary', nav: 'settings' },
   ];
 
   // ================= GRÁFICO DE VENTAS (efectivo / transferencia / VIP) =================

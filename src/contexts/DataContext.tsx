@@ -105,6 +105,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   navPosition: 'top',
   defaultSalaryPercent: 2,
   salaryByPercentEnabled: false,
+  telegramUrl: "https://telegram.me/+Agu7IJDwGU4NGM5",
 };
 
 const DEFAULT_USERS: User[] = [

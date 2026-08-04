@@ -223,9 +223,9 @@ function GeneralSettings() {
           Escanea el código QR para unirte al canal de Telegram donde se publican las últimas actualizaciones.
         </p>
         <div className="flex justify-center bg-white p-4 rounded-lg mx-auto w-fit">
-          <QrDisplay data="https://telegram.me/+Agu7IJDwGU4NGM5" size={220} />
+          <QrDisplay data="{settings.telegramUrl || "https://telegram.me/+Agu7IJDwGU4NGM5"}" size={220} />
         </div>
-        <a href="https://telegram.me/+Agu7IJDwGU4NGM5" target="_blank" rel="noreferrer" className="inline-block mt-3 text-sm text-primary underline">
+        <a href="{settings.telegramUrl || "https://telegram.me/+Agu7IJDwGU4NGM5"}" target="_blank" rel="noreferrer" className="inline-block mt-3 text-sm text-primary underline">
           telegram.me/+Agu7IJDwGU4NGM5
         </a>
       </div>

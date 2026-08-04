@@ -19,16 +19,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
+          registry-url: https://registry.npmjs.org
 
       - name: Install dependencies
-        run: npm install
-
-      - name: Install Capacitor CLI
-        run: npm install @capacitor/cli --save-dev
-
-      - name: Install Capacitor Android
-        run: npm install @capacitor/android --save
+        run: npm ci --registry=https://registry.npmjs.org/
 
       # 3. Build web
       - name: Build web assets
@@ -66,33 +61,14 @@ jobs:
                      "build-tools;33.0.2" \
                      "build-tools;34.0.0"
 
-      # 🔥 FIX DEFINITIVO CONTRA EL ERROR DE BOUNCYCASTLE
-      - name: Create Gradle directory
-        run: mkdir -p ~/.gradle
-
-      - name: Disable Gradle JAR caching
-        run: |
-          echo "org.gradle.caching=false" >> ~/.gradle/gradle.properties
-          echo "org.gradle.java.installations.auto-detect=false" >> ~/.gradle/gradle.properties
-
-      - name: Pre-download BouncyCastle
-        run: |
-          mkdir -p ~/.gradle/caches/modules-2/files-2.1/org.bouncycastle/bcprov-jdk18on/1.79
-          curl -L -o ~/.gradle/caches/modules-2/files-2.1/org.bouncycastle/bcprov-jdk18on/1.79/bcprov.jar \
-            https://repo1.maven.org/maven2/org/bouncycastle/bcprov-jdk18on/1.79/bcprov-jdk18on-1.79.jar
-
       # 8. Permisos gradlew
       - name: Grant execute permission for gradlew
         run: chmod +x android/gradlew
 
-      # 9. Limpiar cachés Gradle
-      - name: Clean Gradle cache
-        run: rm -rf ~/.gradle/caches ~/.gradle/daemon ~/.gradle/native ~/.gradle/wrapper
-
       # 10. Build APK
       - name: Build Android APK
         working-directory: android
-        run: ./gradlew assembleRelease --no-daemon --refresh-dependencies --stacktrace
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
 
       # 11. Subir APK
       - name: Upload APK artifact

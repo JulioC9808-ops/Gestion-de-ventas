@@ -1,3 +1,4 @@
+const { autoUpdater } = require('electron-updater');
 // Electron main process (CommonJS)
 // Ventana frameless con controles personalizados via IPC.
 const { app, BrowserWindow, shell, ipcMain } = require('electron');
@@ -53,6 +54,21 @@ ipcMain.handle('window:toggle-maximize', () => {
 ipcMain.handle('window:close', () => mainWindow?.close());
 ipcMain.handle('window:is-maximized', () => !!mainWindow?.isMaximized());
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+  autoUpdater.checkForUpdatesAndNotify();
+});
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
 app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
+
+// Auto-updater events
+autoUpdater.on('update-available', () => {
+  if (mainWindow) {
+    mainWindow.webContents.send('update_available');
+  }
+});
+autoUpdater.on('update-downloaded', () => {
+  if (mainWindow) {
+    mainWindow.webContents.send('update_downloaded');
+  }
+});
