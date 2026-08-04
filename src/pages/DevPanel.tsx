@@ -12,7 +12,6 @@ const NAV = [
   { label: 'Logo', icon: Image, key: 'logo', tip: 'Sube o cambia el logo que aparece en el login y la navegación.' },
   { label: 'QR Contacto', icon: QrCode, key: 'qr', tip: 'Agrega un código QR para que los usuarios puedan contactarte desde el login.' },
   { label: 'Actualizaciones', icon: Send, key: 'updates', tip: 'Configura el canal de Telegram y el repositorio público de actualizaciones.' },
-  { label: 'Telegram & Video', icon: QrCode, key: 'telegram', tip: 'Configura el link de Telegram y el video de intro.' },
   { label: 'Contraseña', icon: Key, key: 'password', tip: 'Cambia tu contraseña de desarrollador.' },
   { label: 'Restaurar', icon: RotateCcw, key: 'reset', tip: 'Restaura toda la configuración y datos a valores por defecto.' },
 ];
