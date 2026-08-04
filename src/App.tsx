@@ -8,6 +8,7 @@ import { DataProvider } from "@/contexts/DataContext";
 import IntroPlayer from "@/components/IntroPlayer";
 import EulaGate from "@/components/EulaGate";
 import TitleBar from "@/components/TitleBar";
+import UpdateChecker from "@/components/UpdateChecker";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
@@ -21,6 +22,7 @@ const App = () => (
       <DataProvider>
         <AuthProvider>
           <TitleBar />
+          <UpdateChecker />
           <IntroPlayer />
           <EulaGate />
           <HashRouter>
