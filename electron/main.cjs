@@ -16,7 +16,7 @@ function createWindow() {
     autoHideMenuBar: true,
     frame: false, // sin marco nativo — usamos una barra propia
     titleBarStyle: 'hidden',
-    icon: path.join(__dirname, '..', 'build', 'icon.png'),
+    icon: path.join(__dirname, '..', 'build', 'icon.ico'),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,

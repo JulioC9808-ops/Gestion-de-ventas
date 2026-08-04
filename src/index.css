@@ -89,6 +89,30 @@
     min-height: 100vh;
   }
 
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--primary) / 0.65) hsl(var(--muted));
+  }
+
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.65);
+    border: 2px solid hsl(var(--muted));
+    border-radius: 999px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.85);
+  }
+
   h1, h2, h3, h4 {
     font-family: var(--font-display);
   }

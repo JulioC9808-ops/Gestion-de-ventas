@@ -1,18 +1,13 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { useData } from '@/contexts/DataContext';
-import introAsset from '@/assets/intro.mp4.asset.json';
 
 /**
- * Reproduce el video de intro UNA vez por sesión al abrir la app.
- * En Electron (file://) el asset relativo no resuelve: si no arranca
- * en 2.5s o falla, se salta automáticamente para no dejar pantalla negra.
+ * Reproduce el video local de intro una vez por sesión.
+ * El MP4 se empaqueta con la aplicación y funciona sin conexión.
  */
 export default function IntroPlayer() {
-  const { settings } = useData();
   const [show, setShow] = useState(false);
-  const [loaded, setLoaded] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const [playing, setPlaying] = useState(false);
 
   useEffect(() => {
     const seen = sessionStorage.getItem('intro_played');
@@ -22,47 +17,33 @@ export default function IntroPlayer() {
     }
   }, []);
 
-  // Auto-skip si el video no comienza a los 2.5s (packaged .exe sin internet)
+  // Si el equipo no puede iniciar el video, no bloqueamos la aplicación.
   useEffect(() => {
     if (!show) return;
     const t = setTimeout(() => {
-      if (!loaded) setShow(false);
-    }, 2500);
+      if (!playing) setShow(false);
+    }, 1800);
     return () => clearTimeout(t);
-  }, [show, loaded]);
+  }, [show, playing]);
 
   const close = () => setShow(false);
 
   if (!show) return null;
 
-  // Construir URL absoluta hacia el CDN cuando estamos en Electron/file://
-  
-  const src = (() => {
-    const rel = settings.introVideoUrl || introAsset.url;
-    if (!rel) return '';
-    // Si ya es una URL completa o dataURL, no tocar
-    if (rel.startsWith('http') || rel.startsWith('data:')) return rel;
-    // Si es una ruta relativa en Electron, usar CDN
-    if (typeof window !== 'undefined' && window.location.protocol === 'file:' && rel.startsWith('/')) {
-      return `https://cdn.lovable.dev${rel}`;
-    }
-    return rel;
-  })();
-
+  const src = `${import.meta.env.BASE_URL}intro.mp4`;
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black flex items-center justify-center">
+    <div className={`fixed inset-0 z-[9999] bg-background flex items-center justify-center transition-opacity duration-200 ${playing ? 'opacity-100' : 'opacity-0'}`}>
       <video
-        ref={videoRef}
         src={src}
         autoPlay
         muted
         playsInline
-        onPlaying={() => setLoaded(true)}
-        onLoadedData={() => setLoaded(true)}
+        preload="auto"
+        onPlaying={() => setPlaying(true)}
         onEnded={close}
         onError={close}
-        className="max-w-full max-h-full"
+        className="w-full h-full object-contain bg-background"
       />
       <Button
         variant="secondary"

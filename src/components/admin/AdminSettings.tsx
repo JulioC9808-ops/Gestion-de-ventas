@@ -65,6 +65,7 @@ function GeneralSettings() {
   const [selectedFont, setSelectedFont] = useState(settings.font);
   const [fontColor, setFontColor] = useState<string | null>(settings.fontColor ?? null);
   const [salaryByPercentEnabled, setSalaryByPercentEnabled] = useState(!!settings.salaryByPercentEnabled);
+  const telegramUrl = settings.telegramUrl || 'https://t.me/+G8geeJ1gwYo4N2Ex';
 
   const handleSave = () => {
     updateSettings({
@@ -223,10 +224,10 @@ function GeneralSettings() {
           Escanea el código QR para unirte al canal de Telegram donde se publican las últimas actualizaciones.
         </p>
         <div className="flex justify-center bg-white p-4 rounded-lg mx-auto w-fit">
-          <QrDisplay data="{settings.telegramUrl || "https://telegram.me/+Agu7IJDwGU4NGM5"}" size={220} />
+          <QrDisplay data={telegramUrl} size={220} />
         </div>
-        <a href="{settings.telegramUrl || "https://telegram.me/+Agu7IJDwGU4NGM5"}" target="_blank" rel="noreferrer" className="inline-block mt-3 text-sm text-primary underline">
-          telegram.me/+Agu7IJDwGU4NGM5
+        <a href={telegramUrl} target="_blank" rel="noreferrer" className="inline-block mt-3 text-sm text-primary underline break-all">
+          {telegramUrl}
         </a>
       </div>
     </div>

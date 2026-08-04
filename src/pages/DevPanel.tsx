@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import AppLayout from '@/components/AppLayout';
-import { Settings, Key, RotateCcw, Image, QrCode } from 'lucide-react';
+import { Settings, Key, RotateCcw, Image, QrCode, Send } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ const NAV = [
   { label: 'Configuración', icon: Settings, key: 'config', tip: 'Cambia el nombre del negocio y otras configuraciones generales.' },
   { label: 'Logo', icon: Image, key: 'logo', tip: 'Sube o cambia el logo que aparece en el login y la navegación.' },
   { label: 'QR Contacto', icon: QrCode, key: 'qr', tip: 'Agrega un código QR para que los usuarios puedan contactarte desde el login.' },
+  { label: 'Actualizaciones', icon: Send, key: 'updates', tip: 'Configura el canal de Telegram y el repositorio público de actualizaciones.' },
   { label: 'Telegram & Video', icon: QrCode, key: 'telegram', tip: 'Configura el link de Telegram y el video de intro.' },
   { label: 'Contraseña', icon: Key, key: 'password', tip: 'Cambia tu contraseña de desarrollador.' },
   { label: 'Restaurar', icon: RotateCcw, key: 'reset', tip: 'Restaura toda la configuración y datos a valores por defecto.' },
@@ -21,12 +22,13 @@ export default function DevPanel() {
   const { settings, updateSettings, users, updateUser } = useData();
   const { currentUser } = useAuth();
   const [businessName, setBusinessName] = useState(settings.businessName);
+  const [telegramUrl, setTelegramUrl] = useState(settings.telegramUrl || 'https://t.me/+G8geeJ1gwYo4N2Ex');
+  const [githubUpdatesUrl, setGithubUpdatesUrl] = useState(settings.githubUpdatesUrl || '');
   const [currentPwd, setCurrentPwd] = useState('');
   const [newPwd, setNewPwd] = useState('');
   const logoInputRef = useRef<HTMLInputElement>(null);
   const bgInputRef = useRef<HTMLInputElement>(null);
   const qrInputRef = useRef<HTMLInputElement>(null);
-  const introInputRef = useRef<HTMLInputElement>(null);
 
   const handleSaveName = () => {
     updateSettings({ businessName });
@@ -62,7 +64,6 @@ export default function DevPanel() {
       if (type === 'logo') updateSettings({ logoUrl: dataUrl });
       else if (type === 'background') updateSettings({ backgroundUrl: dataUrl });
       else if (type === 'qr') updateSettings({ qrUrl: dataUrl });
-      else if (type === 'intro' as any) updateSettings({ introVideoUrl: dataUrl });
       toast.success(`${type === 'logo' ? 'Logo' : type === 'background' ? 'Fondo' : 'QR'} actualizado`);
     };
     reader.readAsDataURL(file);
@@ -167,27 +168,27 @@ export default function DevPanel() {
       )}
 
       
-      {active === 'telegram' && (
+      {active === 'updates' && (
         <div>
           <div className="page-header">
-            <h1 className="page-title">Telegram e Intro</h1>
+            <h1 className="page-title">Canales de Actualización</h1>
           </div>
           <div className="glass-card p-6 max-w-lg space-y-6">
             <div>
               <label className="text-sm font-medium">Link de Telegram (Actualizaciones)</label>
               <div className="flex gap-2 mt-1">
-                <Input value={settings.telegramUrl || ''} onChange={e => updateSettings({ telegramUrl: e.target.value })} placeholder="https://telegram.me/..." />
+                <Input value={telegramUrl} onChange={e => setTelegramUrl(e.target.value)} placeholder="https://t.me/..." />
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium">Video de Intro (URL o Local)</label>
-              <div className="flex gap-2 mt-1">
-                <Input value={settings.introVideoUrl || ''} onChange={e => updateSettings({ introVideoUrl: e.target.value })} placeholder="URL del video .mp4" />
-                <Button variant="outline" onClick={() => introInputRef.current?.click()}>Subir</Button>
-                <input ref={introInputRef} type="file" accept="video/mp4" className="hidden" onChange={e => handleFileUpload(e, 'intro' as any)} />
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">Si subes un video local, se guardará como dataURL (puede ser lento si es muy pesado).</p>
+              <label className="text-sm font-medium">Repositorio público de GitHub</label>
+              <Input value={githubUpdatesUrl} onChange={e => setGithubUpdatesUrl(e.target.value)} placeholder="https://github.com/usuario/repositorio" />
+              <p className="text-xs text-muted-foreground mt-2">La aplicación consultará las publicaciones de Releases cuando tenga internet.</p>
             </div>
+            <Button onClick={() => {
+              updateSettings({ telegramUrl: telegramUrl.trim(), githubUpdatesUrl: githubUpdatesUrl.trim() || null });
+              toast.success('Canales de actualización guardados');
+            }}>Guardar canales</Button>
           </div>
         </div>
       )}
