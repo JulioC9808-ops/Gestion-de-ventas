@@ -65,6 +65,14 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x android/gradlew
 
+      # 9. Limpiar restos de Lovable y caches
+      - name: Remove old Lovable package
+        run: rm -rf android/app/src/main/java/app/lovable
+
+      - name: Clean Gradle
+        working-directory: android
+        run: ./gradlew clean
+
       # 10. Build APK
       - name: Build Android APK
         working-directory: android
@@ -78,4 +86,3 @@ jobs:
           path: android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 30
-
