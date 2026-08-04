@@ -36,13 +36,19 @@ export default function IntroPlayer() {
   if (!show) return null;
 
   // Construir URL absoluta hacia el CDN cuando estamos en Electron/file://
+  
   const src = (() => {
     const rel = settings.introVideoUrl || introAsset.url;
-    if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
+    if (!rel) return '';
+    // Si ya es una URL completa o dataURL, no tocar
+    if (rel.startsWith('http') || rel.startsWith('data:')) return rel;
+    // Si es una ruta relativa en Electron, usar CDN
+    if (typeof window !== 'undefined' && window.location.protocol === 'file:' && rel.startsWith('/')) {
       return `https://cdn.lovable.dev${rel}`;
     }
     return rel;
   })();
+
 
   return (
     <div className="fixed inset-0 z-[9999] bg-black flex items-center justify-center">
