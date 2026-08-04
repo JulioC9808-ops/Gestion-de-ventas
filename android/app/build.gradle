@@ -3,19 +3,21 @@ apply plugin: 'com.android.application'
 android {
     namespace "com.gestion.ventas"
     compileSdk rootProject.ext.compileSdkVersion
+
     defaultConfig {
-        applicationId "app.lovable.7b113e7c315e4432bc9cae4b8cf017db"
+        applicationId "com.gestion.ventas"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
-             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
-             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+            // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+
     buildTypes {
         release {
             minifyEnabled false
@@ -50,6 +52,11 @@ try {
     def servicesJSON = file('google-services.json')
     if (servicesJSON.text) {
         apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}
+
     }
 } catch(Exception e) {
     logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
