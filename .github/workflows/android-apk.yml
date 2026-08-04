@@ -84,7 +84,11 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
 
-      # 12. Firmar APK
+      # 12. Verificar que el keystore se generó
+      - name: Check Keystore file
+        run: ls -lh my-release-key.keystore
+
+      # 13. Firmar APK (alias fijo gestionventas)
       - name: Sign APK
         run: |
           jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
@@ -92,20 +96,28 @@ jobs:
             -storepass ${{ secrets.KEYSTORE_PASSWORD }} \
             -keypass ${{ secrets.KEY_PASSWORD }} \
             android/app/build/outputs/apk/release/app-release-unsigned.apk \
-            ${{ secrets.KEY_ALIAS }}
+            gestionventas
 
-      # 13. Alinear APK (zipalign)
+      # 14. Alinear APK (zipalign)
       - name: Zipalign APK
         run: |
           $ANDROID_HOME/build-tools/34.0.0/zipalign -v 4 \
             android/app/build/outputs/apk/release/app-release-unsigned.apk \
             android/app/build/outputs/apk/release/app-release-signed.apk
 
-      # 14. Subir APK firmado
+      # 15. Verificar firma del APK
+      - name: Verify APK signature
+        run: |
+          jarsigner -verify -verbose -certs android/app/build/outputs/apk/release/app-release-signed.apk
+
+      # 16. Subir APK firmado
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: GestionDeSistema-release-apk
+          path: android/app/build/outputs/apk/release/app-release-signed.apk
+          if-no-files-found: error
+          retention-days: 30
           path: android/app/build/outputs/apk/release/app-release-signed.apk
           if-no-files-found: error
           retention-days: 30
