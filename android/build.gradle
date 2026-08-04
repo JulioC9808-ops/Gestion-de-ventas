@@ -21,13 +21,6 @@ allprojects {
         google()
         mavenCentral()
     }
-
-    // 🔑 Forzamos la versión de BouncyCastle en todos los subproyectos
-    configurations.all {
-        resolutionStrategy {
-            force "org.bouncycastle:bcprov-jdk18on:1.78"
-        }
-    }
 }
 
 task clean(type: Delete) {

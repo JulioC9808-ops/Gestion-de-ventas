@@ -88,6 +88,8 @@ export interface AppSettings {
   salaryByPercentEnabled?: boolean;
   introVideoUrl?: string | null; // dataURL o URL de video que se reproduce al abrir la app
   introEnabled?: boolean;
+  telegramUrl?: string | null;
+  githubUpdatesUrl?: string | null;
   eulaText?: string | null; // texto EULA que se muestra la primera vez
   salesChartResetAt?: string | null; // ISO date: solo cuentan reportes con date >= a esta
 }

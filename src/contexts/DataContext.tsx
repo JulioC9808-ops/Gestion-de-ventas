@@ -105,6 +105,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   navPosition: 'top',
   defaultSalaryPercent: 2,
   salaryByPercentEnabled: false,
+  telegramUrl: 'https://t.me/+G8geeJ1gwYo4N2Ex',
+  githubUpdatesUrl: null,
 };
 
 const DEFAULT_USERS: User[] = [
@@ -141,6 +143,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     // Migración: forzar tema blanco predeterminado (los temas oscuros antiguos daban ilegibilidad)
     if (!loaded.theme || loaded.theme === 'default' || loaded.theme === 'night') {
       loaded.theme = 'white';
+      dirty = true;
+    }
+    if (!loaded.telegramUrl || loaded.telegramUrl.includes('Agu7IJDwGU4NGM5')) {
+      loaded.telegramUrl = 'https://t.me/+G8geeJ1gwYo4N2Ex';
       dirty = true;
     }
     if (loaded.fontColor && loaded.fontColor.toLowerCase() !== '#000000') {

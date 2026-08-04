@@ -8,7 +8,8 @@ export interface CategoryOption {
 }
 
 export const CATEGORY_OPTIONS: CategoryOption[] = [
-  { value: 'Bebidas', emoji: '🥤', keywords: ['bebida', 'jugo', 'refresco', 'café', 'cafe', 'té', 'te', 'agua'] },
+  { value: 'Café', emoji: '☕', keywords: ['café', 'cafe', 'cafetería', 'cafeteria', 'espresso', 'capuchino', 'cappuccino', 'latte'] },
+  { value: 'Bebidas', emoji: '🥤', keywords: ['bebida', 'jugo', 'refresco', 'té', 'te', 'agua'] },
   { value: 'Botellas', emoji: '🍾', keywords: ['botella', 'vino', 'licor', 'ron', 'whisky', 'cerveza'] },
   { value: 'Latas', emoji: '🥫', keywords: ['lata', 'conserva', 'enlatado'] },
   { value: 'Alimentos', emoji: '🍽️', keywords: ['alimento', 'comida', 'plato', 'sandwich', 'hamburguesa', 'pizza'] },
