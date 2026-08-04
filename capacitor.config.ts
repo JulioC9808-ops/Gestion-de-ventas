@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.7b113e7c315e4432bc9cae4b8cf017db',
-  appName: 'GestionDeVentas',
+ "appId": "com.gestion.ventas",
+  appName: 'Gestion De Ventas',
   webDir: 'dist',
   bundledWebRuntime: false,
   android: {
