@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
-import { Coffee, LogOut, type LucideIcon, HelpCircle } from 'lucide-react';
+import { Coffee, LogOut, type LucideIcon, HelpCircle, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { isMobileDevice } from '@/lib/platform';
