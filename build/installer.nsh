@@ -1,24 +1,22 @@
 !include "MUI2.nsh"
 
-; --- Configuración básica ---
-!define MUI_ICON "build\icon.ico"
+; Header y sidebar personalizados
 !define MUI_HEADERIMAGE
 !define MUI_HEADERIMAGE_BITMAP "build\installerheader.bmp"
 !define MUI_HEADERIMAGE_RIGHT
 !define MUI_WELCOMEFINISHPAGE_BITMAP "build\installersidebar.bmp"
 
-; --- Páginas estándar ---
+; Páginas del instalador
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_LICENSE "build\license.txt"
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
 
-; --- Idiomas ---
+; Idioma
 !insertmacro MUI_LANGUAGE "Spanish"
 
-; --- Barra de progreso personalizada ---
+; Imagen de carga personalizada
 Function .onGUIInit
-  ; Reemplaza la barra por un loader animado
   SetBrandingImage "build\loader.gif"
 FunctionEnd
