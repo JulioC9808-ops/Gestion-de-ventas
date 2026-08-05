@@ -18,9 +18,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
+          cache: 'npm'   # habilita cache de dependencias
 
-      - name: Install dependencies
-        run: npm install
+      - name: Clean install
+        run: |
+          if exist node_modules rd /s /q node_modules
+          if exist package-lock.json del package-lock.json
+          npm install --force
 
       - name: Build app
         run: npm run build
@@ -35,4 +39,3 @@ jobs:
         with:
           name: windows-installer
           path: dist-installer/*.exe
-
