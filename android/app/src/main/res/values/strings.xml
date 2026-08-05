@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">GestionDeVentas</string>
     <string name="title_activity_main">GestionDeVentas</string>
-    <string name="package_name">app.lovable.7b113e7c315e4432bc9cae4b8cf017db</string>
-    <string name="custom_url_scheme">app.lovable.7b113e7c315e4432bc9cae4b8cf017db</string>
+    <string name="package_name">com.gestion.ventas</string>
+    <string name="custom_url_scheme">com.gestion.ventas</string>
 </resources>
