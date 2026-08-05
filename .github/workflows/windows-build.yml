@@ -18,9 +18,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'npm'   # habilita cache de dependencias
+          cache: 'npm'
 
       - name: Clean install
+        shell: cmd
         run: |
           if exist node_modules rd /s /q node_modules
           if exist package-lock.json del package-lock.json
