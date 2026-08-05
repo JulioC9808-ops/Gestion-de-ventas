@@ -1,6 +1,20 @@
 !include "MUI2.nsh"
 
-; Iconos (solo desde resources, no los de electron-builder)
+; Limpiar defines que electron-builder mete por defecto
+!ifdef MUI_ICON
+  !undef MUI_ICON
+!endif
+!ifdef MUI_UNICON
+  !undef MUI_UNICON
+!endif
+!ifdef MUI_WELCOMEFINISHPAGE_BITMAP
+  !undef MUI_WELCOMEFINISHPAGE_BITMAP
+!endif
+!ifdef MUI_UNWELCOMEFINISHPAGE_BITMAP
+  !undef MUI_UNWELCOMEFINISHPAGE_BITMAP
+!endif
+
+; Iconos (solo desde resources)
 !define MUI_ICON "resources\icon.ico"
 !define MUI_UNICON "resources\icon.ico"
 
