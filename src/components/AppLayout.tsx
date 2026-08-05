@@ -122,12 +122,16 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
     );
   }
 
-  // Side nav (classic)
+  // Side nav (classic) — colapsable
   return (
-    <div className="flex min-h-screen">
-      <aside className="sidebar-nav w-64 flex flex-col shrink-0">
-        <div className="p-5 border-b border-sidebar-border">
-          <div className="flex items-center gap-3">
+    <div className="flex min-h-screen w-full">
+      <aside
+        className={`sidebar-nav flex flex-col shrink-0 transition-all duration-200 ${
+          collapsed ? 'w-14' : 'w-64'
+        }`}
+      >
+        <div className={`border-b border-sidebar-border ${collapsed ? 'p-2' : 'p-5'}`}>
+          <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
             {settings.logoUrl ? (
               <img src={settings.logoUrl} alt="Logo" className="w-10 h-10 rounded-xl object-cover" />
             ) : (
@@ -135,14 +139,28 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
                 <Coffee className="w-5 h-5 text-sidebar-primary-foreground" />
               </div>
             )}
-            <div>
-              <h2 className="font-display font-bold text-sm text-sidebar-foreground">{settings.businessName}</h2>
-              <p className="text-xs text-sidebar-foreground/60 capitalize">{currentUser?.role === 'dev' ? 'Desarrollador' : currentUser?.role === 'admin' ? 'Administrador' : 'Empleado'}</p>
-            </div>
+            {!collapsed && (
+              <div className="min-w-0">
+                <h2 className="font-display font-bold text-sm text-sidebar-foreground truncate">{settings.businessName}</h2>
+                <p className="text-xs text-sidebar-foreground/60 capitalize">{currentUser?.role === 'dev' ? 'Desarrollador' : currentUser?.role === 'admin' ? 'Administrador' : 'Empleado'}</p>
+              </div>
+            )}
           </div>
         </div>
 
-        <nav className="flex-1 p-3 space-y-1">
+        <div className={`px-2 py-2 flex ${collapsed ? 'justify-center' : 'justify-end'}`}>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={collapsed ? 'Expandir menú' : 'Recoger menú'}
+            className="h-8 w-8 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+            onClick={() => setCollapsed(c => !c)}
+          >
+            {collapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+          </Button>
+        </div>
+
+        <nav className={`flex-1 space-y-1 ${collapsed ? 'p-1.5' : 'p-3'}`}>
           {nav.map(item => {
             const Icon = item.icon;
             const active = activeKey === item.key;
@@ -151,46 +169,54 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
                 <TooltipTrigger asChild>
                   <button
                     onClick={() => onNav(item.key)}
-                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    aria-label={item.label}
+                    className={`w-full flex items-center rounded-lg text-sm font-medium transition-all duration-200 ${
+                      collapsed ? 'justify-center px-0 py-2.5' : 'gap-3 px-4 py-2.5'
+                    } ${
                       active
                         ? 'bg-sidebar-accent text-sidebar-primary'
                         : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
-                    {item.label}
+                    <Icon className="w-4 h-4 shrink-0" />
+                    {!collapsed && <span className="truncate">{item.label}</span>}
                   </button>
                 </TooltipTrigger>
-                {item.tip && (
-                  <TooltipContent side="right"><p className="max-w-xs">{item.tip}</p></TooltipContent>
-                )}
+                <TooltipContent side="right">
+                  <p className="max-w-xs">{item.tip ?? item.label}</p>
+                </TooltipContent>
               </Tooltip>
             );
           })}
         </nav>
 
-        <div className="p-3 border-t border-sidebar-border">
-          <div className="flex items-center gap-3 px-4 py-2 mb-2">
-            <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center text-xs font-bold text-sidebar-foreground">
-              {currentUser?.name?.charAt(0) || 'U'}
+        <div className={`border-t border-sidebar-border ${collapsed ? 'p-1.5' : 'p-3'}`}>
+          {!collapsed && (
+            <div className="flex items-center gap-3 px-4 py-2 mb-2">
+              <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center text-xs font-bold text-sidebar-foreground">
+                {currentUser?.name?.charAt(0) || 'U'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-sidebar-foreground truncate">{currentUser?.name}</p>
+                <p className="text-xs text-sidebar-foreground/50">@{currentUser?.username}</p>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-sidebar-foreground truncate">{currentUser?.name}</p>
-              <p className="text-xs text-sidebar-foreground/50">@{currentUser?.username}</p>
-            </div>
-          </div>
+          )}
           <Button
             variant="ghost"
-            className="w-full justify-start text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+            aria-label="Cerrar Sesión"
+            className={`text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 ${
+              collapsed ? 'w-full px-0 justify-center' : 'w-full justify-start'
+            }`}
             onClick={handleLogout}
           >
-            <LogOut className="w-4 h-4 mr-2" />
-            Cerrar Sesión
+            <LogOut className="w-4 h-4" />
+            {!collapsed && <span className="ml-2">Cerrar Sesión</span>}
           </Button>
         </div>
       </aside>
 
-      <main className="flex-1 p-8 overflow-auto">
+      <main className="flex-1 min-w-0 p-4 md:p-8 overflow-auto">
         {children}
       </main>
       <Tutorial />
