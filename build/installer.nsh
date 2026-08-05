@@ -1,21 +1,29 @@
 !include "MUI2.nsh"
 
-; Limpiar defines que electron-builder pasa por defecto
-!undef MUI_ICON
-!undef MUI_UNICON
-!undef MUI_WELCOMEFINISHPAGE_BITMAP
-!undef MUI_UNWELCOMEFINISHPAGE_BITMAP
-
-; Iconos (ahora en resources)
+; Iconos
+!ifdef MUI_ICON
+  !undef MUI_ICON
+!endif
+!ifdef MUI_UNICON
+  !undef MUI_UNICON
+!endif
 !define MUI_ICON "resources\icon.ico"
 !define MUI_UNICON "resources\icon.ico"
 
-; Header y sidebar personalizados
+; Sidebar / Welcome bitmaps
+!ifdef MUI_WELCOMEFINISHPAGE_BITMAP
+  !undef MUI_WELCOMEFINISHPAGE_BITMAP
+!endif
+!ifdef MUI_UNWELCOMEFINISHPAGE_BITMAP
+  !undef MUI_UNWELCOMEFINISHPAGE_BITMAP
+!endif
+!define MUI_WELCOMEFINISHPAGE_BITMAP "resources\installersidebar.bmp"
+!define MUI_UNWELCOMEFINISHPAGE_BITMAP "resources\installersidebar.bmp"
+
+; Header personalizado
 !define MUI_HEADERIMAGE
 !define MUI_HEADERIMAGE_BITMAP "resources\installerheader.bmp"
 !define MUI_HEADERIMAGE_RIGHT
-!define MUI_WELCOMEFINISHPAGE_BITMAP "resources\installersidebar.bmp"
-!define MUI_UNWELCOMEFINISHPAGE_BITMAP "resources\installersidebar.bmp"
 
 ; Páginas del instalador
 !insertmacro MUI_PAGE_WELCOME
@@ -26,6 +34,11 @@
 
 ; Idioma
 !insertmacro MUI_LANGUAGE "Spanish"
+
+; Imagen de carga personalizada
+Function .onGUIInit
+  SetBrandingImage "resources\loader.gif"
+FunctionEnd
 
 ; Imagen de carga personalizada
 Function .onGUIInit
