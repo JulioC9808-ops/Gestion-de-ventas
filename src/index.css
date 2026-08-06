@@ -123,6 +123,14 @@
     box-shadow: var(--shadow-card);
   }
 
+  /* Variante translúcida: deja ver el fondo detrás del recuadro (login) */
+  .glass-card-translucent {
+    @apply backdrop-blur-xl border border-border/40 rounded-xl;
+    background-color: hsl(var(--card) / 0.72);
+    box-shadow: var(--shadow-card);
+  }
+
+
   .sidebar-nav {
     @apply bg-sidebar text-sidebar-foreground min-h-screen;
   }
