@@ -48,7 +48,6 @@
       "artifactName": "${productName}-Setup-${version}.${ext}"
     },
     "nsis": {
-      "include": "resources/installer.nsh",
       "installerIcon": "resources/icon.ico",
       "uninstallerIcon": "resources/icon.ico",
       "installerHeaderIcon": "resources/icon.ico",
@@ -73,13 +72,7 @@
       "language": "1034",
       "multiLanguageInstaller": false,
       "displayLanguageSelector": false
-    },
-    "extraResources": [
-      {
-        "from": "resources/loader.gif",
-        "to": "loader.gif"
-      }
-    ]
+    }
   },
   "dependencies": {
     "@capacitor/android": "^6.1.2",
