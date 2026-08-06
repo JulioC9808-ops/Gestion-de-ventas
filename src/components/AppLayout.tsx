@@ -128,9 +128,10 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
     <div className="flex min-h-screen w-full">
       <aside
         className={`sidebar-nav flex flex-col shrink-0 transition-all duration-200 ${
-          collapsed ? 'w-14' : 'w-64'
+          collapsed ? 'w-12 md:w-14' : 'w-52 md:w-64'
         }`}
       >
+
         <div className={`border-b border-sidebar-border ${collapsed ? 'p-2' : 'p-5'}`}>
           <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
             {settings.logoUrl ? (
