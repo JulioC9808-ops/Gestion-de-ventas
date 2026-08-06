@@ -282,3 +282,29 @@ a[href*="lovable.app"] {
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--muted-foreground) / 0.2) transparent;
 }
+
+/* ===== Ajustes para pantallas de celular ===== */
+@media (max-width: 767px) {
+  html {
+    font-size: 13px; /* letras un poco más pequeñas => más interfaz visible */
+  }
+  /* Permitir zoom con pellizco en toda la app */
+  html, body {
+    touch-action: pan-x pan-y pinch-zoom;
+    -webkit-text-size-adjust: 100%;
+  }
+  /* Evitar que tablas y tarjetas se corten */
+  table {
+    font-size: 0.85rem;
+  }
+  .overflow-x-auto,
+  main {
+    -webkit-overflow-scrolling: touch;
+  }
+  /* Diálogos y tarjetas caben en pantalla estrecha */
+  [role="dialog"] {
+    max-width: calc(100vw - 1.5rem) !important;
+    max-height: 88vh;
+    overflow-y: auto;
+  }
+}
