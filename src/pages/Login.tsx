@@ -55,7 +55,7 @@ export default function Login() {
           <div className="absolute bottom-20 right-10 w-96 h-96 rounded-full bg-primary-foreground blur-3xl" />
         </div>
       )}
-      {settings.backgroundUrl && <div className="absolute inset-0 bg-black/40" />}
+      {settings.backgroundUrl && <div className="absolute inset-0 bg-black/20" />}
 
       <div className="relative z-10 w-full max-w-md mx-4 animate-fade-in-up">
         <div className="glass-card-translucent p-8 sm:p-10 shadow-2xl">
