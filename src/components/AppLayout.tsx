@@ -28,9 +28,10 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
   const { currentUser, logout } = useAuth();
   const { settings } = useData();
   const isMobile = useIsMobile();
-  // Respetar la preferencia guardada (barra superior o lateral) en todos los dispositivos
-  const isTop = settings.navPosition === 'top';
+  // En móvil siempre barra lateral colapsable (la barra superior se rompe en pantallas estrechas)
+  const isTop = !isMobile && settings.navPosition === 'top';
   const [collapsed, setCollapsed] = React.useState(isMobile);
+
 
   React.useEffect(() => {
     setCollapsed(isMobile);
