@@ -58,7 +58,7 @@ export default function Login() {
       {settings.backgroundUrl && <div className="absolute inset-0 bg-black/40" />}
 
       <div className="relative z-10 w-full max-w-md mx-4 animate-fade-in-up">
-        <div className="glass-card p-8 sm:p-10 shadow-2xl">
+        <div className="glass-card-translucent p-8 sm:p-10 shadow-2xl">
           <div className="flex flex-col items-center mb-8">
             {settings.logoUrl ? (
               <img src={settings.logoUrl} alt="Logo" className="w-16 h-16 rounded-2xl object-cover mb-4 ring-2 ring-primary/30" />
