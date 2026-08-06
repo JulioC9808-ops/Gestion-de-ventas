@@ -28,7 +28,7 @@
     "productName": "Gestion De Ventas",
     "directories": {
       "output": "dist-installer",
-      "buildResources": "build"
+      "buildResources": "resources"
     },
     "files": [
       "dist/**/*",
@@ -39,12 +39,23 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
-      ]
+      ],
+      "icon": "resources/icon.ico",
+      "artifactName": "${productName}-Setup-${version}.${ext}"
     },
     "nsis": {
-      "include": "build/installer.nsh",
+      "include": "resources/installer.nsh",
+      "installerIcon": "resources/icon.ico",
+      "uninstallerIcon": "resources/icon.ico",
+      "installerHeaderIcon": "resources/icon.ico",
+      "installerHeader": "resources/header.bmp",
+      "installerSidebar": "resources/installersidebar.bmp",
+      "uninstallerSidebar": "resources/installersidebar.bmp",
+      "license": "resources/license.txt",
       "oneClick": false,
       "perMachine": false,
       "allowElevation": true,
@@ -56,9 +67,19 @@
       "deleteAppDataOnUninstall": false,
       "runAfterFinish": true,
       "menuCategory": "GestionDeVentas",
-      "installerLanguages": ["es_ES"],
-      "language": "1034"
-    }
+      "installerLanguages": [
+        "es_ES"
+      ],
+      "language": "1034",
+      "multiLanguageInstaller": false,
+      "displayLanguageSelector": false
+    },
+    "extraResources": [
+      {
+        "from": "resources/loader.gif",
+        "to": "loader.gif"
+      }
+    ]
   },
   "dependencies": {
     "@capacitor/android": "^6.1.2",
