@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
+import { isMobileDevice } from '@/lib/platform';
 
 /**
- * Pantalla de carga inicial (una vez por sesión).
- * Muestra el icono de la aplicación con un GIF de carga debajo.
- * Todos los recursos son locales, funciona sin conexión en Electron/Android.
+ * Pantalla de inicio (una vez por sesión).
+ * - PC / Electron: reproduce el video de introducción.
+ * - Android / móvil: muestra el icono con el GIF de carga (el video fallaba en el celular).
  */
 export default function IntroPlayer() {
   const [show, setShow] = useState(false);
+  const [mobile] = useState(() => isMobileDevice());
 
   useEffect(() => {
     const seen = sessionStorage.getItem('intro_played');
@@ -18,9 +20,10 @@ export default function IntroPlayer() {
 
   useEffect(() => {
     if (!show) return;
-    const t = setTimeout(() => setShow(false), 2600);
+    // Cierre de seguridad: móvil 2.6s, PC máx 12s (por si el video no dispara "ended")
+    const t = setTimeout(() => setShow(false), mobile ? 2600 : 12000);
     return () => clearTimeout(t);
-  }, [show]);
+  }, [show, mobile]);
 
   if (!show) return null;
 
@@ -31,16 +34,26 @@ export default function IntroPlayer() {
       className="fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-8 bg-background animate-fade-in-up"
       onClick={() => setShow(false)}
     >
-      <img
-        src={`${base}favicon.png`}
-        alt="Sistema de Gestión"
-        className="w-28 h-28 sm:w-36 sm:h-36 object-contain drop-shadow-xl"
-      />
-      <img
-        src={`${base}loader.gif`}
-        alt="Cargando"
-        className="w-24 h-24 object-contain"
-      />
+      {mobile ? (
+        <>
+          <img
+            src={`${base}favicon.png`}
+            alt="Sistema de Gestión"
+            className="w-28 h-28 sm:w-36 sm:h-36 object-contain drop-shadow-xl"
+          />
+          <img src={`${base}loader.gif`} alt="Cargando" className="w-24 h-24 object-contain" />
+        </>
+      ) : (
+        <video
+          src={`${base}intro.mp4`}
+          autoPlay
+          muted
+          playsInline
+          className="w-full h-full object-contain"
+          onEnded={() => setShow(false)}
+          onError={() => setShow(false)}
+        />
+      )}
     </div>
   );
 }
