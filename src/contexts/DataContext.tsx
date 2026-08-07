@@ -178,6 +178,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
       loaded.telegramUrl = 'https://t.me/+G8geeJ1gwYo4N2Ex';
       dirty = true;
     }
+    if (!loaded.githubUpdatesUrl) {
+      loaded.githubUpdatesUrl = GITHUB_UPDATES_URL;
+      dirty = true;
+    }
     if (loaded.fontColor && loaded.fontColor.toLowerCase() !== '#000000') {
       // no forzamos, respetamos elección; solo aseguramos que existe algo legible por defecto
     }
