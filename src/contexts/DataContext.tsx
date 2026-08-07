@@ -85,14 +85,14 @@ function dedupeReports(reports: ShiftReport[]) {
   return out.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 }
 
-const DEFAULT_PRODUCTS: Product[] = [
-  { id: 'p1', name: 'Café Americano', price: 35, costPrice: 10, category: 'Bebidas', unit: 'taza', inventoryQty: 100 },
-  { id: 'p2', name: 'Cappuccino', price: 45, costPrice: 15, category: 'Bebidas', unit: 'taza', inventoryQty: 80 },
-  { id: 'p3', name: 'Latte', price: 50, costPrice: 18, category: 'Bebidas', unit: 'taza', inventoryQty: 80 },
-  { id: 'p4', name: 'Pan de Chocolate', price: 25, costPrice: 8, category: 'Panadería', unit: 'pieza', inventoryQty: 50 },
-  { id: 'p5', name: 'Croissant', price: 30, costPrice: 10, category: 'Panadería', unit: 'pieza', inventoryQty: 40 },
-  { id: 'p6', name: 'Sandwich Club', price: 65, costPrice: 25, category: 'Alimentos', unit: 'pieza', inventoryQty: 30 },
-];
+// Sin productos de ejemplo: el dueño crea su propio catálogo.
+const DEFAULT_PRODUCTS: Product[] = [];
+
+// IDs de los productos de demostración antiguos (se eliminan una sola vez)
+const DEMO_PRODUCT_IDS = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'];
+const DEMO_WIPE_FLAG = '__demo_products_wiped_v1';
+
+export const GITHUB_UPDATES_URL = 'https://github.com/JulioC9808-ops/Gestion-de-ventas-PC';
 
 const DEFAULT_SETTINGS: AppSettings = {
   businessName: 'Mi Negocio',
@@ -106,8 +106,37 @@ const DEFAULT_SETTINGS: AppSettings = {
   defaultSalaryPercent: 2,
   salaryByPercentEnabled: false,
   telegramUrl: 'https://t.me/+G8geeJ1gwYo4N2Ex',
-  githubUpdatesUrl: null,
+  githubUpdatesUrl: GITHUB_UPDATES_URL,
 };
+
+// Migración: borra SOLO los productos de demostración (y su stock/movimientos),
+// conservando intactos los productos, reportes y datos creados por el usuario.
+function wipeDemoProducts() {
+  try {
+    if (localStorage.getItem(DEMO_WIPE_FLAG)) return;
+    const raw = localStorage.getItem('products');
+    if (raw) {
+      const list = JSON.parse(raw) as Product[];
+      const kept = list.filter(p => !DEMO_PRODUCT_IDS.includes(p.id));
+      if (kept.length !== list.length) {
+        save('products', kept);
+        const stockRaw = localStorage.getItem('stock');
+        if (stockRaw) {
+          const st = (JSON.parse(stockRaw) as StockItem[]).filter(s => !DEMO_PRODUCT_IDS.includes(s.productId));
+          save('stock', st);
+        }
+        const movRaw = localStorage.getItem('movements');
+        if (movRaw) {
+          const mv = (JSON.parse(movRaw) as StockMovement[]).filter(m => !DEMO_PRODUCT_IDS.includes(m.productId));
+          save('movements', mv);
+        }
+      }
+    }
+    localStorage.setItem(DEMO_WIPE_FLAG, '1');
+  } catch {}
+}
+
+wipeDemoProducts();
 
 const DEFAULT_USERS: User[] = [
   { id: 'dev-1', username: 'DEVJ260208C', password: 'J260208C', name: 'Desarrollador', role: 'dev', createdAt: new Date().toISOString() },
@@ -147,6 +176,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
     if (!loaded.telegramUrl || loaded.telegramUrl.includes('Agu7IJDwGU4NGM5')) {
       loaded.telegramUrl = 'https://t.me/+G8geeJ1gwYo4N2Ex';
+      dirty = true;
+    }
+    if (!loaded.githubUpdatesUrl) {
+      loaded.githubUpdatesUrl = GITHUB_UPDATES_URL;
       dirty = true;
     }
     if (loaded.fontColor && loaded.fontColor.toLowerCase() !== '#000000') {

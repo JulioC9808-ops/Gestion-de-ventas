@@ -218,7 +218,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
         </div>
       </aside>
 
-      <main className="flex-1 min-w-0 max-w-full p-3 md:p-8 overflow-x-auto overflow-y-auto">
+      <main className="flex-1 min-w-0 max-w-full p-3 md:p-8 overflow-x-hidden overflow-y-auto">
         {children}
       </main>
 

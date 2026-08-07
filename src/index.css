@@ -301,9 +301,31 @@ a[href*="lovable.app"] {
     touch-action: pan-x pan-y pinch-zoom;
     -webkit-text-size-adjust: 100%;
   }
+  body {
+    overflow-x: hidden;
+  }
+  /* Encabezados que no se recortan ni se salen de la pantalla */
+  .page-header {
+    @apply flex-wrap gap-2;
+    margin-bottom: 1rem;
+  }
+  .page-title {
+    font-size: 1.15rem;
+    line-height: 1.25;
+    word-break: break-word;
+  }
+  /* Solo la tarjeta con la tabla se desplaza en horizontal */
+  .glass-card {
+    overflow-x: auto;
+    padding: 0.75rem !important;
+  }
   /* Evitar que tablas y tarjetas se corten */
   table {
     font-size: 0.85rem;
+  }
+  .data-table th,
+  .data-table td {
+    @apply p-2;
   }
   .overflow-x-auto,
   main {
@@ -316,3 +338,4 @@ a[href*="lovable.app"] {
     overflow-y: auto;
   }
 }
+
