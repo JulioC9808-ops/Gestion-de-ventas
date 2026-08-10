@@ -291,44 +291,92 @@ a[href*="lovable.app"] {
   scrollbar-color: hsl(var(--muted-foreground) / 0.2) transparent;
 }
 
+/* Respaldo visual: si el navegador (algunos WebView de Android) no oculta
+   el texto de una contraseña, lo enmascaramos por CSS. */
+input[type="password"] {
+  -webkit-text-security: disc;
+  text-security: disc;
+}
+
 /* ===== Ajustes para pantallas de celular ===== */
 @media (max-width: 767px) {
   html {
-    font-size: 13px; /* letras un poco más pequeñas => más interfaz visible */
+    /* Texto legible en el celular sin que la interfaz se salga de pantalla */
+    font-size: 15px;
   }
   /* Permitir zoom con pellizco en toda la app */
   html, body {
-    touch-action: pan-x pan-y pinch-zoom;
+    touch-action: manipulation;
     -webkit-text-size-adjust: 100%;
   }
   body {
     overflow-x: hidden;
   }
+  /* Respeta la muesca / barra de gestos del teléfono */
+  main {
+    padding-left: max(0.75rem, env(safe-area-inset-left)) !important;
+    padding-right: max(0.75rem, env(safe-area-inset-right)) !important;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom)) !important;
+    padding-top: max(0.75rem, env(safe-area-inset-top)) !important;
+  }
   /* Encabezados que no se recortan ni se salen de la pantalla */
   .page-header {
-    @apply flex-wrap gap-2;
+    @apply flex-col items-start gap-2;
     margin-bottom: 1rem;
   }
   .page-title {
-    font-size: 1.15rem;
+    font-size: 1.3rem;
     line-height: 1.25;
     word-break: break-word;
   }
-  /* Solo la tarjeta con la tabla se desplaza en horizontal */
-  .glass-card {
-    overflow-x: auto;
-    padding: 0.75rem !important;
+  /* Las tarjetas nunca se recortan; solo la tabla interior se desliza */
+  .glass-card,
+  .stat-card {
+    overflow: visible;
+    padding: 0.85rem !important;
+    max-width: 100%;
   }
-  /* Evitar que tablas y tarjetas se corten */
+  /* La tabla se envuelve en su propio contenedor deslizable */
+  .glass-card table,
+  .stat-card table {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
   table {
-    font-size: 0.85rem;
+    font-size: 0.95rem;
   }
   .data-table th,
   .data-table td {
     @apply p-2;
   }
-  .overflow-x-auto,
-  main {
+  /* Áreas táctiles cómodas */
+  button,
+  [role="tab"] {
+    min-height: 40px;
+  }
+  input,
+  select,
+  textarea {
+    font-size: 16px !important; /* evita el zoom automático de Android al enfocar */
+    min-height: 40px;
+  }
+  /* Las pestañas se pueden desplazar en vez de comprimirse */
+  [role="tablist"] {
+    overflow-x: auto;
+    justify-content: flex-start;
+    -webkit-overflow-scrolling: touch;
+  }
+  /* Rejillas apretadas pasan a menos columnas para que quepan */
+  .grid.grid-cols-3,
+  .grid.grid-cols-4,
+  .grid.grid-cols-5 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .overflow-x-auto {
     -webkit-overflow-scrolling: touch;
   }
   /* Diálogos y tarjetas caben en pantalla estrecha */

@@ -12,7 +12,7 @@ import { getPendingShift, setPendingShift, clearPendingShift } from '@/lib/syncS
 import QrDisplay from '@/components/QrDisplay';
 import QrScannerModal from '@/components/QrScannerModal';
 
-const DENOMINATIONS = [1000, 500, 200, 100, 50, 20, 10, 5, 3, 1];
+const DENOMINATIONS = [5000, 2000, 1000, 500, 200, 100, 50, 20, 10, 5, 3, 1];
 
 export default function ShiftClose() {
   const { products, getStockQuantity, reduceStock, addReport, settings, users, reports } = useData();
@@ -131,8 +131,25 @@ export default function ShiftClose() {
     };
   };
 
+  const isAdmin = currentUser?.role === 'admin';
+
   const handleFinalize = () => {
-    setFinalReport(buildReport());
+    if (saleItems.length === 0 || totalSold <= 0) {
+      toast.error('No puedes cerrar un turno sin ventas. Registra al menos un producto vendido.');
+      return;
+    }
+    const report = buildReport();
+    // El administrador cierra en su propio dispositivo: no necesita la pantalla de confirmación.
+    if (isAdmin) {
+      setFinalReport(report);
+      setIsClosing(true);
+      saleItems.forEach(item => reduceStock(item.productId, item.quantitySold));
+      addReport({ ...report, synced: true });
+      toast.success('Turno cerrado exitosamente');
+      logout();
+      return;
+    }
+    setFinalReport(report);
     setStep(3);
   };
 

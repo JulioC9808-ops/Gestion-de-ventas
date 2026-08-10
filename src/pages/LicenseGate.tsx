@@ -1,10 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { Shield, Key, MessageCircle, Clock, Infinity as InfinityIcon, QrCode, AlertTriangle } from 'lucide-react';
+import { Shield, Key, MessageCircle, Clock, Infinity as InfinityIcon, QrCode, AlertTriangle, ScanLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import QrDisplay from '@/components/QrDisplay';
+import QrScannerModal from '@/components/QrScannerModal';
 import { getMachineId, isDesktop } from '@/lib/machine';
+import { isMobileDevice } from '@/lib/platform';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  readEmployeeLicense, saveEmployeeLicense, isEmployeeLicenseActive,
+  employeeHoursRemaining, clearEmployeeLicense, EMPLOYEE_LICENSE_HOURS,
+} from '@/lib/employeeLicense';
+import { toast } from 'sonner';
 
 const LIFETIME_LICENSE = '08022664107';
 const TIMED_LICENSE = 'J260208c';
@@ -68,11 +76,15 @@ function daysRemaining(activatedAt: number) {
 }
 
 export default function LicenseGate({ children }: LicenseGateProps) {
+  const { login, logout } = useAuth();
   const [license, setLicense] = useState<LicenseState>(() => readLicense());
   const [key, setKey] = useState('');
   const [error, setError] = useState('');
   const [showQr, setShowQr] = useState(false);
+  const [scanOpen, setScanOpen] = useState(false);
+  const [empLicense, setEmpLicense] = useState(() => readEmployeeLicense());
   const [showWelcome, setShowWelcome] = useState(() => !localStorage.getItem('welcome_seen'));
+  const mobile = isMobileDevice();
 
   const closeWelcome = () => {
     localStorage.setItem('welcome_seen', '1');
@@ -109,10 +121,28 @@ export default function LicenseGate({ children }: LicenseGateProps) {
     setLicense(next);
   }, [license]);
 
-  const licensed = sameMachine && (
+  const employeeActive = isEmployeeLicenseActive(empLicense);
+
+  // Al caducar la licencia de empleado se cierra la sesión y se obliga a
+  // volver a escanear el QR del jefe (así los datos se mantienen sincronizados).
+  useEffect(() => {
+    if (!empLicense) return;
+    const id = setInterval(() => {
+      const current = readEmployeeLicense();
+      if (current && !isEmployeeLicenseActive(current)) {
+        clearEmployeeLicense();
+        logout();
+        setEmpLicense(null);
+        toast.error('Tu licencia de empleado (24 h) caducó. Escanea de nuevo el QR del jefe.');
+      }
+    }, 60 * 1000);
+    return () => clearInterval(id);
+  }, [empLicense, logout]);
+
+  const licensed = employeeActive || (sameMachine && (
     license.type === 'lifetime' ||
     (license.type === 'timed' && isTimedActive(license.activatedAt))
-  );
+  ));
 
   const handleActivate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,6 +160,33 @@ export default function LicenseGate({ children }: LicenseGateProps) {
       setError('Clave de producto inválida');
     }
   };
+
+  // Activación de EMPLEADO: escanea el QR de credenciales que le muestra el jefe.
+  const handleEmployeeScan = (text: string) => {
+    setScanOpen(false);
+    const prefix = text.startsWith('ACT:') ? 4 : text.startsWith('CRED:') ? 5 : -1;
+    if (prefix < 0) {
+      toast.error('Este QR no es un código de activación de empleado.');
+      return;
+    }
+    try {
+      const { u, p } = JSON.parse(text.slice(prefix));
+      if (!u || !p) throw new Error('incompleto');
+      const lic = saveEmployeeLicense(u);
+      setEmpLicense(lic);
+      const ok = login(u, p);
+      if (ok) {
+        toast.success(`Activado por ${EMPLOYEE_LICENSE_HOURS} h. Licencia de SOLO EMPLEADO.`);
+      } else {
+        clearEmployeeLicense();
+        setEmpLicense(null);
+        toast.error('Las credenciales del QR no son válidas o no corresponden a un empleado.');
+      }
+    } catch {
+      toast.error('No se pudo leer el código de activación.');
+    }
+  };
+
 
   const WelcomeDialog = (
     <Dialog open={showWelcome} onOpenChange={(o) => { if (!o) closeWelcome(); }}>
@@ -209,6 +266,20 @@ export default function LicenseGate({ children }: LicenseGateProps) {
             </Button>
           </form>
 
+          {mobile && (
+            <div className="mt-5 rounded-lg border border-border/60 bg-secondary/40 p-3">
+              <p className="text-xs text-muted-foreground mb-2">
+                ¿Eres empleado? Pídele a tu jefe el <strong>QR de activación</strong> desde
+                Ajustes → Usuarios. Te dará acceso por {EMPLOYEE_LICENSE_HOURS} horas con licencia de
+                <strong> SOLO EMPLEADO</strong> (sin panel de administración).
+              </p>
+              <Button variant="secondary" className="w-full h-11" onClick={() => setScanOpen(true)}>
+                <ScanLine className="w-4 h-4 mr-2" />
+                Escanear QR del jefe (empleado)
+              </Button>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-2 mt-4">
             <Button
               variant="outline"
@@ -231,6 +302,14 @@ export default function LicenseGate({ children }: LicenseGateProps) {
           </p>
         </div>
       </div>
+
+      <QrScannerModal
+        open={scanOpen}
+        onClose={() => setScanOpen(false)}
+        onScan={handleEmployeeScan}
+        title="Activación de empleado"
+        hint="Apunta al QR de activación que te muestra el jefe desde Ajustes → Usuarios."
+      />
 
       <Dialog open={showQr} onOpenChange={setShowQr}>
         <DialogContent className="max-w-sm">

@@ -9,6 +9,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { getPendingShift } from '@/lib/syncStore';
 import { toast } from 'sonner';
 import Tutorial from '@/components/Tutorial';
+import EmployeeLicenseBanner from '@/components/EmployeeLicenseBanner';
 
 interface NavItem {
   label: string;
@@ -28,8 +29,10 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
   const { currentUser, logout } = useAuth();
   const { settings } = useData();
   const isMobile = useIsMobile();
-  // En móvil siempre barra lateral colapsable (la barra superior se rompe en pantallas estrechas)
-  const isTop = !isMobile && settings.navPosition === 'top';
+  const native = isMobileDevice();
+  // En Android/celular NUNCA hay barra superior: solo lateral (izquierda o derecha).
+  const isTop = !isMobile && !native && settings.navPosition === 'top';
+  const onRight = settings.navPosition === 'side-right';
   const [collapsed, setCollapsed] = React.useState(isMobile);
 
 
@@ -116,6 +119,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
         </header>
 
         <main className="flex-1 p-8 overflow-auto">
+          <EmployeeLicenseBanner />
           {children}
         </main>
         <Tutorial />
@@ -125,10 +129,10 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
 
   // Side nav (classic) — colapsable
   return (
-    <div className="flex min-h-screen w-full">
+    <div className={`flex min-h-screen w-full ${onRight ? 'flex-row-reverse' : ''}`}>
       <aside
         className={`sidebar-nav flex flex-col shrink-0 transition-all duration-200 ${
-          collapsed ? 'w-12 md:w-14' : 'w-52 md:w-64'
+          collapsed ? 'w-14' : 'w-56 md:w-64'
         }`}
       >
 
@@ -150,15 +154,15 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
           </div>
         </div>
 
-        <div className={`px-2 py-2 flex ${collapsed ? 'justify-center' : 'justify-end'}`}>
+        <div className={`px-2 py-2 flex ${collapsed ? 'justify-center' : onRight ? 'justify-start' : 'justify-end'}`}>
           <Button
             variant="ghost"
             size="icon"
             aria-label={collapsed ? 'Expandir menú' : 'Recoger menú'}
-            className="h-8 w-8 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+            className="h-9 w-9 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
             onClick={() => setCollapsed(c => !c)}
           >
-            {collapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+            {collapsed ? <PanelLeftOpen className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
           </Button>
         </div>
 
@@ -219,6 +223,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
       </aside>
 
       <main className="flex-1 min-w-0 max-w-full p-3 md:p-8 overflow-x-hidden overflow-y-auto">
+        <EmployeeLicenseBanner />
         {children}
       </main>
 

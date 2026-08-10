@@ -13,7 +13,7 @@ export default function UserManagement() {
   const { users, addUser, updateUser, deleteUser, settings } = useData();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
-  const [form, setForm] = useState({ username: '', password: '', name: '', role: 'employee' as 'employee' | 'admin', salaryPercent: '' });
+  const [form, setForm] = useState({ username: '', password: '', name: '', role: 'employee' as 'employee' | 'admin', salaryPercent: '', passwordHint: '' });
   const [qrUser, setQrUser] = useState<User | null>(null);
   const mobile = isMobileDevice();
 
@@ -28,13 +28,13 @@ export default function UserManagement() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ username: '', password: '', name: '', role: 'employee', salaryPercent: String(settings.defaultSalaryPercent || 2) });
+    setForm({ username: '', password: '', name: '', role: 'employee', salaryPercent: String(settings.defaultSalaryPercent || 2), passwordHint: '' });
     setDialogOpen(true);
   };
 
   const openEdit = (u: User) => {
     setEditing(u);
-    setForm({ username: u.username, password: u.password, name: u.name, role: u.role as 'employee' | 'admin', salaryPercent: String(u.salaryPercent ?? settings.defaultSalaryPercent ?? 2) });
+    setForm({ username: u.username, password: u.password, name: u.name, role: u.role as 'employee' | 'admin', salaryPercent: String(u.salaryPercent ?? settings.defaultSalaryPercent ?? 2), passwordHint: u.passwordHint ?? '' });
     setDialogOpen(true);
   };
 
@@ -42,7 +42,7 @@ export default function UserManagement() {
     if (!form.username || !form.password || !form.name) return;
     // Nunca degradar al primer admin
     const safeRole = editing && editing.id === firstAdminId ? 'admin' : form.role;
-    const userData = { ...form, role: safeRole, salaryPercent: Number(form.salaryPercent) || 2 };
+    const userData = { ...form, role: safeRole, salaryPercent: Number(form.salaryPercent) || 2, passwordHint: form.passwordHint.trim() || null };
     if (editing) {
       updateUser({ ...editing, ...userData });
     } else {
@@ -96,11 +96,9 @@ export default function UserManagement() {
                 )}
                 <td className="text-sm text-muted-foreground">{new Date(u.createdAt).toLocaleDateString()}</td>
                 <td className="text-right">
-                  {mobile && (
-                    <Button variant="ghost" size="sm" onClick={() => setQrUser(u)} title="QR de credenciales">
-                      <QrCode className="w-4 h-4" />
-                    </Button>
-                  )}
+                  <Button variant="ghost" size="sm" onClick={() => setQrUser(u)} title="QR de activación">
+                    <QrCode className="w-4 h-4" />
+                  </Button>
                   <Button variant="ghost" size="sm" onClick={() => openEdit(u)}>
                     <Pencil className="w-4 h-4" />
                   </Button>
@@ -132,7 +130,16 @@ export default function UserManagement() {
             </div>
             <div>
               <label className="text-sm font-medium">Contraseña</label>
-              <Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
+              <Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} autoCapitalize="none" spellCheck={false} />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Nota para recordar la contraseña (opcional)</label>
+              <Input
+                value={form.passwordHint}
+                onChange={e => setForm({ ...form, passwordHint: e.target.value })}
+                placeholder="Ej: el nombre de mi primer perro"
+              />
+              <p className="text-xs text-muted-foreground mt-1">No escribas la contraseña: solo una pista para recordarla.</p>
             </div>
             <div>
               <label className="text-sm font-medium">Rol</label>
@@ -177,11 +184,12 @@ export default function UserManagement() {
           {qrUser && (
             <div className="flex flex-col items-center gap-3 py-2">
               <p className="text-sm text-muted-foreground text-center">
-                Que <strong>{qrUser.name}</strong> escanee este QR desde la pantalla de inicio de sesión.
+                Que <strong>{qrUser.name}</strong> escanee este QR desde la pantalla de
+                <strong> Activación de Licencia</strong>. Le dará acceso por 24 h con licencia de SOLO EMPLEADO.
               </p>
               <div className="bg-white p-3 rounded-lg">
                 <QrDisplay
-                  data={`CRED:${JSON.stringify({ u: qrUser.username, p: qrUser.password })}`}
+                  data={`ACT:${JSON.stringify({ u: qrUser.username, p: qrUser.password })}`}
                   size={240}
                 />
               </div>
