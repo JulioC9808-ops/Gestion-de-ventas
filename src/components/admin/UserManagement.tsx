@@ -130,7 +130,16 @@ export default function UserManagement() {
             </div>
             <div>
               <label className="text-sm font-medium">Contraseña</label>
-              <Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
+              <Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} autoCapitalize="none" spellCheck={false} />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Nota para recordar la contraseña (opcional)</label>
+              <Input
+                value={form.passwordHint}
+                onChange={e => setForm({ ...form, passwordHint: e.target.value })}
+                placeholder="Ej: el nombre de mi primer perro"
+              />
+              <p className="text-xs text-muted-foreground mt-1">No escribas la contraseña: solo una pista para recordarla.</p>
             </div>
             <div>
               <label className="text-sm font-medium">Rol</label>
