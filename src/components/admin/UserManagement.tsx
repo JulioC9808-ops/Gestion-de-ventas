@@ -13,7 +13,7 @@ export default function UserManagement() {
   const { users, addUser, updateUser, deleteUser, settings } = useData();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
-  const [form, setForm] = useState({ username: '', password: '', name: '', role: 'employee' as 'employee' | 'admin', salaryPercent: '' });
+  const [form, setForm] = useState({ username: '', password: '', name: '', role: 'employee' as 'employee' | 'admin', salaryPercent: '', passwordHint: '' });
   const [qrUser, setQrUser] = useState<User | null>(null);
   const mobile = isMobileDevice();
 
@@ -28,13 +28,13 @@ export default function UserManagement() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ username: '', password: '', name: '', role: 'employee', salaryPercent: String(settings.defaultSalaryPercent || 2) });
+    setForm({ username: '', password: '', name: '', role: 'employee', salaryPercent: String(settings.defaultSalaryPercent || 2), passwordHint: '' });
     setDialogOpen(true);
   };
 
   const openEdit = (u: User) => {
     setEditing(u);
-    setForm({ username: u.username, password: u.password, name: u.name, role: u.role as 'employee' | 'admin', salaryPercent: String(u.salaryPercent ?? settings.defaultSalaryPercent ?? 2) });
+    setForm({ username: u.username, password: u.password, name: u.name, role: u.role as 'employee' | 'admin', salaryPercent: String(u.salaryPercent ?? settings.defaultSalaryPercent ?? 2), passwordHint: u.passwordHint ?? '' });
     setDialogOpen(true);
   };
 
@@ -42,7 +42,7 @@ export default function UserManagement() {
     if (!form.username || !form.password || !form.name) return;
     // Nunca degradar al primer admin
     const safeRole = editing && editing.id === firstAdminId ? 'admin' : form.role;
-    const userData = { ...form, role: safeRole, salaryPercent: Number(form.salaryPercent) || 2 };
+    const userData = { ...form, role: safeRole, salaryPercent: Number(form.salaryPercent) || 2, passwordHint: form.passwordHint.trim() || null };
     if (editing) {
       updateUser({ ...editing, ...userData });
     } else {
