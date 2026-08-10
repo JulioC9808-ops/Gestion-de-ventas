@@ -221,6 +221,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
       </aside>
 
       <main className="flex-1 min-w-0 max-w-full p-3 md:p-8 overflow-x-hidden overflow-y-auto">
+        <EmployeeLicenseBanner />
         {children}
       </main>
 
