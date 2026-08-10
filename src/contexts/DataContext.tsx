@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import type { Product, StockItem, ShiftReport, StockMovement, User, AppSettings } from '@/types';
+import type { BackupPayload } from '@/lib/backup';
 import defaultQr from '@/assets/dev-qr.png.asset.json';
 
 export const DEFAULT_DEV_QR_URL = defaultQr.url;
@@ -25,6 +26,10 @@ interface DataContextType {
   updateSettings: (s: Partial<AppSettings>) => void;
   getProductById: (id: string) => Product | undefined;
   deleteMovement: (id: string) => void;
+  /** Aplica un respaldo recibido por QR desde otro dispositivo. */
+  applyBackup: (payload: BackupPayload) => void;
+  /** Restablece el usuario administrador a admin / admin123. */
+  resetAdminCredentials: () => void;
 }
 
 const DataContext = createContext<DataContextType | null>(null);
