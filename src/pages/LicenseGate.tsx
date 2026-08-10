@@ -1,10 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { Shield, Key, MessageCircle, Clock, Infinity as InfinityIcon, QrCode, AlertTriangle } from 'lucide-react';
+import { Shield, Key, MessageCircle, Clock, Infinity as InfinityIcon, QrCode, AlertTriangle, ScanLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import QrDisplay from '@/components/QrDisplay';
+import QrScannerModal from '@/components/QrScannerModal';
 import { getMachineId, isDesktop } from '@/lib/machine';
+import { isMobileDevice } from '@/lib/platform';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  readEmployeeLicense, saveEmployeeLicense, isEmployeeLicenseActive,
+  employeeHoursRemaining, clearEmployeeLicense, EMPLOYEE_LICENSE_HOURS,
+} from '@/lib/employeeLicense';
+import { toast } from 'sonner';
 
 const LIFETIME_LICENSE = '08022664107';
 const TIMED_LICENSE = 'J260208c';
