@@ -9,6 +9,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { getPendingShift } from '@/lib/syncStore';
 import { toast } from 'sonner';
 import Tutorial from '@/components/Tutorial';
+import EmployeeLicenseBanner from '@/components/EmployeeLicenseBanner';
 
 interface NavItem {
   label: string;
@@ -118,6 +119,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
         </header>
 
         <main className="flex-1 p-8 overflow-auto">
+          <EmployeeLicenseBanner />
           {children}
         </main>
         <Tutorial />
