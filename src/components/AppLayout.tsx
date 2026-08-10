@@ -127,7 +127,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
 
   // Side nav (classic) — colapsable
   return (
-    <div className="flex min-h-screen w-full">
+    <div className={`flex min-h-screen w-full ${onRight ? 'flex-row-reverse' : ''}`}>
       <aside
         className={`sidebar-nav flex flex-col shrink-0 transition-all duration-200 ${
           collapsed ? 'w-12 md:w-14' : 'w-52 md:w-64'
@@ -152,15 +152,15 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
           </div>
         </div>
 
-        <div className={`px-2 py-2 flex ${collapsed ? 'justify-center' : 'justify-end'}`}>
+        <div className={`px-2 py-2 flex ${collapsed ? 'justify-center' : onRight ? 'justify-start' : 'justify-end'}`}>
           <Button
             variant="ghost"
             size="icon"
             aria-label={collapsed ? 'Expandir menú' : 'Recoger menú'}
-            className="h-8 w-8 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+            className="h-9 w-9 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
             onClick={() => setCollapsed(c => !c)}
           >
-            {collapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+            {collapsed ? <PanelLeftOpen className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
           </Button>
         </div>
 
