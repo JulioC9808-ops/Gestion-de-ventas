@@ -130,7 +130,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
     <div className={`flex min-h-screen w-full ${onRight ? 'flex-row-reverse' : ''}`}>
       <aside
         className={`sidebar-nav flex flex-col shrink-0 transition-all duration-200 ${
-          collapsed ? 'w-12 md:w-14' : 'w-52 md:w-64'
+          collapsed ? 'w-14' : 'w-56 md:w-64'
         }`}
       >
 
