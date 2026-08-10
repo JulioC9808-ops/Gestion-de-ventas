@@ -1,29 +1,29 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
-import { Coffee, Lock, User, MessageCircle, QrCode } from 'lucide-react';
+import { Coffee, Lock, User, MessageCircle, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import HelpTip from '@/components/HelpTip';
-import { isMobileDevice } from '@/lib/platform';
-import QrScannerModal from '@/components/QrScannerModal';
 import QrDisplay from '@/components/QrDisplay';
-import { toast } from 'sonner';
 
 const DEV_WHATSAPP = '+5351616816';
 const DEV_PHONE_TEL = 'tel:+5351616816';
 
 export default function Login() {
-  const { login } = useAuth();
-  const { settings } = useData();
+  const { loginDetailed } = useAuth();
+  const { settings, users } = useData();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showQr, setShowQr] = useState(false);
-  const [scanOpen, setScanOpen] = useState(false);
-  const mobile = isMobileDevice();
+
+  // Recuperación de contraseña por pista personal
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotUser, setForgotUser] = useState('');
+  const [forgotResult, setForgotResult] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,21 +31,38 @@ export default function Login() {
     setError('');
 
     setTimeout(() => {
-      const success = login(username, password);
-      if (!success) {
-        setError('Usuario o contraseña incorrectos');
+      const result = loginDetailed(username, password);
+      if (!result.ok) {
+        setError(
+          result.reason === 'employee-only'
+            ? 'Este dispositivo usa una licencia de SOLO EMPLEADO: no puede entrar como administrador.'
+            : 'Usuario o contraseña incorrectos (revisa las mayúsculas)',
+        );
       }
       setLoading(false);
-    }, 500);
+    }, 400);
+  };
+
+  const handleForgot = () => {
+    const target = users.find(u => u.username === forgotUser.trim());
+    if (!target) {
+      setForgotResult('No existe ningún usuario con ese nombre exacto (revisa las mayúsculas).');
+      return;
+    }
+    if (target.role !== 'admin') {
+      setForgotResult('Solo los administradores pueden recuperar su contraseña aquí. Pídesela a tu jefe.');
+      return;
+    }
+    setForgotResult(
+      target.passwordHint
+        ? `Administrador «${target.name}». Tu nota para recordar la contraseña es: “${target.passwordHint}”`
+        : `Administrador «${target.name}». No guardaste ninguna nota. Pídele al desarrollador que restablezca la cuenta a admin / admin123.`,
+    );
   };
 
   const bgStyle = settings.backgroundUrl
     ? { backgroundImage: `url(${settings.backgroundUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
     : {};
-
-  const handleContact = () => {
-    setShowQr(true);
-  };
 
   return (
     <div className="login-container relative overflow-hidden" style={bgStyle}>
@@ -77,7 +94,7 @@ export default function Login() {
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground flex items-center gap-2">
                 Usuario
-                <HelpTip>Escribe el nombre de usuario que te dio el administrador.</HelpTip>
+                <HelpTip>Escribe el nombre de usuario tal como te lo dio el administrador: las mayúsculas y minúsculas importan.</HelpTip>
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -87,6 +104,9 @@ export default function Login() {
                   onChange={e => setUsername(e.target.value)}
                   placeholder="Ingresa tu usuario"
                   className="pl-10 h-11"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   required
                 />
               </div>
@@ -95,7 +115,7 @@ export default function Login() {
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground flex items-center gap-2">
                 Contraseña
-                <HelpTip>Tu contraseña es secreta. Si la olvidaste, pídele al administrador que te dé una nueva.</HelpTip>
+                <HelpTip>Tu contraseña es secreta y distingue mayúsculas de minúsculas. Si la olvidaste, pídele al administrador que te dé una nueva.</HelpTip>
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -105,6 +125,10 @@ export default function Login() {
                   onChange={e => setPassword(e.target.value)}
                   placeholder="Ingresa tu contraseña"
                   className="pl-10 h-11"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  autoComplete="current-password"
+                  spellCheck={false}
                   required
                 />
               </div>
@@ -125,28 +149,26 @@ export default function Login() {
             </Button>
           </form>
 
-          {mobile && (
-            <Button
-              type="button"
-              variant="secondary"
-              className="w-full mt-3"
-              onClick={() => setScanOpen(true)}
-            >
-              <QrCode className="w-4 h-4 mr-2" />
-              Escanear QR de credenciales
-            </Button>
-          )}
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full mt-2 text-sm"
+            onClick={() => { setForgotResult(null); setForgotUser(username); setForgotOpen(true); }}
+          >
+            <HelpCircle className="w-4 h-4 mr-2" />
+            Olvidé mi contraseña
+          </Button>
 
           <div className="mt-4 flex items-center gap-2">
             <Button
               variant="outline"
               className="flex-1"
-              onClick={handleContact}
+              onClick={() => setShowQr(true)}
             >
               <MessageCircle className="w-4 h-4 mr-2" />
               Contactar al Desarrollador
             </Button>
-            <HelpTip>Si tienes problemas para entrar o algún error del sistema, contacta al desarrollador por WhatsApp.</HelpTip>
+            <HelpTip>Si tienes problemas para entrar o algún error del sistema, contacta al desarrollador.</HelpTip>
           </div>
 
           <p className="text-center text-xs text-muted-foreground mt-6">
@@ -184,33 +206,33 @@ export default function Login() {
         </DialogContent>
       </Dialog>
 
-
-      <QrScannerModal
-        open={scanOpen}
-        onClose={() => setScanOpen(false)}
-        onScan={(text) => {
-          setScanOpen(false);
-          if (!text.startsWith('CRED:')) {
-            toast.error('Este QR no contiene credenciales válidas.');
-            return;
-          }
-          try {
-            const { u, p } = JSON.parse(text.slice(5));
-            setUsername(u);
-            setPassword(p);
-            setLoading(true);
-            setTimeout(() => {
-              const ok = login(u, p);
-              if (!ok) setError('Las credenciales del QR no son válidas.');
-              setLoading(false);
-            }, 300);
-          } catch {
-            toast.error('No se pudo leer el QR.');
-          }
-        }}
-        title="Escanear credenciales"
-        hint="Pídele al administrador que te muestre tu QR desde la pestaña Usuarios."
-      />
+      <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display">Recuperar contraseña</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Escribe tu nombre de usuario. Si eres administrador y guardaste una nota para recordar
+              tu contraseña, te la mostraremos aquí.
+            </p>
+            <Input
+              value={forgotUser}
+              onChange={e => { setForgotUser(e.target.value); setForgotResult(null); }}
+              placeholder="Nombre de usuario"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+            />
+            <Button className="w-full" onClick={handleForgot}>Buscar mi nota</Button>
+            {forgotResult && (
+              <div className="rounded-lg border border-border bg-secondary/50 p-3 text-sm">
+                {forgotResult}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
