@@ -121,10 +121,28 @@ export default function LicenseGate({ children }: LicenseGateProps) {
     setLicense(next);
   }, [license]);
 
-  const licensed = sameMachine && (
+  const employeeActive = isEmployeeLicenseActive(empLicense);
+
+  // Al caducar la licencia de empleado se cierra la sesión y se obliga a
+  // volver a escanear el QR del jefe (así los datos se mantienen sincronizados).
+  useEffect(() => {
+    if (!empLicense) return;
+    const id = setInterval(() => {
+      const current = readEmployeeLicense();
+      if (current && !isEmployeeLicenseActive(current)) {
+        clearEmployeeLicense();
+        logout();
+        setEmpLicense(null);
+        toast.error('Tu licencia de empleado (24 h) caducó. Escanea de nuevo el QR del jefe.');
+      }
+    }, 60 * 1000);
+    return () => clearInterval(id);
+  }, [empLicense, logout]);
+
+  const licensed = employeeActive || (sameMachine && (
     license.type === 'lifetime' ||
     (license.type === 'timed' && isTimedActive(license.activatedAt))
-  );
+  ));
 
   const handleActivate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,6 +160,33 @@ export default function LicenseGate({ children }: LicenseGateProps) {
       setError('Clave de producto inválida');
     }
   };
+
+  // Activación de EMPLEADO: escanea el QR de credenciales que le muestra el jefe.
+  const handleEmployeeScan = (text: string) => {
+    setScanOpen(false);
+    const prefix = text.startsWith('ACT:') ? 4 : text.startsWith('CRED:') ? 5 : -1;
+    if (prefix < 0) {
+      toast.error('Este QR no es un código de activación de empleado.');
+      return;
+    }
+    try {
+      const { u, p } = JSON.parse(text.slice(prefix));
+      if (!u || !p) throw new Error('incompleto');
+      const lic = saveEmployeeLicense(u);
+      setEmpLicense(lic);
+      const ok = login(u, p);
+      if (ok) {
+        toast.success(`Activado por ${EMPLOYEE_LICENSE_HOURS} h. Licencia de SOLO EMPLEADO.`);
+      } else {
+        clearEmployeeLicense();
+        setEmpLicense(null);
+        toast.error('Las credenciales del QR no son válidas o no corresponden a un empleado.');
+      }
+    } catch {
+      toast.error('No se pudo leer el código de activación.');
+    }
+  };
+
 
   const WelcomeDialog = (
     <Dialog open={showWelcome} onOpenChange={(o) => { if (!o) closeWelcome(); }}>
