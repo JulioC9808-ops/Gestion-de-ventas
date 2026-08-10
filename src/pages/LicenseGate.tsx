@@ -266,6 +266,20 @@ export default function LicenseGate({ children }: LicenseGateProps) {
             </Button>
           </form>
 
+          {mobile && (
+            <div className="mt-5 rounded-lg border border-border/60 bg-secondary/40 p-3">
+              <p className="text-xs text-muted-foreground mb-2">
+                ¿Eres empleado? Pídele a tu jefe el <strong>QR de activación</strong> desde
+                Ajustes → Usuarios. Te dará acceso por {EMPLOYEE_LICENSE_HOURS} horas con licencia de
+                <strong> SOLO EMPLEADO</strong> (sin panel de administración).
+              </p>
+              <Button variant="secondary" className="w-full h-11" onClick={() => setScanOpen(true)}>
+                <ScanLine className="w-4 h-4 mr-2" />
+                Escanear QR del jefe (empleado)
+              </Button>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-2 mt-4">
             <Button
               variant="outline"
@@ -288,6 +302,14 @@ export default function LicenseGate({ children }: LicenseGateProps) {
           </p>
         </div>
       </div>
+
+      <QrScannerModal
+        open={scanOpen}
+        onClose={() => setScanOpen(false)}
+        onScan={handleEmployeeScan}
+        title="Activación de empleado"
+        hint="Apunta al QR de activación que te muestra el jefe desde Ajustes → Usuarios."
+      />
 
       <Dialog open={showQr} onOpenChange={setShowQr}>
         <DialogContent className="max-w-sm">
