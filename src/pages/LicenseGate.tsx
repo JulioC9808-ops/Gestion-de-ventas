@@ -76,11 +76,15 @@ function daysRemaining(activatedAt: number) {
 }
 
 export default function LicenseGate({ children }: LicenseGateProps) {
+  const { login, logout } = useAuth();
   const [license, setLicense] = useState<LicenseState>(() => readLicense());
   const [key, setKey] = useState('');
   const [error, setError] = useState('');
   const [showQr, setShowQr] = useState(false);
+  const [scanOpen, setScanOpen] = useState(false);
+  const [empLicense, setEmpLicense] = useState(() => readEmployeeLicense());
   const [showWelcome, setShowWelcome] = useState(() => !localStorage.getItem('welcome_seen'));
+  const mobile = isMobileDevice();
 
   const closeWelcome = () => {
     localStorage.setItem('welcome_seen', '1');
