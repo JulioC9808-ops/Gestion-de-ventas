@@ -96,11 +96,9 @@ export default function UserManagement() {
                 )}
                 <td className="text-sm text-muted-foreground">{new Date(u.createdAt).toLocaleDateString()}</td>
                 <td className="text-right">
-                  {mobile && (
-                    <Button variant="ghost" size="sm" onClick={() => setQrUser(u)} title="QR de credenciales">
-                      <QrCode className="w-4 h-4" />
-                    </Button>
-                  )}
+                  <Button variant="ghost" size="sm" onClick={() => setQrUser(u)} title="QR de activación">
+                    <QrCode className="w-4 h-4" />
+                  </Button>
                   <Button variant="ghost" size="sm" onClick={() => openEdit(u)}>
                     <Pencil className="w-4 h-4" />
                   </Button>
@@ -177,11 +175,12 @@ export default function UserManagement() {
           {qrUser && (
             <div className="flex flex-col items-center gap-3 py-2">
               <p className="text-sm text-muted-foreground text-center">
-                Que <strong>{qrUser.name}</strong> escanee este QR desde la pantalla de inicio de sesión.
+                Que <strong>{qrUser.name}</strong> escanee este QR desde la pantalla de
+                <strong> Activación de Licencia</strong>. Le dará acceso por 24 h con licencia de SOLO EMPLEADO.
               </p>
               <div className="bg-white p-3 rounded-lg">
                 <QrDisplay
-                  data={`CRED:${JSON.stringify({ u: qrUser.username, p: qrUser.password })}`}
+                  data={`ACT:${JSON.stringify({ u: qrUser.username, p: qrUser.password })}`}
                   size={240}
                 />
               </div>
