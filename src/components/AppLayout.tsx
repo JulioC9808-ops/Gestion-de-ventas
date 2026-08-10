@@ -28,8 +28,10 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
   const { currentUser, logout } = useAuth();
   const { settings } = useData();
   const isMobile = useIsMobile();
-  // En móvil siempre barra lateral colapsable (la barra superior se rompe en pantallas estrechas)
-  const isTop = !isMobile && settings.navPosition === 'top';
+  const native = isMobileDevice();
+  // En Android/celular NUNCA hay barra superior: solo lateral (izquierda o derecha).
+  const isTop = !isMobile && !native && settings.navPosition === 'top';
+  const onRight = settings.navPosition === 'side-right';
   const [collapsed, setCollapsed] = React.useState(isMobile);
 
 
