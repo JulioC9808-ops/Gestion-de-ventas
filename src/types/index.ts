@@ -8,6 +8,8 @@ export interface User {
   role: UserRole;
   createdAt: string;
   salaryPercent?: number;
+  /** Pista/nota personal para recordar la contraseña (no es la contraseña). */
+  passwordHint?: string | null;
 }
 
 export interface Product {
@@ -83,7 +85,7 @@ export interface AppSettings {
   theme: string;
   font: string;
   fontColor?: string | null; // hex like #ffffff; null = usar el del tema
-  navPosition: 'side' | 'top';
+  navPosition: 'side' | 'side-right' | 'top';
   defaultSalaryPercent: number;
   salaryByPercentEnabled?: boolean;
   introVideoUrl?: string | null; // dataURL o URL de video que se reproduce al abrir la app
