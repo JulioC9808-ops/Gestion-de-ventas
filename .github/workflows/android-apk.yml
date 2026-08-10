@@ -117,4 +117,4 @@ jobs:
           name: GestionDeSistema-release-apk
           path: android/app/build/outputs/apk/release/app-release-signed.apk
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 3
