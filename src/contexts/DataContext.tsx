@@ -365,6 +365,45 @@ export function DataProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  // Aplica un respaldo recibido por QR. Se respetan las imágenes locales
+  // (logo/fondo/QR) porque no viajan en el respaldo.
+  const applyBackup = useCallback((payload: BackupPayload) => {
+    setP(() => payload.products || []);
+    setS(() => payload.stock || []);
+    setM(() => payload.movements || []);
+    setU(() => payload.users || []);
+    setSt(prev => ({
+      ...prev,
+      ...payload.settings,
+      logoUrl: prev.logoUrl,
+      backgroundUrl: prev.backgroundUrl,
+      qrUrl: prev.qrUrl,
+    }));
+  }, []);
+
+  // Restablece el administrador principal a las credenciales iniciales.
+  const resetAdminCredentials = useCallback(() => {
+    setU(prev => {
+      const admins = prev
+        .filter(u => u.role === 'admin')
+        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      const target = admins[0];
+      if (!target) {
+        return [...prev, {
+          id: crypto.randomUUID(),
+          username: 'admin',
+          password: 'admin123',
+          name: 'Administrador',
+          role: 'admin' as const,
+          createdAt: new Date().toISOString(),
+        }];
+      }
+      return prev.map(u =>
+        u.id === target.id ? { ...u, username: 'admin', password: 'admin123', passwordHint: null } : u
+      );
+    });
+  }, []);
+
   return (
     <DataContext.Provider value={{
       products, stock, reports, movements, users, settings,
@@ -372,6 +411,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       addToStock, getStockQuantity, reduceStock,
       addReport, clearReports, addUser, updateUser, deleteUser,
       updateSettings, getProductById, deleteMovement,
+      applyBackup, resetAdminCredentials,
     }}>
       {children}
     </DataContext.Provider>
