@@ -1,9 +1,16 @@
 import React, { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import type { User, UserRole } from '@/types';
+import { readEmployeeLicense, isEmployeeLicenseActive } from '@/lib/employeeLicense';
+
+interface LoginResult {
+  ok: boolean;
+  reason?: 'invalid' | 'employee-only';
+}
 
 interface AuthContextType {
   currentUser: User | null;
   login: (username: string, password: string) => boolean;
+  loginDetailed: (username: string, password: string) => LoginResult;
   logout: () => void;
   isRole: (role: UserRole) => boolean;
 }
@@ -26,16 +33,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return saved ? JSON.parse(saved) : DEFAULT_USERS;
   }, []);
 
-  const login = useCallback((username: string, password: string): boolean => {
+  const loginDetailed = useCallback((username: string, password: string): LoginResult => {
     const users = getUsers();
-    const user = users.find(u => u.username === username && u.password === password);
-    if (user) {
-      setCurrentUser(user);
-      localStorage.setItem('currentUser', JSON.stringify(user));
-      return true;
+    // Comparación EXACTA: las mayúsculas y minúsculas importan.
+    const u = username.trim();
+    const p = password;
+    const user = users.find(x => x.username === u && x.password === p);
+    if (!user) return { ok: false, reason: 'invalid' };
+
+    // En dispositivos activados con licencia de SOLO EMPLEADO no se permite
+    // entrar como administrador ni desarrollador, aunque las credenciales sean correctas.
+    if (isEmployeeLicenseActive(readEmployeeLicense()) && user.role !== 'employee') {
+      return { ok: false, reason: 'employee-only' };
     }
-    return false;
+
+    setCurrentUser(user);
+    localStorage.setItem('currentUser', JSON.stringify(user));
+    return { ok: true };
   }, [getUsers]);
+
+  const login = useCallback((username: string, password: string): boolean => {
+    return loginDetailed(username, password).ok;
+  }, [loginDetailed]);
 
   const logout = useCallback(() => {
     setCurrentUser(null);
@@ -45,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isRole = useCallback((role: UserRole) => currentUser?.role === role, [currentUser]);
 
   return (
-    <AuthContext.Provider value={{ currentUser, login, logout, isRole }}>
+    <AuthContext.Provider value={{ currentUser, login, loginDetailed, logout, isRole }}>
       {children}
     </AuthContext.Provider>
   );
