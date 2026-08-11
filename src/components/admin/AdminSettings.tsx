@@ -5,9 +5,10 @@ import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Palette, Type, Layout, DollarSign, Users as UsersIcon, Info, Settings as SettingsIcon } from 'lucide-react';
+import { Palette, Type, Layout, DollarSign, Users as UsersIcon, Info, Settings as SettingsIcon, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import UserManagement from '@/components/admin/UserManagement';
+import DataSync from '@/components/admin/DataSync';
 
 const THEMES = [
   { value: 'white', label: 'Blanco Puro', preview: 'bg-white border border-gray-300' },
@@ -174,6 +175,7 @@ function GeneralSettings() {
         <div className="space-y-4">
           <div>
             <label className="text-sm font-medium">Posición de Navegación</label>
+            <p className="text-xs text-muted-foreground mt-1">En el celular siempre se usa la barra lateral (izquierda o derecha).</p>
             <div className="flex gap-3 mt-2">
               <button onClick={() => setNavPosition('top')} className={`flex-1 p-3 rounded-lg border-2 text-center transition-all ${navPosition === 'top' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}>
                 <div className="w-full h-2 bg-primary/30 rounded mb-2" />
@@ -185,7 +187,14 @@ function GeneralSettings() {
                   <div className="w-4 h-10 bg-primary/30 rounded" />
                   <div className="flex-1 h-10 bg-muted rounded" />
                 </div>
-                <p className="text-xs mt-2">Lateral</p>
+                <p className="text-xs mt-2">Lateral Izquierdo</p>
+              </button>
+              <button onClick={() => setNavPosition('side-right')} className={`flex-1 p-3 rounded-lg border-2 text-center transition-all ${navPosition === 'side-right' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}>
+                <div className="flex gap-1">
+                  <div className="flex-1 h-10 bg-muted rounded" />
+                  <div className="w-4 h-10 bg-primary/30 rounded" />
+                </div>
+                <p className="text-xs mt-2">Lateral Derecho</p>
               </button>
             </div>
           </div>
@@ -249,10 +258,12 @@ export default function AdminSettings() {
           <TabsTrigger value="users"><UsersIcon className="w-4 h-4 mr-2" />Usuarios</TabsTrigger>
           <TabsTrigger value="notes"><Info className="w-4 h-4 mr-2" />Notas Importantes</TabsTrigger>
           <TabsTrigger value="general"><SettingsIcon className="w-4 h-4 mr-2" />Configuración</TabsTrigger>
+          <TabsTrigger value="sync"><RefreshCw className="w-4 h-4 mr-2" />Sincronización</TabsTrigger>
         </TabsList>
         <TabsContent value="users"><UserManagement /></TabsContent>
         <TabsContent value="notes"><ImportantNotes /></TabsContent>
         <TabsContent value="general"><GeneralSettings /></TabsContent>
+        <TabsContent value="sync"><div className="max-w-2xl"><DataSync /></div></TabsContent>
       </Tabs>
     </div>
   );
