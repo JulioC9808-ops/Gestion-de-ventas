@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import AppLayout from '@/components/AppLayout';
-import { Settings, Key, RotateCcw, Image, QrCode, Send } from 'lucide-react';
+import { Settings, Key, RotateCcw, Image, Send, UserCog } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -10,15 +10,15 @@ import { toast } from 'sonner';
 const NAV = [
   { label: 'Configuración', icon: Settings, key: 'config', tip: 'Cambia el nombre del negocio y otras configuraciones generales.' },
   { label: 'Logo', icon: Image, key: 'logo', tip: 'Sube o cambia el logo que aparece en el login y la navegación.' },
-  { label: 'QR Contacto', icon: QrCode, key: 'qr', tip: 'Agrega un código QR para que los usuarios puedan contactarte desde el login.' },
   { label: 'Actualizaciones', icon: Send, key: 'updates', tip: 'Configura el canal de Telegram y el repositorio público de actualizaciones.' },
   { label: 'Contraseña', icon: Key, key: 'password', tip: 'Cambia tu contraseña de desarrollador.' },
+  { label: 'Restablecer Admin', icon: UserCog, key: 'admin', tip: 'Devuelve el administrador principal a Usuario: admin y Contraseña: admin123.' },
   { label: 'Restaurar', icon: RotateCcw, key: 'reset', tip: 'Restaura toda la configuración y datos a valores por defecto.' },
 ];
 
 export default function DevPanel() {
   const [active, setActive] = useState('config');
-  const { settings, updateSettings, users, updateUser } = useData();
+  const { settings, updateSettings, users, updateUser, resetAdminCredentials } = useData();
   const { currentUser } = useAuth();
   const [businessName, setBusinessName] = useState(settings.businessName);
   const [telegramUrl, setTelegramUrl] = useState(settings.telegramUrl || 'https://t.me/+G8geeJ1gwYo4N2Ex');
@@ -27,7 +27,6 @@ export default function DevPanel() {
   const [newPwd, setNewPwd] = useState('');
   const logoInputRef = useRef<HTMLInputElement>(null);
   const bgInputRef = useRef<HTMLInputElement>(null);
-  const qrInputRef = useRef<HTMLInputElement>(null);
 
   const handleSaveName = () => {
     updateSettings({ businessName });
@@ -54,7 +53,14 @@ export default function DevPanel() {
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'background' | 'qr') => {
+  const handleResetAdmin = () => {
+    if (confirm('¿Restablecer el administrador principal a Usuario: admin / Contraseña: admin123?')) {
+      resetAdminCredentials();
+      toast.success('Administrador restablecido: admin / admin123');
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'background') => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -62,8 +68,7 @@ export default function DevPanel() {
       const dataUrl = reader.result as string;
       if (type === 'logo') updateSettings({ logoUrl: dataUrl });
       else if (type === 'background') updateSettings({ backgroundUrl: dataUrl });
-      else if (type === 'qr') updateSettings({ qrUrl: dataUrl });
-      toast.success(`${type === 'logo' ? 'Logo' : type === 'background' ? 'Fondo' : 'QR'} actualizado`);
+      toast.success(`${type === 'logo' ? 'Logo' : 'Fondo'} actualizado`);
     };
     reader.readAsDataURL(file);
   };
@@ -135,38 +140,6 @@ export default function DevPanel() {
         </div>
       )}
 
-      {active === 'qr' && (
-        <div>
-          <div className="page-header">
-            <h1 className="page-title">QR de Contacto</h1>
-          </div>
-          <div className="glass-card p-6 max-w-lg space-y-6">
-            <div className="flex flex-col items-center gap-4">
-              {settings.qrUrl ? (
-                <img src={settings.qrUrl} alt="QR" className="w-48 h-48 object-contain rounded-lg border-2 border-border p-2" />
-              ) : (
-                <div className="w-48 h-48 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
-                  <QrCode className="w-16 h-16" />
-                </div>
-              )}
-              <div className="flex gap-2">
-                <Button onClick={() => qrInputRef.current?.click()}>
-                  {settings.qrUrl ? 'Cambiar QR' : 'Subir QR'}
-                </Button>
-                {settings.qrUrl && (
-                  <Button variant="destructive" onClick={() => updateSettings({ qrUrl: null })}>
-                    Quitar QR
-                  </Button>
-                )}
-              </div>
-              <input ref={qrInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleFileUpload(e, 'qr')} />
-              <p className="text-sm text-muted-foreground text-center">Este QR aparecerá como botón "Contactar al Desarrollador" en la pantalla de login.</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      
       {active === 'updates' && (
         <div>
           <div className="page-header">
@@ -207,6 +180,22 @@ export default function DevPanel() {
               <Input type="password" value={newPwd} onChange={e => setNewPwd(e.target.value)} />
             </div>
             <Button onClick={handleChangePassword} className="w-full">Cambiar Contraseña</Button>
+          </div>
+        </div>
+      )}
+
+      {active === 'admin' && (
+        <div>
+          <div className="page-header">
+            <h1 className="page-title">Restablecer Administrador</h1>
+          </div>
+          <div className="glass-card p-6 max-w-md space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Si el dueño olvidó su usuario o contraseña, esto devuelve la cuenta de administrador
+              principal a las credenciales iniciales. Los productos, ventas y demás datos NO se borran.
+            </p>
+            <p className="text-sm font-medium">Usuario: <strong>admin</strong> — Contraseña: <strong>admin123</strong></p>
+            <Button onClick={handleResetAdmin} className="w-full">Restablecer a admin / admin123</Button>
           </div>
         </div>
       )}
