@@ -22,8 +22,15 @@ jobs:
           node-version: 20
           registry-url: https://registry.npmjs.org
 
+      # 2.1 Configurar caché de Electron
+      - name: Configure Electron cache
+        run: |
+          export ELECTRON_CACHE=$HOME/.cache/electron
+          export ELECTRON_SKIP_BINARY_DOWNLOAD=0
+
+      # 2.2 Instalar dependencias con reintento
       - name: Install dependencies
-        run: npm ci --registry=https://registry.npmjs.org/
+        run: npm ci --registry=https://registry.npmjs.org/ || npm ci --registry=https://registry.npmjs.org/
 
       # 3. Build web
       - name: Build web assets
@@ -83,7 +90,7 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
 
-      # 12. Zipalign + Firmar APK con apksigner (v1 y v2)
+      # 12. Zipalign + Firmar APK con apksigner (v1, v2, v3)
       - name: Zipalign APK
         run: |
           $ANDROID_HOME/build-tools/34.0.0/zipalign -p -f 4 \
@@ -102,7 +109,6 @@ jobs:
             --v3-signing-enabled true \
             --out android/app/build/outputs/apk/release/app-release-signed.apk \
             android/app/build/outputs/apk/release/app-release-aligned.apk
-
 
       # 13. Verificar firma del APK
       - name: Verify APK signature
