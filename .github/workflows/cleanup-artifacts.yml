@@ -1,4 +1,4 @@
-name: Limpiar Artifacts (liberar espacio)
+name: Eliminar Artifacts
 
 # Borra TODOS los artifacts del repositorio para liberar el almacenamiento de GitHub.
 # Ejecutar manualmente desde la pestaña Actions -> "Limpiar Artifacts" -> Run workflow.
