@@ -1,0 +1,59 @@
+name: Limpiar Artifacts (liberar espacio)
+
+# Borra TODOS los artifacts del repositorio para liberar el almacenamiento de GitHub.
+# Ejecutar manualmente desde la pestaña Actions -> "Limpiar Artifacts" -> Run workflow.
+# También se ejecuta solo todos los días a las 03:00 UTC borrando los de más de 3 días.
+
+on:
+  workflow_dispatch:
+    inputs:
+      older_than_days:
+        description: 'Borrar artifacts con más de N días (0 = borrar TODOS)'
+        required: false
+        default: '0'
+  schedule:
+    - cron: '0 3 * * *'
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete artifacts
+        uses: actions/github-script@v7
+        env:
+          OLDER_THAN_DAYS: ${{ github.event.inputs.older_than_days || '3' }}
+        with:
+          script: |
+            const days = Number(process.env.OLDER_THAN_DAYS || '0');
+            const cutoff = days > 0 ? Date.now() - days * 24 * 60 * 60 * 1000 : null;
+            let deleted = 0, freed = 0;
+            for (let page = 1; ; page++) {
+              const { data } = await github.rest.actions.listArtifactsForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                per_page: 100,
+                page,
+              });
+              if (data.artifacts.length === 0) break;
+              for (const a of data.artifacts) {
+                if (cutoff && new Date(a.created_at).getTime() > cutoff) continue;
+                try {
+                  await github.rest.actions.deleteArtifact({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    artifact_id: a.id,
+                  });
+                  deleted++;
+                  freed += a.size_in_bytes || 0;
+                } catch (e) {
+                  core.warning(`No se pudo borrar ${a.name} (${a.id}): ${e.message}`);
+                }
+              }
+              // Al borrar cambia la paginación: volvemos siempre a la primera página.
+              page = 0;
+            }
+            core.notice(`Artifacts borrados: ${deleted} (${(freed / 1048576).toFixed(1)} MB liberados)`);

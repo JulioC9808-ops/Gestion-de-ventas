@@ -40,3 +40,4 @@ jobs:
         with:
           name: windows-installer
           path: dist-installer/*.exe
+          retention-days: 3
