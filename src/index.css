@@ -351,24 +351,53 @@ input[type="password"] {
   }
   .data-table th,
   .data-table td {
-    @apply p-2;
+    padding: 0.6rem 0.55rem;
   }
-  /* Áreas táctiles cómodas */
+  .data-table th {
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  /* Áreas táctiles cómodas (recomendación de Android: 48dp) */
   button,
-  [role="tab"] {
-    min-height: 40px;
+  [role="tab"],
+  [role="menuitem"],
+  a.btn {
+    min-height: 44px;
   }
   input,
   select,
   textarea {
     font-size: 16px !important; /* evita el zoom automático de Android al enfocar */
-    min-height: 40px;
+    min-height: 44px;
+    border-radius: 0.75rem;
+  }
+  /* Botones más redondeados y con más aire */
+  button {
+    border-radius: 0.75rem;
   }
   /* Las pestañas se pueden desplazar en vez de comprimirse */
   [role="tablist"] {
     overflow-x: auto;
     justify-content: flex-start;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
+  }
+  [role="tablist"]::-webkit-scrollbar { display: none; }
+  [role="tab"] {
+    flex: 0 0 auto;
+    padding-left: 0.9rem;
+    padding-right: 0.9rem;
+  }
+  /* Tarjetas con esquinas suaves y separación clara */
+  .glass-card,
+  .stat-card {
+    border-radius: 1rem;
+  }
+  .glass-card + .glass-card {
+    margin-top: 0.75rem;
   }
   /* Rejillas apretadas pasan a menos columnas para que quepan */
   .grid.grid-cols-3,
@@ -376,14 +405,17 @@ input[type="password"] {
   .grid.grid-cols-5 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  .grid { gap: 0.65rem; }
   .overflow-x-auto {
     -webkit-overflow-scrolling: touch;
   }
-  /* Diálogos y tarjetas caben en pantalla estrecha */
+  /* Diálogos anclados abajo, más fáciles de alcanzar con el pulgar */
   [role="dialog"] {
-    max-width: calc(100vw - 1.5rem) !important;
+    max-width: calc(100vw - 1.25rem) !important;
     max-height: 88vh;
     overflow-y: auto;
+    border-radius: 1.25rem;
+    padding: 1rem !important;
   }
 }
 

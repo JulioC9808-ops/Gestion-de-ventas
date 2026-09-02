@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { isMobileDevice } from '@/lib/platform';
+import splashCup from '@/assets/splash-cup.png';
 
 /**
  * Pantalla de inicio (una vez por sesión).
  * - PC / Electron: reproduce el video de introducción.
- * - Android / móvil: muestra el icono con el GIF de carga (el video fallaba en el celular).
+ * - Android / móvil: muestra la taza en grande (alta resolución) con el GIF de carga.
  */
 export default function IntroPlayer() {
   const [show, setShow] = useState(false);
@@ -31,18 +32,24 @@ export default function IntroPlayer() {
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-8 bg-background animate-fade-in-up"
+      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background animate-fade-in-up"
       onClick={() => setShow(false)}
     >
       {mobile ? (
-        <>
+        <div className="relative flex h-full w-full flex-col items-center justify-center px-8">
+          {/* Resplandor suave detrás de la taza */}
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,hsl(var(--primary)/0.18),transparent_65%)]" />
           <img
-            src={`${base}favicon.png`}
+            src={splashCup}
             alt="Sistema de Gestión"
-            className="w-28 h-28 sm:w-36 sm:h-36 object-contain drop-shadow-xl"
+            className="relative w-[78vw] max-w-[420px] object-contain drop-shadow-2xl"
           />
-          <img src={`${base}loader.gif`} alt="Cargando" className="w-24 h-24 object-contain" />
-        </>
+          <img
+            src={`${base}loader.gif`}
+            alt="Cargando"
+            className="relative mt-10 h-16 w-16 object-contain opacity-90"
+          />
+        </div>
       ) : (
         <video
           src={`${base}intro.mp4`}

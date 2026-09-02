@@ -127,12 +127,21 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
     );
   }
 
-  // Side nav (classic) — colapsable
+  // Side nav (classic) — colapsable. En celular se comporta como cajón flotante
+  // para que el contenido siempre use el ancho completo de la pantalla.
+  const drawer = isMobile;
+
   return (
     <div className={`flex min-h-screen w-full ${onRight ? 'flex-row-reverse' : ''}`}>
       <aside
         className={`sidebar-nav flex flex-col shrink-0 transition-all duration-200 ${
-          collapsed ? 'w-14' : 'w-56 md:w-64'
+          drawer
+            ? `fixed top-0 bottom-0 z-40 ${onRight ? 'right-0' : 'left-0'} ${
+                collapsed ? 'w-14' : 'w-[15.5rem] shadow-2xl'
+              }`
+            : collapsed
+              ? 'w-14'
+              : 'w-56 md:w-64'
         }`}
       >
 
@@ -174,9 +183,9 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
               <Tooltip key={item.key}>
                 <TooltipTrigger asChild>
                   <button
-                    onClick={() => onNav(item.key)}
+                    onClick={() => { onNav(item.key); if (drawer) setCollapsed(true); }}
                     aria-label={item.label}
-                    className={`w-full flex items-center rounded-lg text-sm font-medium transition-all duration-200 ${
+                    className={`w-full flex items-center rounded-xl text-sm font-medium transition-all duration-200 ${
                       collapsed ? 'justify-center px-0 py-2.5' : 'gap-3 px-4 py-2.5'
                     } ${
                       active
@@ -221,6 +230,16 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
           </Button>
         </div>
       </aside>
+
+      {/* Espacio reservado del riel + fondo oscuro cuando el cajón está abierto */}
+      {drawer && <div className="w-14 shrink-0" aria-hidden />}
+      {drawer && !collapsed && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm"
+          onClick={() => setCollapsed(true)}
+          aria-hidden
+        />
+      )}
 
       <main className="flex-1 min-w-0 max-w-full p-3 md:p-8 overflow-x-hidden overflow-y-auto">
         <EmployeeLicenseBanner />
