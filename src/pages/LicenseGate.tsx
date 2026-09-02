@@ -8,6 +8,7 @@ import QrScannerModal from '@/components/QrScannerModal';
 import { getMachineId, isDesktop } from '@/lib/machine';
 import { isMobileDevice } from '@/lib/platform';
 import { useAuth } from '@/contexts/AuthContext';
+import { useData } from '@/contexts/DataContext';
 import {
   readEmployeeLicense, saveEmployeeLicense, isEmployeeLicenseActive,
   employeeHoursRemaining, clearEmployeeLicense, EMPLOYEE_LICENSE_HOURS,
