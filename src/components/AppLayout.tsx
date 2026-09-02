@@ -231,6 +231,16 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
         </div>
       </aside>
 
+      {/* Espacio reservado del riel + fondo oscuro cuando el cajón está abierto */}
+      {drawer && <div className="w-14 shrink-0" aria-hidden />}
+      {drawer && !collapsed && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm"
+          onClick={() => setCollapsed(true)}
+          aria-hidden
+        />
+      )}
+
       <main className="flex-1 min-w-0 max-w-full p-3 md:p-8 overflow-x-hidden overflow-y-auto">
         <EmployeeLicenseBanner />
         {children}
