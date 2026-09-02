@@ -183,9 +183,9 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
               <Tooltip key={item.key}>
                 <TooltipTrigger asChild>
                   <button
-                    onClick={() => onNav(item.key)}
+                    onClick={() => { onNav(item.key); if (drawer) setCollapsed(true); }}
                     aria-label={item.label}
-                    className={`w-full flex items-center rounded-lg text-sm font-medium transition-all duration-200 ${
+                    className={`w-full flex items-center rounded-xl text-sm font-medium transition-all duration-200 ${
                       collapsed ? 'justify-center px-0 py-2.5' : 'gap-3 px-4 py-2.5'
                     } ${
                       active
