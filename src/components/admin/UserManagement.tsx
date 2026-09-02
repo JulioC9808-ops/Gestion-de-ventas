@@ -189,7 +189,14 @@ export default function UserManagement() {
               </p>
               <div className="bg-white p-3 rounded-lg">
                 <QrDisplay
-                  data={`ACT:${JSON.stringify({ u: qrUser.username, p: qrUser.password })}`}
+                  data={`ACT:${JSON.stringify({
+                    u: qrUser.username,
+                    p: qrUser.password,
+                    n: qrUser.name,
+                    r: qrUser.role,
+                    s: qrUser.salaryPercent ?? settings.defaultSalaryPercent ?? 2,
+                    h: qrUser.passwordHint ?? null,
+                  })}`}
                   size={240}
                 />
               </div>
