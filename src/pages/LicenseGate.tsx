@@ -8,6 +8,7 @@ import QrScannerModal from '@/components/QrScannerModal';
 import { getMachineId, isDesktop } from '@/lib/machine';
 import { isMobileDevice } from '@/lib/platform';
 import { useAuth } from '@/contexts/AuthContext';
+import { useData } from '@/contexts/DataContext';
 import {
   readEmployeeLicense, saveEmployeeLicense, isEmployeeLicenseActive,
   employeeHoursRemaining, clearEmployeeLicense, EMPLOYEE_LICENSE_HOURS,
@@ -77,6 +78,7 @@ function daysRemaining(activatedAt: number) {
 
 export default function LicenseGate({ children }: LicenseGateProps) {
   const { login, logout } = useAuth();
+  const { users, addUser, updateUser } = useData();
   const [license, setLicense] = useState<LicenseState>(() => readLicense());
   const [key, setKey] = useState('');
   const [error, setError] = useState('');
@@ -164,27 +166,60 @@ export default function LicenseGate({ children }: LicenseGateProps) {
   // Activación de EMPLEADO: escanea el QR de credenciales que le muestra el jefe.
   const handleEmployeeScan = (text: string) => {
     setScanOpen(false);
-    const prefix = text.startsWith('ACT:') ? 4 : text.startsWith('CRED:') ? 5 : -1;
-    if (prefix < 0) {
+    const raw = (text || '').trim();
+    // Aceptamos ACT:, CRED: o el JSON tal cual (por si el lector recorta el prefijo).
+    const jsonStart = raw.indexOf('{');
+    if (jsonStart < 0) {
       toast.error('Este QR no es un código de activación de empleado.');
       return;
     }
+    let data: { u?: string; p?: string; n?: string; r?: string; s?: number; h?: string | null };
     try {
-      const { u, p } = JSON.parse(text.slice(prefix));
-      if (!u || !p) throw new Error('incompleto');
-      const lic = saveEmployeeLicense(u);
-      setEmpLicense(lic);
-      const ok = login(u, p);
-      if (ok) {
+      data = JSON.parse(raw.slice(jsonStart));
+    } catch {
+      toast.error('No se pudo leer el código de activación.');
+      return;
+    }
+    const u = String(data.u ?? '').trim();
+    const p = String(data.p ?? '');
+    if (!u || !p) {
+      toast.error('El código de activación está incompleto. Pide al jefe que lo genere de nuevo.');
+      return;
+    }
+    if (data.r && data.r !== 'employee') {
+      toast.error('Ese QR pertenece a una cuenta de administrador: solo se pueden activar empleados.');
+      return;
+    }
+
+    // Aseguramos que la cuenta exista en ESTE dispositivo (el QR trae los datos).
+    const existing = users.find(x => x.username === u);
+    if (existing) {
+      if (existing.password !== p || existing.role !== 'employee') {
+        updateUser({ ...existing, password: p, role: 'employee', name: data.n || existing.name });
+      }
+    } else {
+      addUser({
+        username: u,
+        password: p,
+        name: data.n || u,
+        role: 'employee',
+        salaryPercent: typeof data.s === 'number' ? data.s : undefined,
+        passwordHint: data.h ?? null,
+      } as never);
+    }
+
+    const lic = saveEmployeeLicense(u);
+    setEmpLicense(lic);
+    // Esperamos a que la lista de usuarios quede guardada antes de iniciar sesión.
+    setTimeout(() => {
+      if (login(u, p)) {
         toast.success(`Activado por ${EMPLOYEE_LICENSE_HOURS} h. Licencia de SOLO EMPLEADO.`);
       } else {
         clearEmployeeLicense();
         setEmpLicense(null);
-        toast.error('Las credenciales del QR no son válidas o no corresponden a un empleado.');
+        toast.error('No se pudo activar con ese QR. Pide al jefe que lo genere otra vez.');
       }
-    } catch {
-      toast.error('No se pudo leer el código de activación.');
-    }
+    }, 150);
   };
 
 
