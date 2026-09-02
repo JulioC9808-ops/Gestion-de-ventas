@@ -127,12 +127,21 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
     );
   }
 
-  // Side nav (classic) — colapsable
+  // Side nav (classic) — colapsable. En celular se comporta como cajón flotante
+  // para que el contenido siempre use el ancho completo de la pantalla.
+  const drawer = isMobile;
+
   return (
     <div className={`flex min-h-screen w-full ${onRight ? 'flex-row-reverse' : ''}`}>
       <aside
         className={`sidebar-nav flex flex-col shrink-0 transition-all duration-200 ${
-          collapsed ? 'w-14' : 'w-56 md:w-64'
+          drawer
+            ? `fixed top-0 bottom-0 z-40 ${onRight ? 'right-0' : 'left-0'} ${
+                collapsed ? 'w-14' : 'w-[15.5rem] shadow-2xl'
+              }`
+            : collapsed
+              ? 'w-14'
+              : 'w-56 md:w-64'
         }`}
       >
 
