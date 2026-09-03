@@ -17,7 +17,7 @@ import HelpTip from '@/components/HelpTip';
  * el otro los ESCANEA hasta completar el respaldo.
  */
 export default function DataSync() {
-  const { products, stock, movements, users, settings, applyBackup } = useData();
+  const { products, stock, movements, users, reports, settings, applyBackup } = useData();
   const [showQr, setShowQr] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
 
