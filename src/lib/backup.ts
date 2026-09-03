@@ -2,7 +2,7 @@
 // que se transfiere entre dispositivos por códigos QR, sin internet.
 
 import LZString from 'lz-string';
-import type { Product, StockItem, StockMovement, User, AppSettings } from '@/types';
+import type { Product, StockItem, StockMovement, User, AppSettings, ShiftReport } from '@/types';
 
 export interface BackupPayload {
   v: 1;
@@ -11,6 +11,7 @@ export interface BackupPayload {
   stock: StockItem[];
   movements: StockMovement[];
   users: User[];
+  reports?: ShiftReport[];
   settings: Partial<AppSettings>;
 }
 
@@ -25,6 +26,7 @@ export function buildBackup(data: {
   stock: StockItem[];
   movements: StockMovement[];
   users: User[];
+  reports?: ShiftReport[];
   settings: AppSettings;
 }): BackupPayload {
   return {
@@ -34,6 +36,7 @@ export function buildBackup(data: {
     stock: data.stock,
     movements: data.movements,
     users: data.users,
+    reports: data.reports || [],
     settings: slimSettings(data.settings),
   };
 }

@@ -17,13 +17,13 @@ import HelpTip from '@/components/HelpTip';
  * el otro los ESCANEA hasta completar el respaldo.
  */
 export default function DataSync() {
-  const { products, stock, movements, users, settings, applyBackup } = useData();
+  const { products, stock, movements, users, reports, settings, applyBackup } = useData();
   const [showQr, setShowQr] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
 
   const chunks = useMemo(
-    () => chunkPayload(encodeBackup(buildBackup({ products, stock, movements, users, settings }))),
-    [products, stock, movements, users, settings],
+    () => chunkPayload(encodeBackup(buildBackup({ products, stock, movements, users, reports, settings }))),
+    [products, stock, movements, users, reports, settings],
   );
 
   const [index, setIndex] = useState(0);
@@ -89,7 +89,7 @@ export default function DataSync() {
         <h3 className="font-display font-bold text-lg">Sincronizar datos por QR</h3>
         <HelpTip>
           El dispositivo que tiene los datos más nuevos muestra los códigos; el otro los escanea.
-          Se envían productos, almacén, stock de venta, movimientos y usuarios. Las imágenes (logo/fondo) no se envían.
+          Se envían productos, almacén, stock de venta, movimientos, cierres de turno y usuarios. Las imágenes (logo/fondo) no se envían.
         </HelpTip>
       </div>
       <p className="text-sm text-muted-foreground">

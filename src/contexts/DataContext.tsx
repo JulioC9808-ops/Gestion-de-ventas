@@ -372,6 +372,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setS(() => payload.stock || []);
     setM(() => payload.movements || []);
     setU(() => payload.users || []);
+    // Los cierres de turno se FUSIONAN (nunca se pierde historial de ningún dispositivo)
+    if (payload.reports?.length) {
+      setR(prev => dedupeReports([...prev, ...payload.reports!]));
+    }
     setSt(prev => ({
       ...prev,
       ...payload.settings,
