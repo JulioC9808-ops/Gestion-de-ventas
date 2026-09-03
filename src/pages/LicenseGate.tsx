@@ -407,10 +407,28 @@ export default function LicenseGate({ children }: LicenseGateProps) {
 
       <QrScannerModal
         open={scanOpen}
-        onClose={() => setScanOpen(false)}
+        onClose={() => {
+          setScanOpen(false);
+          const creds = pendingCreds;
+          if (creds && !dataDone) {
+            toast.info('Entrando sin los datos del jefe. Puedes recibirlos luego en la pestaña Sincronizar.');
+            finishActivation(creds);
+          } else {
+            resetScanState();
+          }
+        }}
         onScan={handleEmployeeScan}
-        title="Activación de empleado"
-        hint="Apunta al QR de activación que te muestra el jefe desde Ajustes → Usuarios."
+        keepOpen
+        title={
+          pendingCreds
+            ? `Recibiendo datos del jefe ${dataTotal ? `${dataChunks.size}/${dataTotal}` : '0/?'}`
+            : 'Activación de empleado'
+        }
+        hint={
+          pendingCreds
+            ? 'El jefe debe abrir Ajustes → Sincronización → "Mostrar mis datos". Mantén la cámara frente a los códigos hasta completarlos todos. Si cierras ahora entrarás sin los datos.'
+            : 'Apunta al QR de activación que te muestra el jefe (Ajustes → Usuarios). Después escanea sus códigos de datos.'
+        }
       />
 
       <Dialog open={showQr} onOpenChange={setShowQr}>
