@@ -79,7 +79,7 @@ function daysRemaining(activatedAt: number) {
 
 export default function LicenseGate({ children }: LicenseGateProps) {
   const { login, logout } = useAuth();
-  const { users, addUser, updateUser } = useData();
+  const { users, addUser, updateUser, applyBackup } = useData();
   const [license, setLicense] = useState<LicenseState>(() => readLicense());
   const [key, setKey] = useState('');
   const [error, setError] = useState('');
