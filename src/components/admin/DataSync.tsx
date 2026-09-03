@@ -89,7 +89,7 @@ export default function DataSync() {
         <h3 className="font-display font-bold text-lg">Sincronizar datos por QR</h3>
         <HelpTip>
           El dispositivo que tiene los datos más nuevos muestra los códigos; el otro los escanea.
-          Se envían productos, almacén, stock de venta, movimientos y usuarios. Las imágenes (logo/fondo) no se envían.
+          Se envían productos, almacén, stock de venta, movimientos, cierres de turno y usuarios. Las imágenes (logo/fondo) no se envían.
         </HelpTip>
       </div>
       <p className="text-sm text-muted-foreground">
