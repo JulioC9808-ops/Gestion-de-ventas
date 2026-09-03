@@ -20,6 +20,7 @@ export default function EmployeeDashboard() {
     'stock-view': <StockView />,
     'stock-entry': <StockEntry />,
     shift: <ShiftClose />,
+    sync: <DataSync />,
   };
 
   return (
