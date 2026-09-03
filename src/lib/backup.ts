@@ -26,6 +26,7 @@ export function buildBackup(data: {
   stock: StockItem[];
   movements: StockMovement[];
   users: User[];
+  reports?: ShiftReport[];
   settings: AppSettings;
 }): BackupPayload {
   return {
@@ -35,6 +36,7 @@ export function buildBackup(data: {
     stock: data.stock,
     movements: data.movements,
     users: data.users,
+    reports: data.reports || [],
     settings: slimSettings(data.settings),
   };
 }
