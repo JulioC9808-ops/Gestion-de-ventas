@@ -22,8 +22,8 @@ export default function DataSync() {
   const [scanOpen, setScanOpen] = useState(false);
 
   const chunks = useMemo(
-    () => chunkPayload(encodeBackup(buildBackup({ products, stock, movements, users, settings }))),
-    [products, stock, movements, users, settings],
+    () => chunkPayload(encodeBackup(buildBackup({ products, stock, movements, users, reports, settings }))),
+    [products, stock, movements, users, reports, settings],
   );
 
   const [index, setIndex] = useState(0);
