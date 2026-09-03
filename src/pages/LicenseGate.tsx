@@ -13,6 +13,7 @@ import {
   readEmployeeLicense, saveEmployeeLicense, isEmployeeLicenseActive,
   employeeHoursRemaining, clearEmployeeLicense, EMPLOYEE_LICENSE_HOURS,
 } from '@/lib/employeeLicense';
+import { decodeBackup, joinChunks, parseChunk } from '@/lib/backup';
 import { toast } from 'sonner';
 
 const LIFETIME_LICENSE = '08022664107';
