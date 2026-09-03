@@ -164,11 +164,42 @@ export default function LicenseGate({ children }: LicenseGateProps) {
     }
   };
 
-  // Activación de EMPLEADO: escanea el QR de credenciales que le muestra el jefe.
-  const handleEmployeeScan = (text: string) => {
-    setScanOpen(false);
-    const raw = (text || '').trim();
-    // Aceptamos ACT:, CRED: o el JSON tal cual (por si el lector recorta el prefijo).
+  // ---- Activación de EMPLEADO + recepción de la base de datos del jefe ----
+  // El mismo escáner acepta:
+  //   1) el QR de credenciales (JSON) -> crea/actualiza la cuenta
+  //   2) los QR de datos "SYNC:..."  -> respaldo completo (productos, stock, cierres...)
+  const [pendingCreds, setPendingCreds] = useState<{ u: string; p: string } | null>(null);
+  const [dataChunks, setDataChunks] = useState<Map<number, string>>(new Map());
+  const [dataTotal, setDataTotal] = useState(0);
+  const [dataBatch, setDataBatch] = useState<string | null>(null);
+  const [dataDone, setDataDone] = useState(false);
+
+  const resetScanState = () => {
+    setPendingCreds(null);
+    setDataChunks(new Map());
+    setDataTotal(0);
+    setDataBatch(null);
+    setDataDone(false);
+  };
+
+  const finishActivation = (creds: { u: string; p: string } | null) => {
+    if (!creds) return;
+    const lic = saveEmployeeLicense(creds.u);
+    setEmpLicense(lic);
+    setTimeout(() => {
+      if (login(creds.u, creds.p)) {
+        setScanOpen(false);
+        resetScanState();
+        toast.success(`Activado por ${EMPLOYEE_LICENSE_HOURS} h. Licencia de SOLO EMPLEADO.`);
+      } else {
+        clearEmployeeLicense();
+        setEmpLicense(null);
+        toast.error('No se pudo activar con ese QR. Pide al jefe que lo genere otra vez.');
+      }
+    }, 150);
+  };
+
+  const handleCredsQr = (raw: string) => {
     const jsonStart = raw.indexOf('{');
     if (jsonStart < 0) {
       toast.error('Este QR no es un código de activación de empleado.');
@@ -209,19 +240,54 @@ export default function LicenseGate({ children }: LicenseGateProps) {
       } as never);
     }
 
-    const lic = saveEmployeeLicense(u);
-    setEmpLicense(lic);
-    // Esperamos a que la lista de usuarios quede guardada antes de iniciar sesión.
-    setTimeout(() => {
-      if (login(u, p)) {
-        toast.success(`Activado por ${EMPLOYEE_LICENSE_HOURS} h. Licencia de SOLO EMPLEADO.`);
-      } else {
-        clearEmployeeLicense();
-        setEmpLicense(null);
-        toast.error('No se pudo activar con ese QR. Pide al jefe que lo genere otra vez.');
-      }
-    }, 150);
+    setPendingCreds({ u, p });
+    if (dataDone) {
+      finishActivation({ u, p });
+      return;
+    }
+    toast.success('Cuenta lista. Ahora el jefe debe pulsar "Mostrar mis datos" (Ajustes → Sincronización) y tú sigue escaneando.');
   };
+
+  const handleDataChunk = (raw: string) => {
+    const chunk = parseChunk(raw);
+    if (!chunk) return;
+
+    let next: Map<number, string>;
+    if (dataBatch && dataBatch !== chunk.id) {
+      next = new Map([[chunk.index, chunk.data]]);
+      setDataBatch(chunk.id);
+    } else {
+      next = new Map(dataChunks);
+      next.set(chunk.index, chunk.data);
+      if (!dataBatch) setDataBatch(chunk.id);
+    }
+    setDataChunks(next);
+    setDataTotal(chunk.total);
+
+    const joined = joinChunks(next, chunk.total);
+    if (!joined) return;
+
+    const payload = decodeBackup(joined);
+    if (!payload) {
+      toast.error('Los datos recibidos están dañados. Vuelve a escanear.');
+      setDataChunks(new Map());
+      setDataTotal(0);
+      setDataBatch(null);
+      return;
+    }
+    applyBackup(payload);
+    setDataDone(true);
+    toast.success('Datos del jefe recibidos: productos, stock, movimientos y cierres.');
+    if (pendingCreds) finishActivation(pendingCreds);
+    else toast.info('Ahora escanea el QR de activación de tu cuenta.');
+  };
+
+  const handleEmployeeScan = (text: string) => {
+    const raw = (text || '').trim();
+    if (raw.startsWith('SYNC:')) handleDataChunk(raw);
+    else handleCredsQr(raw);
+  };
+
 
 
   const WelcomeDialog = (
