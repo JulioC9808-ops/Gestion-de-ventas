@@ -32,6 +32,8 @@ contextBridge.exposeInMainWorld('desktopBridge', {
   isElectron: true,
   machineId: MACHINE_ID,
   platform: process.platform,
+  startSyncServer: (payload) => ipcRenderer.invoke('sync:start', payload),
+  stopSyncServer: () => ipcRenderer.invoke('sync:stop'),
   windowControls: {
     minimize: () => ipcRenderer.invoke('window:minimize'),
     toggleMaximize: () => ipcRenderer.invoke('window:toggle-maximize'),

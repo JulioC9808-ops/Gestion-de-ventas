@@ -3,8 +3,30 @@ const { autoUpdater } = require('electron-updater');
 // Ventana frameless con controles personalizados via IPC.
 const { app, BrowserWindow, shell, ipcMain } = require('electron');
 const path = require('path');
+const http = require('http');
+const os = require('os');
+const crypto = require('crypto');
 
 let mainWindow = null;
+let syncServer = null;
+let syncPayload = '';
+let syncToken = '';
+
+function localIpv4() {
+  for (const addresses of Object.values(os.networkInterfaces())) {
+    for (const address of addresses || []) {
+      if (address.family === 'IPv4' && !address.internal) return address.address;
+    }
+  }
+  return null;
+}
+
+function stopSyncServer() {
+  if (syncServer) syncServer.close();
+  syncServer = null;
+  syncPayload = '';
+  syncToken = '';
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -53,12 +75,39 @@ ipcMain.handle('window:toggle-maximize', () => {
 });
 ipcMain.handle('window:close', () => mainWindow?.close());
 ipcMain.handle('window:is-maximized', () => !!mainWindow?.isMaximized());
+ipcMain.handle('sync:start', async (_event, payload) => {
+  stopSyncServer();
+  const ip = localIpv4();
+  if (!ip) throw new Error('Conecta esta computadora a la misma red Wi-Fi del empleado.');
+  syncPayload = String(payload || '');
+  syncToken = crypto.randomUUID();
+  syncServer = http.createServer((request, response) => {
+    if (request.method !== 'GET' || request.url !== `/sync/${syncToken}`) {
+      response.writeHead(404).end('Not found');
+      return;
+    }
+    response.writeHead(200, {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'no-store',
+    });
+    response.end(syncPayload);
+  });
+  await new Promise((resolve, reject) => {
+    syncServer.once('error', reject);
+    syncServer.listen(0, '0.0.0.0', resolve);
+  });
+  const address = syncServer.address();
+  if (!address || typeof address === 'string') throw new Error('No se pudo abrir la transferencia local.');
+  return `http://${ip}:${address.port}/sync/${syncToken}`;
+});
+ipcMain.handle('sync:stop', () => stopSyncServer());
 
 app.whenReady().then(() => {
   createWindow();
   autoUpdater.checkForUpdatesAndNotify();
 });
-app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
+app.on('window-all-closed', () => { stopSyncServer(); if (process.platform !== 'darwin') app.quit(); });
 app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 
 // Auto-updater events
