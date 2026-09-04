@@ -18,6 +18,7 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(LocalSyncPlugin.class);
         super.onCreate(savedInstanceState);
 
         // Pide el permiso de cámara al iniciar, para que el escáner de QR
