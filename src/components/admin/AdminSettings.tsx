@@ -8,7 +8,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Palette, Type, Layout, DollarSign, Users as UsersIcon, Info, Settings as SettingsIcon, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import UserManagement from '@/components/admin/UserManagement';
-import DataSync from '@/components/admin/DataSync';
 
 const THEMES = [
   { value: 'white', label: 'Blanco Puro', preview: 'bg-white border border-gray-300' },
@@ -258,12 +257,10 @@ export default function AdminSettings() {
           <TabsTrigger value="users"><UsersIcon className="w-4 h-4 mr-2" />Usuarios</TabsTrigger>
           <TabsTrigger value="notes"><Info className="w-4 h-4 mr-2" />Notas Importantes</TabsTrigger>
           <TabsTrigger value="general"><SettingsIcon className="w-4 h-4 mr-2" />Configuración</TabsTrigger>
-          <TabsTrigger value="sync"><RefreshCw className="w-4 h-4 mr-2" />Sincronización</TabsTrigger>
         </TabsList>
         <TabsContent value="users"><UserManagement /></TabsContent>
         <TabsContent value="notes"><ImportantNotes /></TabsContent>
         <TabsContent value="general"><GeneralSettings /></TabsContent>
-        <TabsContent value="sync"><div className="max-w-2xl"><DataSync /></div></TabsContent>
       </Tabs>
     </div>
   );

@@ -10,7 +10,6 @@ import { isMobileDevice } from '@/lib/platform';
 import QrDisplay from '@/components/QrDisplay';
 import { buildBackup } from '@/lib/backup';
 import { startEmployeeShare, stopEmployeeShare } from '@/lib/syncTransport';
-import { toast } from 'sonner';
 
 export default function UserManagement() {
   const { users, addUser, updateUser, deleteUser, settings, products, stock, movements, reports } = useData();
