@@ -5,6 +5,9 @@ interface DesktopBridge {
   isElectron: boolean;
   machineId: string;
   platform: string;
+  startSyncServer?: (payload: string) => Promise<string>;
+  stopSyncServer?: () => Promise<void>;
+  windowControls?: Record<string, unknown>;
 }
 
 declare global {
