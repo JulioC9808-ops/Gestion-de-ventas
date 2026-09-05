@@ -28,6 +28,8 @@ public class MainActivity extends BridgeActivity {
         // Habilita el zoom con pellizco y mejora la legibilidad en pantallas pequeñas.
         WebView webView = getBridge().getWebView();
         if (webView != null) {
+            // Fondo blanco: evita el destello negro mientras carga la web
+            webView.setBackgroundColor(android.graphics.Color.WHITE);
             WebSettings s = webView.getSettings();
             s.setSupportZoom(true);
             s.setBuiltInZoomControls(true);
