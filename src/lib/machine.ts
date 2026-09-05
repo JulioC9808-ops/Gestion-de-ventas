@@ -13,6 +13,15 @@ interface DesktopBridge {
 declare global {
   interface Window {
     desktopBridge?: DesktopBridge;
+    Capacitor?: {
+      isNativePlatform?: () => boolean;
+      Plugins?: {
+        LocalSync?: {
+          start: (options: { payload: string }) => Promise<{ url: string }>;
+          stop: () => Promise<void>;
+        };
+      };
+    };
   }
 }
 
