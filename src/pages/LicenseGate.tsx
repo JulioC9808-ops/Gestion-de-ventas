@@ -13,7 +13,7 @@ import {
   readEmployeeLicense, saveEmployeeLicense, isEmployeeLicenseActive,
   employeeHoursRemaining, clearEmployeeLicense, EMPLOYEE_LICENSE_HOURS,
 } from '@/lib/employeeLicense';
-import { decodeBackup, joinChunks, parseChunk } from '@/lib/backup';
+import { receiveEmployeeShare } from '@/lib/syncTransport';
 import { toast } from 'sonner';
 
 const LIFETIME_LICENSE = '08022664107';
@@ -164,131 +164,59 @@ export default function LicenseGate({ children }: LicenseGateProps) {
     }
   };
 
-  // ---- Activación de EMPLEADO + recepción de la base de datos del jefe ----
-  // El mismo escáner acepta:
-  //   1) el QR de credenciales (JSON) -> crea/actualiza la cuenta
-  //   2) los QR de datos "SYNC:..."  -> respaldo completo (productos, stock, cierres...)
-  const [pendingCreds, setPendingCreds] = useState<{ u: string; p: string } | null>(null);
-  const [dataChunks, setDataChunks] = useState<Map<number, string>>(new Map());
-  const [dataTotal, setDataTotal] = useState(0);
-  const [dataBatch, setDataBatch] = useState<string | null>(null);
-  const [dataDone, setDataDone] = useState(false);
+  // ---- Activación de EMPLEADO con UN solo QR ----
+  // El QR del jefe (Ajustes → Usuarios) trae la cuenta del empleado y todos los datos.
+  const [receiving, setReceiving] = useState(false);
 
-  const resetScanState = () => {
-    setPendingCreds(null);
-    setDataChunks(new Map());
-    setDataTotal(0);
-    setDataBatch(null);
-    setDataDone(false);
-  };
-
-  const finishActivation = (creds: { u: string; p: string } | null) => {
-    if (!creds) return;
-    const lic = saveEmployeeLicense(creds.u);
-    setEmpLicense(lic);
-    setTimeout(() => {
-      if (login(creds.u, creds.p)) {
-        setScanOpen(false);
-        resetScanState();
-        toast.success(`Activado por ${EMPLOYEE_LICENSE_HOURS} h. Licencia de SOLO EMPLEADO.`);
-      } else {
-        clearEmployeeLicense();
-        setEmpLicense(null);
-        toast.error('No se pudo activar con ese QR. Pide al jefe que lo genere otra vez.');
-      }
-    }, 150);
-  };
-
-  const handleCredsQr = (raw: string) => {
-    const jsonStart = raw.indexOf('{');
-    if (jsonStart < 0) {
-      toast.error('Este QR no es un código de activación de empleado.');
-      return;
-    }
-    let data: { u?: string; p?: string; n?: string; r?: string; s?: number; h?: string | null };
-    try {
-      data = JSON.parse(raw.slice(jsonStart));
-    } catch {
-      toast.error('No se pudo leer el código de activación.');
-      return;
-    }
-    const u = String(data.u ?? '').trim();
-    const p = String(data.p ?? '');
-    if (!u || !p) {
-      toast.error('El código de activación está incompleto. Pide al jefe que lo genere de nuevo.');
-      return;
-    }
-    if (data.r && data.r !== 'employee') {
-      toast.error('Ese QR pertenece a una cuenta de administrador: solo se pueden activar empleados.');
-      return;
-    }
-
-    // Aseguramos que la cuenta exista en ESTE dispositivo (el QR trae los datos).
-    const existing = users.find(x => x.username === u);
-    if (existing) {
-      if (existing.password !== p || existing.role !== 'employee') {
-        updateUser({ ...existing, password: p, role: 'employee', name: data.n || existing.name });
-      }
-    } else {
-      addUser({
-        username: u,
-        password: p,
-        name: data.n || u,
-        role: 'employee',
-        salaryPercent: typeof data.s === 'number' ? data.s : undefined,
-        passwordHint: data.h ?? null,
-      } as never);
-    }
-
-    setPendingCreds({ u, p });
-    if (dataDone) {
-      finishActivation({ u, p });
-      return;
-    }
-    toast.success('Cuenta lista. Ahora el jefe debe pulsar "Mostrar mis datos" (Ajustes → Sincronización) y tú sigue escaneando.');
-  };
-
-  const handleDataChunk = (raw: string) => {
-    const chunk = parseChunk(raw);
-    if (!chunk) return;
-
-    let next: Map<number, string>;
-    if (dataBatch && dataBatch !== chunk.id) {
-      next = new Map([[chunk.index, chunk.data]]);
-      setDataBatch(chunk.id);
-    } else {
-      next = new Map(dataChunks);
-      next.set(chunk.index, chunk.data);
-      if (!dataBatch) setDataBatch(chunk.id);
-    }
-    setDataChunks(next);
-    setDataTotal(chunk.total);
-
-    const joined = joinChunks(next, chunk.total);
-    if (!joined) return;
-
-    const payload = decodeBackup(joined);
-    if (!payload) {
-      toast.error('Los datos recibidos están dañados. Vuelve a escanear.');
-      setDataChunks(new Map());
-      setDataTotal(0);
-      setDataBatch(null);
-      return;
-    }
-    applyBackup(payload);
-    setDataDone(true);
-    toast.success('Datos del jefe recibidos: productos, stock, movimientos y cierres.');
-    if (pendingCreds) finishActivation(pendingCreds);
-    else toast.info('Ahora escanea el QR de activación de tu cuenta.');
-  };
-
-  const handleEmployeeScan = (text: string) => {
+  const handleEmployeeScan = async (text: string) => {
+    if (receiving) return;
     const raw = (text || '').trim();
-    if (raw.startsWith('SYNC:')) handleDataChunk(raw);
-    else handleCredsQr(raw);
+    setReceiving(true);
+    try {
+      const packet = await receiveEmployeeShare(raw);
+      if (!packet) {
+        toast.error('Este no es el QR de activación que te dio el jefe.');
+        return;
+      }
+
+      // 1) Todos los datos del jefe
+      applyBackup(packet.backup);
+
+      // 2) La cuenta del empleado en este dispositivo
+      const { u, p, n, s: sal, h } = packet.account;
+      const existing = users.find(x => x.username === u);
+      if (existing) {
+        updateUser({ ...existing, password: p, role: 'employee', name: n || existing.name });
+      } else {
+        addUser({
+          username: u,
+          password: p,
+          name: n || u,
+          role: 'employee',
+          salaryPercent: typeof sal === 'number' ? sal : undefined,
+          passwordHint: h ?? null,
+        } as never);
+      }
+
+      // 3) Licencia de 24 h y entrada
+      const lic = saveEmployeeLicense(u);
+      setEmpLicense(lic);
+      setTimeout(() => {
+        if (login(u, p)) {
+          setScanOpen(false);
+          toast.success(`Datos recibidos y activado por ${EMPLOYEE_LICENSE_HOURS} h. Licencia de SOLO EMPLEADO.`);
+        } else {
+          clearEmployeeLicense();
+          setEmpLicense(null);
+          toast.error('No se pudo activar con ese QR. Pide al jefe que lo genere otra vez.');
+        }
+      }, 200);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'No se pudo recibir los datos del jefe.');
+    } finally {
+      setReceiving(false);
+    }
   };
-
-
 
   const WelcomeDialog = (
     <Dialog open={showWelcome} onOpenChange={(o) => { if (!o) closeWelcome(); }}>
@@ -407,28 +335,11 @@ export default function LicenseGate({ children }: LicenseGateProps) {
 
       <QrScannerModal
         open={scanOpen}
-        onClose={() => {
-          setScanOpen(false);
-          const creds = pendingCreds;
-          if (creds && !dataDone) {
-            toast.info('Entrando sin los datos del jefe. Puedes recibirlos luego en la pestaña Sincronizar.');
-            finishActivation(creds);
-          } else {
-            resetScanState();
-          }
-        }}
+        onClose={() => setScanOpen(false)}
         onScan={handleEmployeeScan}
         keepOpen
-        title={
-          pendingCreds
-            ? `Recibiendo datos del jefe ${dataTotal ? `${dataChunks.size}/${dataTotal}` : '0/?'}`
-            : 'Activación de empleado'
-        }
-        hint={
-          pendingCreds
-            ? 'El jefe debe abrir Ajustes → Sincronización → "Mostrar mis datos". Mantén la cámara frente a los códigos hasta completarlos todos. Si cierras ahora entrarás sin los datos.'
-            : 'Apunta al QR de activación que te muestra el jefe (Ajustes → Usuarios). Después escanea sus códigos de datos.'
-        }
+        title="Activación de empleado"
+        hint={receiving ? 'Recibiendo datos del jefe…' : 'Apunta al QR que te muestra el jefe (Ajustes → Usuarios). Ambos teléfonos deben estar en la misma red Wi‑Fi.'}
       />
 
       <Dialog open={showQr} onOpenChange={setShowQr}>

@@ -4,7 +4,6 @@ export function isMobileDevice(): boolean {
   if (typeof window === 'undefined') return false;
 
   // Capacitor nativo (Android/iOS empaquetado)
-  // @ts-expect-error - Capacitor inyecta esto en runtime nativo
   const cap = window.Capacitor;
   if (cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform()) {
     return true;

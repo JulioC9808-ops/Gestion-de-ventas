@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import HelpTip from '@/components/HelpTip';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
@@ -8,13 +8,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import type { User } from '@/types';
 import { isMobileDevice } from '@/lib/platform';
 import QrDisplay from '@/components/QrDisplay';
+import { buildBackup } from '@/lib/backup';
+import { startEmployeeShare, stopEmployeeShare } from '@/lib/syncTransport';
 
 export default function UserManagement() {
-  const { users, addUser, updateUser, deleteUser, settings } = useData();
+  const { users, addUser, updateUser, deleteUser, settings, products, stock, movements, reports } = useData();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
   const [form, setForm] = useState({ username: '', password: '', name: '', role: 'employee' as 'employee' | 'admin', salaryPercent: '', passwordHint: '' });
   const [qrUser, setQrUser] = useState<User | null>(null);
+  const [qrPayload, setQrPayload] = useState<string | null>(null);
+  const [qrError, setQrError] = useState<string | null>(null);
   const mobile = isMobileDevice();
 
   const visibleUsers = users.filter(u => u.role !== 'dev');
@@ -24,6 +28,36 @@ export default function UserManagement() {
     .filter(u => u.role === 'admin')
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())[0]?.id;
   const isProtectedAdmin = editing && editing.id === firstAdminId;
+
+  // Un solo QR: lleva la cuenta del empleado + TODOS los datos actuales (por Wi‑Fi local).
+  useEffect(() => {
+    if (!qrUser) {
+      setQrPayload(null);
+      setQrError(null);
+      void stopEmployeeShare();
+      return;
+    }
+    let cancelled = false;
+    setQrPayload(null);
+    setQrError(null);
+    startEmployeeShare({
+      v: 2,
+      account: {
+        u: qrUser.username,
+        p: qrUser.password,
+        n: qrUser.name,
+        r: 'employee',
+        s: qrUser.salaryPercent ?? settings.defaultSalaryPercent ?? 2,
+        h: qrUser.passwordHint ?? null,
+      },
+      backup: buildBackup({ products, stock, movements, users, reports, settings }),
+    })
+      .then(code => { if (!cancelled) setQrPayload(code); })
+      .catch(err => {
+        if (!cancelled) setQrError(err instanceof Error ? err.message : 'No se pudo preparar el QR.');
+      });
+    return () => { cancelled = true; };
+  }, [qrUser, products, stock, movements, users, reports, settings]);
 
 
   const openNew = () => {
@@ -185,20 +219,13 @@ export default function UserManagement() {
             <div className="flex flex-col items-center gap-3 py-2">
               <p className="text-sm text-muted-foreground text-center">
                 Que <strong>{qrUser.name}</strong> escanee este QR desde la pantalla de
-                <strong> Activación de Licencia</strong>. Le dará acceso por 24 h con licencia de SOLO EMPLEADO.
+                <strong> Activación</strong> en su celular. Recibirá su cuenta y todos los datos
+                (productos, precios, stock, movimientos y cierres). Ambos teléfonos deben estar en la misma red Wi‑Fi.
               </p>
-              <div className="bg-white p-3 rounded-lg">
-                <QrDisplay
-                  data={`ACT:${JSON.stringify({
-                    u: qrUser.username,
-                    p: qrUser.password,
-                    n: qrUser.name,
-                    r: qrUser.role,
-                    s: qrUser.salaryPercent ?? settings.defaultSalaryPercent ?? 2,
-                    h: qrUser.passwordHint ?? null,
-                  })}`}
-                  size={240}
-                />
+              <div className="bg-white p-3 rounded-lg min-h-[240px] min-w-[240px] flex items-center justify-center">
+                {qrPayload
+                  ? <QrDisplay data={qrPayload} size={240} />
+                  : <span className="text-xs text-black/60 text-center px-4">{qrError ?? 'Preparando…'}</span>}
               </div>
               <div className="text-xs text-muted-foreground text-center">
                 Usuario: <code className="bg-secondary px-1 rounded">{qrUser.username}</code>

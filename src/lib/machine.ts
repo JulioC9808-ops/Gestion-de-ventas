@@ -5,11 +5,23 @@ interface DesktopBridge {
   isElectron: boolean;
   machineId: string;
   platform: string;
+  startSyncServer?: (payload: string) => Promise<string>;
+  stopSyncServer?: () => Promise<void>;
+  windowControls?: Record<string, unknown>;
 }
 
 declare global {
   interface Window {
     desktopBridge?: DesktopBridge;
+    Capacitor?: {
+      isNativePlatform?: () => boolean;
+      Plugins?: {
+        LocalSync?: {
+          start: (options: { payload: string }) => Promise<{ url: string }>;
+          stop: () => Promise<void>;
+        };
+      };
+    };
   }
 }
 
