@@ -14,26 +14,6 @@ export interface EmployeeSyncPackage {
   backup: BackupPayload;
 }
 
-declare global {
-  interface Window {
-    desktopBridge?: {
-      isElectron: boolean;
-      startSyncServer?: (payload: string) => Promise<string>;
-      stopSyncServer?: () => Promise<void>;
-      windowControls: Record<string, unknown>;
-    };
-    Capacitor?: {
-      isNativePlatform?: () => boolean;
-      Plugins?: {
-        LocalSync?: {
-          start: (options: { payload: string }) => Promise<{ url: string }>;
-          stop: () => Promise<void>;
-        };
-      };
-    };
-  }
-}
-
 const DIRECT_PREFIX = 'GVBACKUP:';
 const WIFI_PREFIX = 'GVSYNC:';
 
