@@ -54,6 +54,9 @@ function createWindow() {
     console.error('Error cargando index.html:', err);
   });
 
+  mainWindow.once('ready-to-show', () => mainWindow?.show());
+
+
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('mailto:')) {
       shell.openExternal(url);
