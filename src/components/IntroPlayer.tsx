@@ -8,16 +8,17 @@ import splashCup from '@/assets/splash-cup.png';
  * - Android / móvil: muestra la taza en grande (alta resolución) con el GIF de carga.
  */
 export default function IntroPlayer() {
-  const [show, setShow] = useState(false);
   const [mobile] = useState(() => isMobileDevice());
-
-  useEffect(() => {
-    const seen = sessionStorage.getItem('intro_played');
-    if (!seen) {
-      setShow(true);
+  // Se calcula en el primer render (sincrónico) para que no haya destello de la app.
+  const [show, setShow] = useState(() => {
+    try {
+      if (sessionStorage.getItem('intro_played')) return false;
       sessionStorage.setItem('intro_played', '1');
+      return true;
+    } catch {
+      return false;
     }
-  }, []);
+  });
 
   useEffect(() => {
     if (!show) return;
@@ -32,9 +33,12 @@ export default function IntroPlayer() {
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background animate-fade-in-up"
+      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center ${
+        mobile ? 'bg-white' : 'bg-background'
+      }`}
       onClick={() => setShow(false)}
     >
+
       {mobile ? (
         <div className="relative flex h-full w-full flex-col items-center justify-center px-8">
           {/* Resplandor suave detrás de la taza */}
