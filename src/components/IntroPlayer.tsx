@@ -74,8 +74,10 @@ export default function IntroPlayer() {
           muted
           playsInline
           className="w-full h-full object-contain"
-          onEnded={() => setShow(false)}
-          onError={() => setShow(false)}
+          onCanPlay={hideBootSplash}
+          onPlaying={hideBootSplash}
+          onEnded={() => { hideBootSplash(); setShow(false); }}
+          onError={() => { hideBootSplash(); setShow(false); }}
         />
       )}
     </div>
