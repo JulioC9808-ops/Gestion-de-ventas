@@ -35,6 +35,8 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     backgroundColor: '#ffffff',
+    show: false, // se muestra al estar lista: evita el parpadeo al abrir
+    paintWhenInitiallyHidden: true,
     autoHideMenuBar: true,
     frame: false, // sin marco nativo — usamos una barra propia
     titleBarStyle: 'hidden',
@@ -51,6 +53,9 @@ function createWindow() {
   mainWindow.loadFile(indexHtml).catch((err) => {
     console.error('Error cargando index.html:', err);
   });
+
+  mainWindow.once('ready-to-show', () => mainWindow?.show());
+
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('mailto:')) {

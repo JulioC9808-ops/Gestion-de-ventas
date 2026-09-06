@@ -21,11 +21,22 @@
     <style>
       /* Evita el destello negro/gris mientras arranca la app */
       html, body, #root { background: #ffffff; }
+      #boot-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483647;
+        background: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #boot-splash img { width: 64px; height: 64px; object-fit: contain; }
     </style>
   </head>
 
 
   <body>
+    <div id="boot-splash"><img src="./loader.gif" alt="Cargando" /></div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

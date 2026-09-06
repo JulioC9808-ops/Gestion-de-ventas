@@ -20,10 +20,23 @@ export default function IntroPlayer() {
     }
   });
 
+  // Quita el splash estático del index.html (evita el parpadeo al arrancar)
+  const hideBootSplash = () => {
+    const el = document.getElementById('boot-splash');
+    if (el) el.remove();
+  };
+
   useEffect(() => {
-    if (!show) return;
+    if (!show) {
+      hideBootSplash();
+      return;
+    }
+    if (mobile) hideBootSplash();
     // Cierre de seguridad: móvil 2.6s, PC máx 12s (por si el video no dispara "ended")
-    const t = setTimeout(() => setShow(false), mobile ? 2600 : 12000);
+    const t = setTimeout(() => {
+      hideBootSplash();
+      setShow(false);
+    }, mobile ? 2600 : 12000);
     return () => clearTimeout(t);
   }, [show, mobile]);
 
@@ -61,8 +74,10 @@ export default function IntroPlayer() {
           muted
           playsInline
           className="w-full h-full object-contain"
-          onEnded={() => setShow(false)}
-          onError={() => setShow(false)}
+          onCanPlay={hideBootSplash}
+          onPlaying={hideBootSplash}
+          onEnded={() => { hideBootSplash(); setShow(false); }}
+          onError={() => { hideBootSplash(); setShow(false); }}
         />
       )}
     </div>
