@@ -35,6 +35,8 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     backgroundColor: '#ffffff',
+    show: false, // se muestra al estar lista: evita el parpadeo al abrir
+    paintWhenInitiallyHidden: true,
     autoHideMenuBar: true,
     frame: false, // sin marco nativo — usamos una barra propia
     titleBarStyle: 'hidden',
