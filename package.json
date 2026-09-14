@@ -66,7 +66,7 @@
       "deleteAppDataOnUninstall": false,
       "runAfterFinish": true,
       "menuCategory": "GestionDeVentas",
-      "language": "es_ES",
+      "language": "es-ES",
       "multiLanguageInstaller": false,
       "displayLanguageSelector": false
     }
