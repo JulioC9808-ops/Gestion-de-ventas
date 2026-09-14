@@ -35,7 +35,7 @@ export default function Login() {
       if (!result.ok) {
         setError(
           result.reason === 'employee-only'
-            ? 'Este dispositivo usa una licencia de SOLO EMPLEADO: no puede entrar como administrador.'
+            ? 'Este dispositivo usa una licencia de SOLO EMPLEADO.'
             : 'Usuario o contraseña incorrectos (revisa las mayúsculas)',
         );
       }
@@ -50,13 +50,13 @@ export default function Login() {
       return;
     }
     if (target.role !== 'admin') {
-      setForgotResult('Solo los administradores pueden recuperar su contraseña aquí. Pídesela a tu jefe.');
+      setForgotResult('Solo los administradores pueden recuperar su contraseña. Pídele a tu Jefe que te de una nueva.');
       return;
     }
     setForgotResult(
       target.passwordHint
         ? `Administrador «${target.name}». Tu nota para recordar la contraseña es: “${target.passwordHint}”`
-        : `Administrador «${target.name}». No guardaste ninguna nota. Pídele al desarrollador que restablezca la cuenta a admin / admin123.`,
+        : `Administrador «${target.name}». No guardaste ninguna nota. Pídele al desarrollador que le restablezca los datos de su cuenta.`,
     );
   };
 
