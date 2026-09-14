@@ -51,7 +51,7 @@ function ImportantNotes() {
         <p><strong>4-</strong> Si usted desea hacer algún cambio <em>¡CONTÁCTEME!</em> Este servicio se le cobrará dependiendo de lo complejo que este sea.</p>
         <p><strong>5-</strong> No fuerces el programa (se puede desinstalar y volver a instalar sin problemas ya que este hace un <em>BACKUP</em> en sus archivos internos).</p>
         <p><strong>6-</strong> Este programa tiene un sistema <em>¡Anti-Hacking!</em> que si se detecta que intentan configurarlo externamente este borrará archivos necesarios dentro de sí mismo para su funcionamiento adecuado.</p>
-        <p className="pt-2 border-t border-border italic">Muchas gracias por su atención, y le deseo buena suerte. Espero que me vuelva a contactar y si le gustó la aplicación me encantaría que me recomendara… no intentes copiarlo porque no va a dejar usarlo.</p>
+        <p className="pt-2 border-t border-border italic">Muchas gracias por su atención, y le deseo buena suerte. Espero que me vuelva a contactar y si le gustó la aplicación me encantaría que me recomendara… .</p>
       </div>
     </div>
   );
