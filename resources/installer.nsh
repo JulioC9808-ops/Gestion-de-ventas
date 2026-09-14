@@ -12,7 +12,7 @@
 ; --- Nombre del producto ---
 Name "Gestion De Ventas"
 OutFile "dist-installer/GestionDeVentas-Setup-${VERSION}.exe"
-InstallDir "$PROGRAMFILES\GestionDeVentas"
+InstallDir "$PROGRAMFILES\\GestionDeVentas"
 
 ; --- Páginas estándar ---
 !insertmacro MUI_PAGE_WELCOME
@@ -32,20 +32,20 @@ InstallDir "$PROGRAMFILES\GestionDeVentas"
 ; --- Sección principal ---
 Section "Instalar"
   SetOutPath "$INSTDIR"
-  File /r "dist\*.*"
-  File /r "electron\*.*"
+  File /r "dist\\*.*"
+  File /r "electron\\*.*"
   File "package.json"
 
   ; Crear accesos directos
-  CreateDirectory "$SMPROGRAMS\GestionDeVentas"
-  CreateShortCut "$SMPROGRAMS\GestionDeVentas\Gestion De Ventas.lnk" "$INSTDIR\GestionDeVentas.exe"
-  CreateShortCut "$DESKTOP\Gestion De Ventas.lnk" "$INSTDIR\GestionDeVentas.exe"
+  CreateDirectory "$SMPROGRAMS\\GestionDeVentas"
+  CreateShortCut "$SMPROGRAMS\\GestionDeVentas\\Gestion De Ventas.lnk" "$INSTDIR\\GestionDeVentas.exe"
+  CreateShortCut "$DESKTOP\\Gestion De Ventas.lnk" "$INSTDIR\\GestionDeVentas.exe"
 SectionEnd
 
 ; --- Sección de desinstalación ---
 Section "Uninstall"
-  Delete "$DESKTOP\Gestion De Ventas.lnk"
-  RMDir /r "$SMPROGRAMS\GestionDeVentas"
+  Delete "$DESKTOP\\Gestion De Ventas.lnk"
+  RMDir /r "$SMPROGRAMS\\GestionDeVentas"
   RMDir /r "$INSTDIR"
 SectionEnd
 
