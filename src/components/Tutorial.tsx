@@ -20,11 +20,11 @@ const ADMIN_STEPS: Step[] = [
   },
   {
     title: 'Productos',
-    body: 'Crea, edita o elimina productos. Define precio de venta, precio de costo y cantidad en almacén.',
+    body: 'Crea, edita o elimina productos. Define precio de venta, precio de costo y cantidad en almacén para que estén disponibles para pasar a Stock de Venta.',
   },
   {
     title: 'Usuarios',
-    body: 'Crea cuentas para tus empleados. En el celular puedes generar un QR de credenciales para que entren sin escribir la contraseña.',
+    body: 'Crea cuentas para tus empleados. En el celular puedes generar un QR de credenciales para que entren sin escribir la contraseña, Esto está en Ajustes',
   },
   {
     title: 'Entrada de Stock',
@@ -55,11 +55,11 @@ const EMPLOYEE_STEPS: Step[] = [
   },
   {
     title: 'Entrada de Stock',
-    body: 'Si el admin lo permite, puedes pasar productos del almacén a tu punto de venta.',
+    body: 'Aquí puedes pasar productos del almacén a tu punto de venta, para realizar el Cierre de Turno.',
   },
   {
     title: 'Cierre de Turno',
-    body: 'Al terminar, registra lo vendido, el efectivo y las transferencias. Si estás en el celular, genera un QR y pide al admin que lo escanee para sincronizar.',
+    body: 'Al terminar, registra lo vendido, el efectivo y las transferencias. (Si estás en el celular, genera un QR y pide al admin que lo escanee para sincronizar).',
   },
 ];
 
