@@ -39,13 +39,36 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
+      "icon": "resources/icon.ico",
       "artifactName": "${productName}-Setup-${version}.${ext}"
     },
     "nsis": {
-      "script": "resources/installer.nsh"
+      "installerIcon": "resources/icon.ico",
+      "uninstallerIcon": "resources/icon.ico",
+      "installerHeaderIcon": "resources/icon.ico",
+      "installerHeader": "resources/header.bmp",
+      "installerSidebar": "resources/installersidebar.bmp",
+      "uninstallerSidebar": "resources/installersidebar.bmp",
+      "license": "resources/license.txt",
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Gestion De Ventas",
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true,
+      "menuCategory": "GestionDeVentas",
+      "language": "es_ES",
+      "multiLanguageInstaller": false,
+      "displayLanguageSelector": false
     }
   },
   "dependencies": {
