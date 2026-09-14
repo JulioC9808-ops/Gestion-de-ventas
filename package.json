@@ -57,7 +57,7 @@
       "license": "resources/license.txt",
       "oneClick": false,
       "perMachine": false,
-      "allowElevation": true,
+      "allowElevation": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
@@ -70,8 +70,8 @@
         "es_ES"
       ],
       "language": "1034",
-      "multiLanguageInstaller": false,
-      "displayLanguageSelector": false
+      "multiLanguageInstaller": true,
+      "displayLanguageSelector": true
     }
   },
   "dependencies": {
