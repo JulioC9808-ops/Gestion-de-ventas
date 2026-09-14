@@ -21,7 +21,7 @@ export default function DevPanel() {
   const { settings, updateSettings, users, updateUser, resetAdminCredentials } = useData();
   const { currentUser } = useAuth();
   const [businessName, setBusinessName] = useState(settings.businessName);
-  const [telegramUrl, setTelegramUrl] = useState(settings.telegramUrl || 'https://t.me/+G8geeJ1gwYo4N2Ex');
+  const [telegramUrl, setTelegramUrl] = useState(settings.telegramUrl || 'https://t.me/Gestion_Ventas');
   const [githubUpdatesUrl, setGithubUpdatesUrl] = useState(settings.githubUpdatesUrl || '');
   const [currentPwd, setCurrentPwd] = useState('');
   const [newPwd, setNewPwd] = useState('');
