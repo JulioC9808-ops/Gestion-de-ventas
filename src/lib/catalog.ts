@@ -11,7 +11,7 @@ export const CATEGORY_OPTIONS: CategoryOption[] = [
   { value: 'Café', emoji: '☕', keywords: ['café', 'cafe', 'cafetería', 'cafeteria', 'espresso', 'capuchino', 'cappuccino', 'latte'] },
   { value: 'Bebidas', emoji: '🥤', keywords: ['bebida', 'jugo', 'refresco', 'té', 'te', 'agua'] },
   { value: 'Botellas', emoji: '🍾', keywords: ['botella', 'vino', 'licor', 'ron', 'whisky', 'cerveza'] },
-  { value: 'Latas', emoji: '🥫', keywords: ['lata', 'conserva', 'enlatado''puré', 'leche condensada', 'cerveza'] },
+  { value: 'Latas', emoji: '🥫', keywords: ['lata', 'conserva', 'enlatado', 'puré', 'leche condensada', 'cerveza'] },
   { value: 'Alimentos', emoji: '🍽️', keywords: ['alimento', 'comida', 'plato', 'sandwich', 'hamburguesa', 'pizza'] },
   { value: 'Panadería', emoji: '🥖', keywords: ['pan', 'panadería', 'panaderia', 'croissant', 'bolleria', 'dulce', 'kake'] },
   { value: 'Caramelos', emoji: '🍬', keywords: ['caramelo', 'dulce', 'chocolate', 'bombón', 'chupa chupa', 'chicle'] },
