@@ -227,7 +227,7 @@ export default function LicenseGate({ children }: LicenseGateProps) {
         <div className="space-y-3 text-sm leading-relaxed">
           <p>Este programa es justo lo que necesitas. Aquí podrás gestionar desde tus productos en almacén hasta los precios y ventas de cada uno, y mantenerte al tanto del flujo de dichos productos.</p>
           <p>Para usar esta aplicación me puedes contactar mediante el código QR que te dejé preparado.</p>
-          <p className="text-muted-foreground">Listo, eso es todo.</p>
+          <p className="text-muted-foreground">Y esto es Todo.</p>
         </div>
         <Button onClick={closeWelcome} className="w-full">Continuar</Button>
       </DialogContent>
