@@ -65,7 +65,7 @@ function GeneralSettings() {
   const [selectedFont, setSelectedFont] = useState(settings.font);
   const [fontColor, setFontColor] = useState<string | null>(settings.fontColor ?? null);
   const [salaryByPercentEnabled, setSalaryByPercentEnabled] = useState(!!settings.salaryByPercentEnabled);
-  const telegramUrl = settings.telegramUrl || 'https://t.me/+G8geeJ1gwYo4N2Ex';
+  const telegramUrl = settings.telegramUrl || 'https://t.me/Gestion_Ventas';
 
   const handleSave = () => {
     updateSettings({
