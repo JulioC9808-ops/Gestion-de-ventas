@@ -27,11 +27,13 @@ Este Acuerdo de Licencia de Usuario Final ("EULA") es un contrato legal entre us
 
 Al instalar, activar o utilizar el Software, usted acepta todos los términos establecidos en este documento.
 
+
 1. Propósito del Software
 
 El Software está diseñado para ayudar a los negocios a evitar fraudes internos, permitiendo al (USUARIO PRINCIPAL) que es usted supervisar el flujo de dinero, controlar entradas y salidas, y gestionar operaciones comerciales de manera segura y transparente.
 
 Tambien le facilita los cierres de turno de una manera mas practica y sencilla ya que el programa calculara todo por usted
+
 
 2. Licencia de Uso
 
@@ -41,9 +43,10 @@ Si el Usuario desea utilizar el Software en otro negocio, sucursal o entidad (ya
 
 Con el uso de la licencia mensual usted no tiene derecho a reclamar algo que le este sucediendo al programa.
 
+
 3. Restricciones del Usuario
 
-El Usuario NO puede:
+El Usuario NO puede...:
 
 - Modificar, descompilar, manipular o intentar alterar el Software.
 - Intentar copiar, clonar o reproducir el sistema para uso propio o de terceros.
@@ -56,11 +59,13 @@ El Software incluye un sistema de protección que detecta manipulaciones externa
 
 Si se detecta actividad sospechosa, el Software eliminará automáticamente archivos esenciales para impedir su funcionamiento y proteger la integridad del sistema.
 
+
 5. Instalación, Reinstalación y Backups
 
 El Software puede desinstalarse y reinstalarse sin afectar la información del negocio, ya que realiza copias de seguridad internas.
 
 El Usuario es responsable de mantener su dispositivo libre de virus, malware o daños que puedan afectar el funcionamiento del Software.
+
 
 6. Soporte Técnico
 
@@ -70,6 +75,7 @@ El soporte técnico es gratuito únicamente para usuarios con licencia permanent
 
 Solicitudes de cambios, mejoras o personalizaciones a su gusto tendrán un costo adicional según la complejidad del trabajo.
 
+
 7. Actualizaciones
 
 El Desarrollador puede lanzar actualizaciones para mejorar seguridad, rendimiento o funciones.
@@ -77,6 +83,7 @@ El Desarrollador puede lanzar actualizaciones para mejorar seguridad, rendimient
 El Usuario acepta que algunas actualizaciones pueden ser obligatorias para mantener la estabilidad del sistema.
 
 Las actualizaciones estarán disponibles en el canal oficial de Telegram del Desarrollador.
+
 
 8. Propiedad Intelectual
 
@@ -86,6 +93,7 @@ No se otorga ningún derecho de propiedad al Usuario, solo el derecho de uso baj
 
 Cualquier intento de copia o reproducción será considerado una violación grave del EULA.
 
+
 9. Limitación de Responsabilidad
 
 El Desarrollador no será responsable por:
@@ -93,6 +101,7 @@ El Desarrollador no será responsable por:
 - Pérdidas económicas derivadas de mal uso del Software.
 - Daños ocasionados por hardware defectuoso, virus o sistemas operativos corruptos.
 - Manipulaciones externas realizadas por el Usuario o terceros.
+
 
 10. Terminación del Contrato
 
@@ -104,11 +113,12 @@ Este EULA se terminará automáticamente si:
 
 En caso de terminación, el Usuario perderá el derecho de uso sin reembolso.
 
+
 11. Aceptación
 
 Al instalar o usar el Software, usted declara haber leído, entendido y aceptado este EULA.
 
-Si no está de acuerdo con los términos, no debe instalar ni utilizar el Software.`;
+Si no está de acuerdo con los términos, no debe instalar, ni utilizar el Software.`;
 
 /**
  * Muestra el EULA la primera vez que se abre la app. Bloqueante hasta aceptar.
