@@ -64,12 +64,12 @@ El Software, su codigo, diseno, interfaz y funciones son propiedad exclusiva del
 
 No se otorga ningun derecho de Propiedad al Usuario, solo el derecho de uso bajo licencia.
 
-Cualquier intento de copia o reproduccion será considerado una violacion grave del EULA y podria tener consecuencias penales.
+Cualquier intento de copia o reproduccion sera considerado una violacion grave del EULA y podria tener consecuencias penales.
 
 Limitacion de Responsabilidad
 El Desarrollador no sera responsable por:
 
-Perdidas económicas derivadas de mal uso del Software.
+Perdidas economicas derivadas de mal uso del Software.
 
 Daños ocasionados por hardware defectuoso, virus o sistemas operativos corruptos.
 
@@ -80,7 +80,7 @@ Este EULA se terminara automaticamente si:
 
 El Usuario viola cualquiera de las restricciones mencionadas.
 
-Se detecta manipulación, hackeo o intento de copia del Software.
+Se detecta manipulacion, hackeo o intento de copia del Software.
 
 El Usuario utiliza el Software en un negocio no autorizado.
 
