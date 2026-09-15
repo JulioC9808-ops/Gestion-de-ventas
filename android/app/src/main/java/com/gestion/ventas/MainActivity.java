@@ -43,3 +43,16 @@ public class MainActivity extends BridgeActivity {
             s.setTextZoom(100);
         }
     }
+
+    private void requestCameraPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return;
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{Manifest.permission.CAMERA},
+                    CAMERA_REQUEST_CODE
+            );
+        }
+    }
+}
