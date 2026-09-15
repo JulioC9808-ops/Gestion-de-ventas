@@ -9,6 +9,7 @@ import android.webkit.WebView;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.splashscreen.SplashScreen;
 
 import com.getcapacitor.BridgeActivity;
 
@@ -18,6 +19,9 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // Inicializa el splash theme ANTES de todo
+        SplashScreen.installSplashScreen(this);
+        
         registerPlugin(LocalSyncPlugin.class);
         super.onCreate(savedInstanceState);
 
@@ -39,16 +43,3 @@ public class MainActivity extends BridgeActivity {
             s.setTextZoom(100);
         }
     }
-
-    private void requestCameraPermissionIfNeeded() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return;
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(
-                    this,
-                    new String[]{Manifest.permission.CAMERA},
-                    CAMERA_REQUEST_CODE
-            );
-        }
-    }
-}
