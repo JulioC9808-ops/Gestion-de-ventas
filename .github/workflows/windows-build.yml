@@ -24,11 +24,21 @@ jobs:
         shell: cmd
         run: |
           if exist node_modules rd /s /q node_modules
-          if exist package-lock.json del package-lock.json
-          npm install --force
+          npm ci
 
       - name: Build app
         run: npm run build
+
+      - name: Prepare NSIS license
+        shell: powershell
+        run: |
+          $path = "resources/license.txt"
+          $content = Get-Content -Path $path -Raw -Encoding UTF8
+          [System.IO.File]::WriteAllText(
+            $path,
+            $content,
+            [System.Text.Encoding]::GetEncoding(1252)
+          )
 
       - name: Package Electron app
         env:
