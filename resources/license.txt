@@ -2,16 +2,16 @@
 
 Acuerdo de Licencia de Usuario Final
 
-Sistema de Ventas                            Julio_GE Software
+Sistema de Ventas – Julio_GE Software
 
-Ultima actualizacion: 09/26
+Última actualización: 08/26
 
-Este Acuerdo de Licencia de Usuario Final (EULA) es un contrato legal entre usted y Julio_GE Software que es el desarrollador para el uso del sistema de ventas y gestion comercial.
+Este Acuerdo de Licencia de Usuario Final (“EULA”) es un contrato legal entre usted y Julio_GE Software que es el desarrollador para el uso del sistema de ventas y gestión comercial.
 
-Al instalar, activar o utilizar el Software, usted acepta todos los terminos establecidos en este documento.
+Al instalar, activar o utilizar el Software, usted acepta todos los términos establecidos en este documento.
 
-Proposito del Software
-El Software esta disenado para ayudar a los negocios a evitar fraudes internos, permitiendo al (USUARIO PRINCIPAL) que es usted, supervisar el flujo de dinero, controlar entradas y salidas, y gestionar operaciones comerciales de manera segura y transparente.
+Propósito del Software
+El Software está diseñado para ayudar a los negocios a evitar fraudes internos, permitiendo al (USUARIO PRINCIPAL) que es usted supervisar el flujo de dinero, controlar entradas y salidas, y gestionar operaciones comerciales de manera segura y transparente.
 
 Tambien le facilita los cierres de turno de una manera mas practica y sencilla ya que el programa calculara todo por usted
 
@@ -19,7 +19,7 @@ Tambien le facilita los cierres de turno de una manera mas practica y sencilla y
 Licencia de Uso
 La licencia otorgada es exclusiva para el negocio registrado al momento de la compra.
 
-Si el Usuario desea utilizar el Software en otro negocio,sucursal o entidad (ya sea de usted mismo), debera adquirir una nueva licencia.
+Si el Usuario desea utilizar el Software en otro negocio,sucursal o entidad (ya sea de usted mismo), deberá adquirir una nueva licencia.
 
 Con el uso de la licencia mensual usted no tiene derecho a reclamar algo que le este sucediendo al programa.
 
@@ -36,57 +36,57 @@ Forzar el programa, manipular sus archivos internos o intentar evadir los mecani
 Usar el Software para actividades ilegales o fraudulentas.
 
 Sistema Anti-Hacking
-El Software incluye un sistema de proteccion que detecta manipulaciones externas, intentos de ingenieria inversa o alteraciones no autorizadas.
+El Software incluye un sistema de protección que detecta manipulaciones externas, intentos de ingeniería inversa o alteraciones no autorizadas.
 
-Si se detecta actividad sospechosa, el Software eliminara automaticamente archivos esenciales para impedir su funcionamiento y proteger la integridad del sistema.
+Si se detecta actividad sospechosa, el Software eliminará automáticamente archivos esenciales para impedir su funcionamiento y proteger la integridad del sistema.
 
-Instalacion, Reinstalacion y Backups
-El Software puede desinstalarse y reinstalarse sin afectar la informacion del negocio, ya que realiza copias de seguridad internas.
+Instalación, Reinstalación y Backups
+El Software puede desinstalarse y reinstalarse sin afectar la información del negocio, ya que realiza copias de seguridad internas.
 
-El Usuario es responsable de mantener su dispositivo libre de virus, malware o danos que puedan afectar el funcionamiento del Software.
+El Usuario es responsable de mantener su dispositivo libre de virus, malware o daños que puedan afectar el funcionamiento del Software.
 
-Soporte Tecnico
+Soporte Técnico
 Cualquier error, duda o problema debe ser reportado directamente al Desarrollador,puede tardar hasta 24h en responder su mensaje.
 
-El soporte tecnico es gratuito únicamente para usuarios con licencia permanente.
+El soporte técnico es gratuito únicamente para usuarios con licencia permanente.
 
-Solicitudes de cambios, mejoras o personalizaciones a su gusto tendrán un costo adicional segun la complejidad del trabajo.
+Solicitudes de cambios, mejoras o personalizaciones a su gusto tendrán un costo adicional según la complejidad del trabajo.
 
 Actualizaciones
 El Desarrollador puede lanzar actualizaciones para mejorar seguridad, rendimiento o funciones.
 
 El Usuario acepta que algunas actualizaciones pueden ser obligatorias para mantener la estabilidad del sistema.
 
-Las actualizaciones estaran en mi canal de Telegram para actualizaciones manuales, y a su vez la apliacion tambien buscara updates desde el sitio oficial.
+Las actualizaciones estaran en mi canal de Telegram.
 
 Propiedad Intelectual
-El Software, su codigo, diseno, interfaz y funciones son propiedad exclusiva del Desarrollador.
+El Software, su código, diseño, interfaz y funciones son propiedad exclusiva del Desarrollador.
 
-No se otorga ningun derecho de Propiedad al Usuario, solo el derecho de uso bajo licencia.
+No se otorga ningún derecho de propiedad al Usuario, solo el derecho de uso bajo licencia.
 
-Cualquier intento de copia o reproduccion sera considerado una violacion grave del EULA y podria tener consecuencias penales.
+Cualquier intento de copia o reproducción será considerado una violación grave del EULA.
 
-Limitacion de Responsabilidad
-El Desarrollador no sera responsable por:
+Limitación de Responsabilidad
+El Desarrollador no será responsable por:
 
-Perdidas economicas derivadas de mal uso del Software.
+Pérdidas económicas derivadas de mal uso del Software.
 
 Daños ocasionados por hardware defectuoso, virus o sistemas operativos corruptos.
 
 Manipulaciones externas realizadas por el Usuario o terceros.
 
-Terminacion del Contrato
-Este EULA se terminara automaticamente si:
+Terminación del Contrato
+Este EULA se terminará automáticamente si:
 
 El Usuario viola cualquiera de las restricciones mencionadas.
 
-Se detecta manipulacion, hackeo o intento de copia del Software.
+Se detecta manipulación, hackeo o intento de copia del Software.
 
 El Usuario utiliza el Software en un negocio no autorizado.
 
-En caso de terminacion, el Usuario perdera el derecho de uso sin reembolso.
+En caso de terminación, el Usuario perderá el derecho de uso sin reembolso.
 
-Aceptacion
-Al instalar o usar el Software, usted declara haber leido, entendido y aceptado este EULA.
+Aceptación
+Al instalar o usar el Software, usted declara haber leído, entendido y aceptado este EULA.
 
-(Si no esta de acuerdo con los terminos, no debe instalar, ni utilizar el Software.)
+(Si no está de acuerdo con los términos, no debe instalar, ni utilizar el Software.)
