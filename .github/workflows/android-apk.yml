@@ -53,7 +53,7 @@ jobs:
           cmdline-tools-version: 12266719
           accept-android-sdk-licenses: true
           log-accepted-android-sdk-licenses: true
-          packages: tools platform-tools
+          packages: platform-tools
 
       # 6. Aceptar TODAS las licencias
       - name: Accept ALL Android SDK licenses
