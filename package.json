@@ -55,6 +55,7 @@
       "installerSidebar": "resources/installersidebar.bmp",
       "uninstallerSidebar": "resources/installersidebar.bmp",
       "license": "resources/license.txt",
+      "include": "resources/installer.nsh",
       "oneClick": false,
       "perMachine": false,
       "allowElevation": false,
