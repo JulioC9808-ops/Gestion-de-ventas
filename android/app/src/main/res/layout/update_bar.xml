@@ -1,1 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/updateBarContainer"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="12dp"
+    android:layout_gravity="bottom|start"
+    android:background="@drawable/glass_background"
+    android:elevation="8dp"
+    android:visibility="gone">
+
+    <!-- Icono del programa -->
+    <ImageView
+        android:src="@mipmap/ic_launcher"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginEnd="8dp"/>
+
+    <!-- Contenedor de progreso y botón -->
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="180dp"
+        android:layout_height="wrap_content">
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="10dp"
+            android:progressDrawable="@drawable/progress_gradient"/>
+
+        <Button
+            android:id="@+id/applyButton"
+            android:text="Aplicar cambios"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            android:background="@drawable/button_gradient"
+            android:textColor="@android:color/white"
+            android:textStyle="bold"/>
+    </LinearLayout>
+</LinearLayout>
 
