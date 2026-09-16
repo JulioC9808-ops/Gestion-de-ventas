@@ -1,6 +1,8 @@
 // Preload seguro: expone al renderer solo lo estrictamente necesario.
 // - machineId: huella de hardware (SHA-256) para licencia anti-copia.
 // - windowControls: control de ventana frameless (minimize/maximize/close).
+// - update events: eventos del auto-updater para barra de progreso y avisos.
+
 const { contextBridge, ipcRenderer } = require('electron');
 const os = require('os');
 const crypto = require('crypto');
@@ -32,8 +34,12 @@ contextBridge.exposeInMainWorld('desktopBridge', {
   isElectron: true,
   machineId: MACHINE_ID,
   platform: process.platform,
+
+  // --- SYNC SERVER ---
   startSyncServer: (payload) => ipcRenderer.invoke('sync:start', payload),
   stopSyncServer: () => ipcRenderer.invoke('sync:stop'),
+
+  // --- WINDOW CONTROLS ---
   windowControls: {
     minimize: () => ipcRenderer.invoke('window:minimize'),
     toggleMaximize: () => ipcRenderer.invoke('window:toggle-maximize'),
@@ -43,6 +49,19 @@ contextBridge.exposeInMainWorld('desktopBridge', {
       const listener = (_e, value) => cb(!!value);
       ipcRenderer.on('window:maximized', listener);
       return () => ipcRenderer.removeListener('window:maximized', listener);
+    },
+  },
+
+  // --- AUTO-UPDATER EVENTS ---
+  updates: {
+    onAvailable: (cb) => {
+      ipcRenderer.on('update_available', () => cb());
+    },
+    onProgress: (cb) => {
+      ipcRenderer.on('update_progress', (_e, percent) => cb(percent));
+    },
+    onDownloaded: (cb) => {
+      ipcRenderer.on('update_downloaded', () => cb());
     },
   },
 });
