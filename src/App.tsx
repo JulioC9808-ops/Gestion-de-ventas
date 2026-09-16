@@ -9,32 +9,52 @@ import IntroPlayer from "@/components/IntroPlayer";
 import EulaGate from "@/components/EulaGate";
 import TitleBar from "@/components/TitleBar";
 import UpdateChecker from "@/components/UpdateChecker";
+import UpdateBar from "@/components/UpdateBar";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import { useEffect, useState } from "react";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider delayDuration={300}>
-      <Toaster />
-      <Sonner />
-      <DataProvider>
-        <AuthProvider>
-          <TitleBar />
-          <UpdateChecker />
-          <IntroPlayer />
-          <EulaGate />
-          <HashRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </HashRouter>
-        </AuthProvider>
-      </DataProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  const [updatePercent, setUpdatePercent] = useState(0);
+
+  useEffect(() => {
+    if (window.desktopBridge?.updates) {
+      window.desktopBridge.updates.onProgress((percent) => {
+        setUpdatePercent(percent);
+      });
+    }
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider delayDuration={300}>
+        <Toaster />
+        <Sonner />
+        <DataProvider>
+          <AuthProvider>
+            <TitleBar />
+            <UpdateChecker />
+            <IntroPlayer />
+            <EulaGate />
+
+            {/* Barra de progreso abajo a la izquierda */}
+            {updatePercent > 0 && updatePercent < 100 && (
+              <UpdateBar percent={updatePercent} />
+            )}
+
+            <HashRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </HashRouter>
+          </AuthProvider>
+        </DataProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
