@@ -1,31 +1,113 @@
-name: Release Windows Installer
+name: Build and Release Windows
 
 on:
   workflow_dispatch:
 
 jobs:
-  release:
+  build:
     runs-on: windows-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Build installer
-        run: npm run electron:build
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Clean install
+        shell: cmd
+        run: |
+          if exist node_modules rd /s /q node_modules
+          if exist package-lock.json del package-lock.json
+          npm install --force
+
+      - name: Fix Rollup native dependency
+        run: npm install @rollup/rollup-win32-x64-msvc --save-dev
+
+      - name: Prepare NSIS license encoding
+        shell: powershell
+        run: |
+          $path = "resources/license.txt"
+
+          $content = [System.IO.File]::ReadAllText(
+            $path,
+            [System.Text.Encoding]::UTF8
+          )
+
+          [System.IO.File]::WriteAllText(
+            $path,
+            $content,
+            [System.Text.Encoding]::GetEncoding(1252)
+          )
+
+          Write-Host "License converted to Windows-1252 successfully."
+
+      - name: Build app
+        shell: cmd
+        run: npm run build
+
+      - name: Package Electron app
+        shell: cmd
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: npx electron-builder
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: dist-installer/*.exe
+          retention-days: 3
+
+      # ---- A partir de aquí: publicar en Releases ----
 
       - name: Get latest release tag
         id: get_release
-        run: |
-          tag=$(gh api repos/${{ github.repository }}/releases/latest --jq .tag_name)
-          echo "tag=$tag" >> $GITHUB_OUTPUT
         shell: bash
+        run: |
+          latest=$(gh api repos/${{ github.repository }}/releases/latest --jq .tag_name 2>/dev/null || echo "1.0.0")
+          IFS='.' read -r major minor patch <<< "$latest"
+          new_patch=$((patch + 1))
+          new_tag="${major}.${minor}.${new_patch}"
+          echo "new_tag=$new_tag" >> "$GITHUB_OUTPUT"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload installer to latest release
+      - name: Find installer file
+        id: find_exe
+        shell: bash
+        run: |
+          exe_path=$(ls dist-installer/*.exe | head -n 1)
+          echo "exe_path=$exe_path" >> "$GITHUB_OUTPUT"
+          echo "exe_name=$(basename "$exe_path")" >> "$GITHUB_OUTPUT"
+
+      - name: Create new private release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ steps.get_release.outputs.tag }}
-          files: dist-installer/*.exe
+          tag_name: ${{ steps.get_release.outputs.new_tag }}
+          name: "Gestion de Ventas v${{ steps.get_release.outputs.new_tag }} (Windows)"
+          files: ${{ steps.find_exe.outputs.exe_path }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate latest.yml
+        shell: bash
+        run: |
+          echo "version: ${{ steps.get_release.outputs.new_tag }}" > latest.yml
+          echo "path: ${{ steps.find_exe.outputs.exe_name }}" >> latest.yml
+          echo "releaseDate: $(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> latest.yml
+
+      - name: Upload new release to public repo
+        shell: bash
+        run: |
+          gh release create ${{ steps.get_release.outputs.new_tag }} \
+            "${{ steps.find_exe.outputs.exe_path }}" \
+            latest.yml \
+            -R JulioC9808-ops/Sistema-Updates \
+            -t "Version ${{ steps.get_release.outputs.new_tag }} (Windows)" \
+            -n "Actualización automática de Windows"
+        env:
+          GH_TOKEN: ${{ secrets.UPDATES_TOKEN }}
