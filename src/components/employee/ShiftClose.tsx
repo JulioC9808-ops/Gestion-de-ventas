@@ -9,6 +9,7 @@ import type { SaleItem, Transfer, VipSale, ShiftReport } from '@/types';
 import { Check, Trash2, Plus, Printer, LogOut, Pencil, ArrowLeft, Package, Coffee, UtensilsCrossed, Sandwich, QrCode } from 'lucide-react';
 import { isMobileDevice } from '@/lib/platform';
 import { getPendingShift, setPendingShift, clearPendingShift } from '@/lib/syncStore';
+import { startShiftShare, stopShiftShare } from '@/lib/syncTransport';
 import QrDisplay from '@/components/QrDisplay';
 import QrScannerModal from '@/components/QrScannerModal';
 
@@ -20,6 +21,8 @@ export default function ShiftClose() {
   const [step, setStep] = useState<1 | 2 | 3 | 'sync'>(1);
   const [isClosing, setIsClosing] = useState(false);
   const [scanAckOpen, setScanAckOpen] = useState(false);
+  const [shareCode, setShareCode] = useState<string | null>(null);
+  const [shareError, setShareError] = useState<string | null>(null);
   const mobile = isMobileDevice();
 
   // If a pending shift exists for this user, jump straight to sync screen
@@ -141,7 +144,7 @@ export default function ShiftClose() {
     const report = buildReport();
     // El administrador cierra en su propio dispositivo: no necesita la pantalla de confirmación.
     if (isAdmin) {
-      setFinalReport(true);
+      setFinalReport(report);
       setIsClosing(true);
       saleItems.forEach(item => reduceStock(item.productId, item.quantitySold));
       addReport({ ...report, synced: true });
@@ -183,6 +186,22 @@ export default function ShiftClose() {
     logout();
   };
 
+  // Levanta el servidor Wi‑Fi (o genera el QR directo) mientras se muestra la pantalla de sincronización
+  useEffect(() => {
+    if (step !== 'sync' || !finalReport) return;
+    let active = true;
+    setShareCode(null);
+    setShareError(null);
+    startShiftShare(finalReport)
+      .then(code => { if (active) setShareCode(code); })
+      .catch(err => { if (active) setShareError(err instanceof Error ? err.message : 'No se pudo iniciar la sincronización.'); });
+    return () => {
+      active = false;
+      stopShiftShare();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, finalReport?.id]);
+
   const handleAckScan = (text: string) => {
     setScanAckOpen(false);
     if (!finalReport) return;
@@ -197,12 +216,12 @@ export default function ShiftClose() {
     }
     addReport({ ...finalReport, synced: true });
     clearPendingShift();
+    stopShiftShare();
     toast.success('Turno sincronizado. Cerrando sesión…');
     setTimeout(() => logout(), 600);
   };
 
   if (step === 'sync' && finalReport) {
-    const payload = `SHIFT:${JSON.stringify(finalReport)}`;
     return (
       <div className="max-w-xl mx-auto">
         <div className="glass-card p-6 animate-fade-in-up text-center space-y-4">
@@ -211,12 +230,18 @@ export default function ShiftClose() {
           </div>
           <h1 className="text-xl font-display font-bold">Sincroniza tu turno</h1>
           <p className="text-sm text-muted-foreground">
-            Muéstrale este QR al Admin para que lo escanee desde su dispositivo.
+            Conecta tu celular a la misma red Wi‑Fi que el dispositivo del Admin y muéstrale este QR para que lo escanee.
             Cuando él te muestre su QR de confirmación, escanéalo aquí para poder cerrar sesión.
           </p>
 
-          <div className="flex justify-center bg-white p-4 rounded-lg">
-            <QrDisplay data={payload} size={260} />
+          <div className="flex justify-center bg-white p-4 rounded-lg min-h-[280px] items-center">
+            {shareCode ? (
+              <QrDisplay data={shareCode} size={260} />
+            ) : shareError ? (
+              <p className="text-sm text-destructive px-4">{shareError}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground">Preparando código…</p>
+            )}
           </div>
 
           <div className="bg-warning/10 border border-warning/30 rounded-lg p-3 text-xs text-warning text-left">
@@ -343,7 +368,7 @@ export default function ShiftClose() {
             <p className="text-sm font-medium text-warning">⚠️ Revise bien todos los datos. El reporte solo se guardará cuando confirme y cierre la sesión.</p>
           </div>
 
-          <div className="flex gap-3 mt-4">
+          <div className="flex flex-col sm:flex-row gap-3 mt-4">
             <Button variant="outline" onClick={handleGoBack}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Volver a Corregir
