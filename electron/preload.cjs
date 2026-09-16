@@ -63,5 +63,8 @@ contextBridge.exposeInMainWorld('desktopBridge', {
     onDownloaded: (cb) => {
       ipcRenderer.on('update_downloaded', () => cb());
     },
+    applyChanges: () => {
+      ipcRenderer.send('apply_update');
+    },
   },
 });
