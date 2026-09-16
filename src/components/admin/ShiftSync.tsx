@@ -8,27 +8,33 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { toast } from 'sonner';
 import HelpTip from '@/components/HelpTip';
 import type { ShiftReport } from '@/types';
+import { receiveShiftShare } from '@/lib/syncTransport';
 
 export default function ShiftSync() {
   const { addReport } = useData();
   const [scanOpen, setScanOpen] = useState(false);
   const [ackReport, setAckReport] = useState<ShiftReport | null>(null);
+  const [receiving, setReceiving] = useState(false);
 
-  const handleScan = (text: string) => {
-    setScanOpen(false);
-    if (!text.startsWith('SHIFT:')) {
-      toast.error('Este QR no es un cierre de turno válido.');
-      return;
-    }
+  const handleScan = async (text: string) => {
+    if (receiving) return;
+    setReceiving(true);
     try {
-      const report: ShiftReport = JSON.parse(text.slice(6));
+      const report = await receiveShiftShare(text.trim());
+      if (!report) {
+        toast.error('Este QR no es un cierre de turno válido.');
+        return;
+      }
       const synced: ShiftReport = { ...report, synced: true };
       addReport(synced);
+      setScanOpen(false);
       setAckReport(synced);
       toast.success(`Turno de ${synced.employeeName} sincronizado.`);
     } catch (err) {
       console.error(err);
-      toast.error('No se pudo leer el turno del QR.');
+      toast.error(err instanceof Error ? err.message : 'No se pudo leer el turno del QR.');
+    } finally {
+      setReceiving(false);
     }
   };
 
@@ -50,13 +56,13 @@ export default function ShiftSync() {
         </div>
         <h2 className="text-lg font-display font-bold">Recibir cierre de turno</h2>
         <p className="text-sm text-muted-foreground">
-          Pídele a tu empleado que abra la pestaña "Cierre de Turno" y muestre el QR. Apunta la cámara hacia él.
+          Pídele a tu empleado que abra la pestaña "Cierre de Turno" y muestre el QR. Conecta ambos dispositivos a la misma red Wi‑Fi y apunta la cámara hacia él.
         </p>
         <Button onClick={() => setScanOpen(true)} className="w-full">
           <QrCode className="w-4 h-4 mr-2" /> Escanear QR del empleado
         </Button>
         <div className="bg-warning/10 border border-warning/30 rounded-lg p-3 text-xs text-warning text-left">
-          ℹ️ Nota: esta función transfiere los datos sin internet, solo con la cámara. El turno se guarda en tu
+          ℹ️ Nota: esta función transfiere los datos por la red Wi‑Fi local, sin necesitar internet. El turno se guarda en tu
           dispositivo y luego debes mostrarle al empleado el QR de confirmación para que pueda salir.
         </div>
       </div>
@@ -65,8 +71,9 @@ export default function ShiftSync() {
         open={scanOpen}
         onClose={() => setScanOpen(false)}
         onScan={handleScan}
+        keepOpen
         title="Escanear cierre de turno"
-        hint="Apunta al QR que muestra el empleado."
+        hint={receiving ? 'Recibiendo turno…' : 'Apunta al QR que muestra el empleado.'}
       />
 
       <Dialog open={!!ackReport} onOpenChange={(o) => !o && setAckReport(null)}>
