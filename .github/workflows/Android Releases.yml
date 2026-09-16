@@ -1,6 +1,6 @@
 name: Releases Android APK
 
- on:
+on:
   workflow_dispatch:
 
 jobs:
