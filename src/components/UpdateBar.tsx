@@ -19,14 +19,15 @@ export default function UpdateBar({ percent }: Props) {
     }
   }, [percent]);
 
+  const applyChanges = () => {
+    // Enviar señal al main para aplicar update
+    window.desktopBridge?.updates?.applyChanges?.();
+  };
+
   return (
     <div className="update-bar-container">
       {/* ICONO DEL PROGRAMA */}
-      <img
-        src="/icon.ico"
-        className="update-bar-icon"
-        alt="icon"
-      />
+      <img src="/icon.ico" className="update-bar-icon" alt="icon" />
 
       {/* CONTENIDO */}
       <div className="update-bar-content">
@@ -35,7 +36,6 @@ export default function UpdateBar({ percent }: Props) {
             <div className="update-bar-title">
               Actualizando… {percent.toFixed(0)}%
             </div>
-
             <div className="update-bar-progress">
               <div
                 className="update-bar-fill"
@@ -46,7 +46,7 @@ export default function UpdateBar({ percent }: Props) {
         )}
 
         {finished && (
-          <button className="apply-button">
+          <button className="apply-button" onClick={applyChanges}>
             Aplicar cambios
           </button>
         )}
