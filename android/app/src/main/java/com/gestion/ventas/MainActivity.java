@@ -1,6 +1,11 @@
 package com.gestion.ventas;
 
 import android.Manifest;
+import android.app.DownloadManager;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -10,7 +15,6 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.media.MediaPlayer;
-import android.content.Intent;
 import android.net.Uri;
 import android.os.Environment;
 
@@ -66,8 +70,8 @@ public class MainActivity extends BridgeActivity {
             updateBarContainer.setVisibility(View.GONE);
         }
 
-        // Simulación de descarga de update
-        simulateUpdateDownload();
+        // Iniciar descarga real de update
+        startUpdateDownload();
     }
 
     private void requestCameraPermissionIfNeeded() {
@@ -82,31 +86,42 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
-    // --- lógica de la barra ---
-    private void simulateUpdateDownload() {
+    // --- lógica de descarga real ---
+    private void startUpdateDownload() {
         if (updateBarContainer != null) {
             updateBarContainer.setVisibility(View.VISIBLE);
         }
 
-        new Thread(() -> {
-            for (int i = 1; i <= 100; i++) {
-                try { Thread.sleep(100); } catch (InterruptedException ignored) {}
-                int finalI = i;
-                runOnUiThread(() -> {
-                    progressBar.setProgress(finalI);
-                    if (finalI == 100) {
-                        // Sonido suave al terminar
-                        MediaPlayer player = MediaPlayer.create(this, R.raw.update_finish);
-                        player.start();
+        // 👉 URL del APK en GitHub Releases
+        String apkUrl = "https://github.com/JulioC9808-ops/Sistema-Updates/releases/latest/download/app-release.apk";
 
-                        // Ocultar barra y mostrar botón
-                        progressBar.setVisibility(View.GONE);
-                        applyButton.setVisibility(View.VISIBLE);
-                        applyButton.setOnClickListener(v -> applyUpdate());
-                    }
-                });
+        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(apkUrl));
+        request.setTitle("Descargando actualización");
+        request.setDescription("Preparando nueva versión...");
+        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
+        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "update.apk");
+
+        DownloadManager manager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+        long downloadId = manager.enqueue(request);
+
+        BroadcastReceiver receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
+                if (id == downloadId) {
+                    // Sonido al terminar
+                    MediaPlayer player = MediaPlayer.create(MainActivity.this, R.raw.update_finish);
+                    player.start();
+
+                    // Ocultar barra y mostrar botón
+                    progressBar.setVisibility(View.GONE);
+                    applyButton.setVisibility(View.VISIBLE);
+                    applyButton.setOnClickListener(v -> applyUpdate());
+                }
             }
-        }).start();
+        };
+
+        registerReceiver(receiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
     }
 
     private void applyUpdate() {
