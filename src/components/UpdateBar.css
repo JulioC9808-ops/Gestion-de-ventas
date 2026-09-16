@@ -45,16 +45,11 @@
 .update-bar-fill {
   height: 100%;
   border-radius: 8px;
-  background: linear-gradient(
-    90deg,
-    #0099ff,
-    #ffee00,
-    #00cc66
-  );
+  background: linear-gradient(90deg, #0099ff, #ffee00, #00cc66);
   transition: width 0.25s ease-out;
 }
 
-/* Botón de aplicar cambios */
+/* Botón aplicar cambios */
 .apply-button {
   margin-top: 4px;
   padding: 8px 12px;
