@@ -6,7 +6,16 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+    <!-- WebView principal -->
     <WebView
+        android:id="@+id/mainWebView"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
+
+    <!-- Barra de actualización abajo a la izquierda -->
+    <include
+        layout="@layout/update_bar"
+        android:id="@+id/updateBarContainer"
+        android:layout_gravity="bottom|start"
+        android:visibility="gone"/>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
