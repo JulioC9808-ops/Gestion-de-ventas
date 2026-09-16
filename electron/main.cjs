@@ -1,6 +1,4 @@
 const { autoUpdater } = require('electron-updater');
-// Electron main process (CommonJS)
-// Ventana frameless con controles personalizados via IPC.
 const { app, BrowserWindow, shell, ipcMain } = require('electron');
 const path = require('path');
 const http = require('http');
@@ -35,10 +33,10 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     backgroundColor: '#ffffff',
-    show: false, // se muestra al estar lista: evita el parpadeo al abrir
+    show: false,
     paintWhenInitiallyHidden: true,
     autoHideMenuBar: true,
-    frame: false, // sin marco nativo — usamos una barra propia
+    frame: false,
     titleBarStyle: 'hidden',
     icon: path.join(__dirname, '..', 'build', 'icon.ico'),
     webPreferences: {
@@ -56,7 +54,6 @@ function createWindow() {
 
   mainWindow.once('ready-to-show', () => mainWindow?.show());
 
-
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('mailto:')) {
       shell.openExternal(url);
@@ -70,7 +67,7 @@ function createWindow() {
   mainWindow.on('closed', () => { mainWindow = null; });
 }
 
-// IPC: controles de ventana desde el renderer (barra custom)
+// IPC: controles de ventana
 ipcMain.handle('window:minimize', () => mainWindow?.minimize());
 ipcMain.handle('window:toggle-maximize', () => {
   if (!mainWindow) return false;
@@ -80,12 +77,15 @@ ipcMain.handle('window:toggle-maximize', () => {
 });
 ipcMain.handle('window:close', () => mainWindow?.close());
 ipcMain.handle('window:is-maximized', () => !!mainWindow?.isMaximized());
+
+// IPC: sincronización local
 ipcMain.handle('sync:start', async (_event, payload) => {
   stopSyncServer();
   const ip = localIpv4();
   if (!ip) throw new Error('Conecta esta computadora a la misma red Wi-Fi del empleado.');
   syncPayload = String(payload || '');
   syncToken = crypto.randomUUID();
+
   syncServer = http.createServer((request, response) => {
     if (request.method !== 'GET' || request.url !== `/sync/${syncToken}`) {
       response.writeHead(404).end('Not found');
@@ -98,31 +98,52 @@ ipcMain.handle('sync:start', async (_event, payload) => {
     });
     response.end(syncPayload);
   });
+
   await new Promise((resolve, reject) => {
     syncServer.once('error', reject);
     syncServer.listen(0, '0.0.0.0', resolve);
   });
+
   const address = syncServer.address();
   if (!address || typeof address === 'string') throw new Error('No se pudo abrir la transferencia local.');
   return `http://${ip}:${address.port}/sync/${syncToken}`;
 });
+
 ipcMain.handle('sync:stop', () => stopSyncServer());
 
+// APP READY
 app.whenReady().then(() => {
   createWindow();
-  autoUpdater.checkForUpdatesAndNotify();
-});
-app.on('window-all-closed', () => { stopSyncServer(); if (process.platform !== 'darwin') app.quit(); });
-app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 
-// Auto-updater events
-autoUpdater.on('update-available', () => {
-  if (mainWindow) {
-    mainWindow.webContents.send('update_available');
-  }
+  // CONFIGURAR AUTO-UPDATER
+  autoUpdater.setFeedURL({
+    provider: 'github',
+    owner: 'JulioC9808-ops',
+    repo: 'Sistema-Updates'
+  });
+
+  autoUpdater.checkForUpdates();
+
+  // EVENTOS DEL AUTO-UPDATER
+  autoUpdater.on('update-available', () => {
+    if (mainWindow) mainWindow.webContents.send('update_available');
+  });
+
+  autoUpdater.on('download-progress', (progress) => {
+    if (mainWindow) mainWindow.webContents.send('update_progress', progress.percent);
+  });
+
+  autoUpdater.on('update-downloaded', () => {
+    if (mainWindow) mainWindow.webContents.send('update_downloaded');
+    autoUpdater.quitAndInstall();
+  });
 });
-autoUpdater.on('update-downloaded', () => {
-  if (mainWindow) {
-    mainWindow.webContents.send('update_downloaded');
-  }
+
+app.on('window-all-closed', () => {
+  stopSyncServer();
+  if (process.platform !== 'darwin') app.quit();
+});
+
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
