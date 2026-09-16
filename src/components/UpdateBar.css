@@ -2,16 +2,31 @@
   position: fixed;
   bottom: 20px;
   left: 20px;
-  width: 220px;
-  padding: 12px;
-  border-radius: 12px;
-  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  backdrop-filter: blur(14px);
   background: rgba(20, 20, 20, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.25);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
   color: white;
   font-size: 14px;
   z-index: 9999;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.update-bar-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+}
+
+.update-bar-content {
+  display: flex;
+  flex-direction: column;
+  width: 180px;
 }
 
 .update-bar-title {
@@ -37,4 +52,33 @@
     #00cc66
   );
   transition: width 0.25s ease-out;
+}
+
+/* Botón de aplicar cambios */
+.apply-button {
+  margin-top: 4px;
+  padding: 8px 12px;
+  background: linear-gradient(90deg, #00cc66, #0099ff);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  animation: slideUp 0.45s ease-out;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+}
+
+.apply-button:hover {
+  opacity: 0.85;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
 }
