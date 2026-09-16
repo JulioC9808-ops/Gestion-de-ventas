@@ -1,17 +1,131 @@
-name: Release Android APK
+name: Build Android APK
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      # 1. Checkout
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Build APK
-        run: ./gradlew assembleRelease
+      # 2. Node
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+
+      # 2.1 Configurar caché de Electron
+      - name: Configure Electron cache
+        run: |
+          export ELECTRON_CACHE=$HOME/.cache/electron
+          export ELECTRON_SKIP_BINARY_DOWNLOAD=0
+
+      # 2.2 Instalar dependencias con reintento
+      - name: Install dependencies
+        run: npm ci --registry=https://registry.npmjs.org/ || npm ci --registry=https://registry.npmjs.org/
+
+      # 3. Build web
+      - name: Build web assets
+        run: npm run build
+
+      - name: Sync Capacitor
+        run: npx --no-install cap sync android
+
+      # 4. Java (usar Java 17)
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # 5. Android SDK
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: 12266719
+          accept-android-sdk-licenses: true
+          log-accepted-android-sdk-licenses: true
+          packages: platform-tools
+
+      # 6. Aceptar TODAS las licencias
+      - name: Accept ALL Android SDK licenses
+        run: yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+
+      # 7. Instalar SDKs necesarios
+      - name: Install Android SDK packages
+        run: |
+          sdkmanager "platform-tools" \
+                     "platforms;android-33" \
+                     "platforms;android-34" \
+                     "build-tools;34.0.0"
+
+      # 8. Permisos gradlew
+      - name: Grant execute permission for gradlew
+        run: chmod +x android/gradlew
+
+      # 9. Limpiar restos de Lovable y caches
+      - name: Remove old Lovable package
+        run: rm -rf android/app/src/main/java/app
+
+      - name: Clean Gradle
+        working-directory: android
+        run: ./gradlew clean
+
+      # 10. Build APK (unsigned)
+      - name: Build Android APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
+
+      # 11. Decode keystore desde secreto
+      - name: Decode Keystore
+        run: echo "$KEYSTORE_BASE64" | base64 --decode > my-release-key.keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+
+      # 12. Zipalign + Firmar APK con apksigner (v1, v2, v3)
+      - name: Zipalign APK
+        run: |
+          $ANDROID_HOME/build-tools/34.0.0/zipalign -p -f 4 \
+            android/app/build/outputs/apk/release/app-release-unsigned.apk \
+            android/app/build/outputs/apk/release/app-release-aligned.apk
+
+      - name: Sign APK with apksigner
+        run: |
+          $ANDROID_HOME/build-tools/34.0.0/apksigner sign \
+            --ks my-release-key.keystore \
+            --ks-key-alias gestionventas \
+            --ks-pass pass:${{ secrets.KEYSTORE_PASSWORD }} \
+            --key-pass pass:${{ secrets.KEY_PASSWORD }} \
+            --v1-signing-enabled true \
+            --v2-signing-enabled true \
+            --v3-signing-enabled true \
+            --out android/app/build/outputs/apk/release/app-release-signed.apk \
+            android/app/build/outputs/apk/release/app-release-aligned.apk
+
+      # 13. Verificar firma del APK
+      - name: Verify APK signature
+        run: |
+          $ANDROID_HOME/build-tools/34.0.0/apksigner verify --verbose \
+            android/app/build/outputs/apk/release/app-release-signed.apk
+
+      # 14. Subir APK firmado
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GestiondeVentas-release-apk
+          path: android/app/build/outputs/apk/release/Gestion de Ventas.apk
+          if-no-files-found: error
+          retention-days: 3
+
+      # 15 Subir a Releases
 
       - name: Get latest release tag
         id: get_release
@@ -25,6 +139,6 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.get_release.outputs.tag }}
-          files: android/app/build/outputs/apk/release/app-release.apk
+          files: android/app/build/outputs/apk/release/Gestion de Ventas.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
