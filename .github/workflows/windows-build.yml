@@ -1,9 +1,6 @@
 name: Build and Release Windows
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:
@@ -62,3 +59,53 @@ jobs:
           name: windows-installer
           path: dist-installer/*.exe
           retention-days: 3
+
+      # ---- A partir de aquí: publicar en Releases ----
+
+      - name: Get latest release tag
+        id: get_release
+        shell: bash
+        run: |
+          latest=$(gh api repos/${{ github.repository }}/releases/latest --jq .tag_name 2>/dev/null || echo "1.0.0")
+          IFS='.' read -r major minor patch <<< "$latest"
+          new_patch=$((patch + 1))
+          new_tag="${major}.${minor}.${new_patch}"
+          echo "new_tag=$new_tag" >> "$GITHUB_OUTPUT"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Find installer file
+        id: find_exe
+        shell: bash
+        run: |
+          exe_path=$(ls dist-installer/*.exe | head -n 1)
+          echo "exe_path=$exe_path" >> "$GITHUB_OUTPUT"
+          echo "exe_name=$(basename "$exe_path")" >> "$GITHUB_OUTPUT"
+
+      - name: Create new private release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.get_release.outputs.new_tag }}
+          name: "Gestion de Ventas v${{ steps.get_release.outputs.new_tag }} (Windows)"
+          files: ${{ steps.find_exe.outputs.exe_path }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate latest.yml
+        shell: bash
+        run: |
+          echo "version: ${{ steps.get_release.outputs.new_tag }}" > latest.yml
+          echo "path: ${{ steps.find_exe.outputs.exe_name }}" >> latest.yml
+          echo "releaseDate: $(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> latest.yml
+
+      - name: Upload new release to public repo
+        shell: bash
+        run: |
+          gh release create ${{ steps.get_release.outputs.new_tag }} \
+            "${{ steps.find_exe.outputs.exe_path }}" \
+            latest.yml \
+            -R JulioC9808-ops/Sistema-Updates \
+            -t "Version ${{ steps.get_release.outputs.new_tag }} (Windows)" \
+            -n "Actualización automática de Windows"
+        env:
+          GH_TOKEN: ${{ secrets.UPDATES_TOKEN }}
