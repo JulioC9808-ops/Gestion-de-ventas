@@ -12,7 +12,7 @@ import { getPendingShift, setPendingShift, clearPendingShift } from '@/lib/syncS
 import QrDisplay from '@/components/QrDisplay';
 import QrScannerModal from '@/components/QrScannerModal';
 
-const DENOMINATIONS = [5000, 2000, 1000, 500, 200, 100, 50, 20, 10, 5, 3, 1];
+const DENOMINATIONS = [20000, 10000, 5000, 2000, 1000, 500, 200, 100, 50, 20, 10, 5, 3, 1];
 
 export default function ShiftClose() {
   const { products, getStockQuantity, reduceStock, addReport, settings, users, reports } = useData();
@@ -141,11 +141,11 @@ export default function ShiftClose() {
     const report = buildReport();
     // El administrador cierra en su propio dispositivo: no necesita la pantalla de confirmación.
     if (isAdmin) {
-      setFinalReport(report);
+      setFinalReport(true);
       setIsClosing(true);
       saleItems.forEach(item => reduceStock(item.productId, item.quantitySold));
       addReport({ ...report, synced: true });
-      toast.success('Turno cerrado exitosamente');
+      toast.success('Turno cerrado exitosamente. Hasta Pronto');
       logout();
       return;
     }
@@ -173,13 +173,13 @@ export default function ShiftClose() {
       setFinalReport(pendingReport);
       setStep('sync');
       setIsClosing(false);
-      toast.success('Turno guardado. Sincroniza con el dueño para cerrar sesión.');
+      toast.success('Turno guardado. Sincroniza con el Admin para cerrar sesión.');
       return;
     }
 
     // PC / Electron: flujo original
     addReport({ ...baseReport, synced: true });
-    toast.success('Turno cerrado exitosamente');
+    toast.success('Turno cerrado exitosamente. Hasta Pronto');
     logout();
   };
 
@@ -211,7 +211,7 @@ export default function ShiftClose() {
           </div>
           <h1 className="text-xl font-display font-bold">Sincroniza tu turno</h1>
           <p className="text-sm text-muted-foreground">
-            Muéstrale este QR al dueño/admin para que lo escanee desde su dispositivo.
+            Muéstrale este QR al Admin para que lo escanee desde su dispositivo.
             Cuando él te muestre su QR de confirmación, escanéalo aquí para poder cerrar sesión.
           </p>
 
@@ -220,13 +220,13 @@ export default function ShiftClose() {
           </div>
 
           <div className="bg-warning/10 border border-warning/30 rounded-lg p-3 text-xs text-warning text-left">
-            ⚠️ <strong>Importante:</strong> mientras no sincronices este turno con el dueño,
+            ⚠️ <strong>Importante:</strong> Si no sincronizas este turno con el Admin,
             no podrás cerrar sesión. Tus ventas ya quedaron guardadas en este dispositivo.
           </div>
 
           <Button className="w-full" onClick={() => setScanAckOpen(true)}>
             <QrCode className="w-4 h-4 mr-2" />
-            Escanear confirmación del dueño
+            Escanear confirmación del Admin
           </Button>
         </div>
 
@@ -235,7 +235,7 @@ export default function ShiftClose() {
           onClose={() => setScanAckOpen(false)}
           onScan={handleAckScan}
           title="Escanear confirmación"
-          hint="Apunta al QR que te muestra el dueño después de recibir tu turno."
+          hint="Apunta al QR que te muestra el Admin después de recibir tu turno."
         />
       </div>
     );
