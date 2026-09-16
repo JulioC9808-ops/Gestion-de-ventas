@@ -546,7 +546,7 @@ export default function ShiftClose() {
             </div>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3 mt-4">
             <Button variant="outline" onClick={() => setStep(1)}>← Volver</Button>
             <Button className="flex-1" disabled={!isBalanced} onClick={handleFinalize}>
               {isBalanced ? 'Revisar Cierre ✅' : 'Diferencia detectada ❌'}
