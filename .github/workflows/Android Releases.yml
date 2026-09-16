@@ -116,7 +116,7 @@ jobs:
           $ANDROID_HOME/build-tools/34.0.0/apksigner verify --verbose \
             android/app/build/outputs/apk/release/app-release-signed.apk
 
-       # 14. Subir APK firmado
+      # 14. Subir APK firmado como artifact
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
@@ -125,32 +125,23 @@ jobs:
           if-no-files-found: error
           retention-days: 3
 
-      # 15 Subir a Releases y autoaumenta la version
+      # 15. Auto-incrementar versión y subir a Releases
+      - name: Get latest release tag
+        id: get_release
+        run: |
+          latest=$(gh api repos/${{ github.repository }}/releases/latest --jq .tag_name 2>/dev/null || echo "1.0.0")
+          IFS='.' read -r major minor patch <<< "$latest"
+          new_patch=$((patch + 1))
+          new_tag="${major}.${minor}.${new_patch}"
+          echo "new_tag=$new_tag" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-     - name: Get latest release tag
-  id: get_release
-  run: |
-    # Obtener el último tag o usar 1.0.0 si no existe
-    latest=$(gh api repos/${{ github.repository }}/releases/latest --jq .tag_name 2>/dev/null || echo "1.0.0")
-
-    # Separar en partes
-    IFS='.' read -r major minor patch <<< "$latest"
-
-    # Incrementar patch
-    new_patch=$((patch + 1))
-
-    # Nueva versión
-    new_tag="${major}.${minor}.${new_patch}"
-
-    echo "new_tag=$new_tag" >> $GITHUB_OUTPUT
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-- name: Create new release with incremented version
-  uses: softprops/action-gh-release@v1
-  with:
-    tag_name: ${{ steps.get_release.outputs.new_tag }}
-    name: "Gestion de Ventas v${{ steps.get_release.outputs.new_tag }}"
-    files: android/app/build/outputs/apk/release/app-release-signed.apk
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create new release with incremented version
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.get_release.outputs.new_tag }}
+          name: "Gestion de Ventas v${{ steps.get_release.outputs.new_tag }}"
+          files: android/app/build/outputs/apk/release/app-release-signed.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
