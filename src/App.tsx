@@ -40,7 +40,7 @@ const App = () => {
             <EulaGate />
 
             {/* Barra de progreso abajo a la izquierda */}
-            {updatePercent > 0 && updatePercent < 100 && (
+            {updatePercent > 0 && (
               <UpdateBar percent={updatePercent} />
             )}
 
