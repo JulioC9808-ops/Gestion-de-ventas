@@ -135,8 +135,13 @@ app.whenReady().then(() => {
 
   autoUpdater.on('update-downloaded', () => {
     if (mainWindow) mainWindow.webContents.send('update_downloaded');
-    autoUpdater.quitAndInstall();
+    // Ya no instalamos automáticamente, esperamos al botón "Aplicar cambios"
   });
+});
+
+// IPC: aplicar update desde el renderer
+ipcMain.on('apply_update', () => {
+  autoUpdater.quitAndInstall();
 });
 
 app.on('window-all-closed', () => {
