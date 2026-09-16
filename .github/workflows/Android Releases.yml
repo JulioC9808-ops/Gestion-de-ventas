@@ -125,7 +125,7 @@ jobs:
           if-no-files-found: error
           retention-days: 3
 
-      # 15. Auto-incrementar versión y subir a Releases
+      # 15. Auto-incrementar versión y subir a Releases PRIVADO
       - name: Get latest release tag
         id: get_release
         run: |
@@ -137,7 +137,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create new release with incremented version
+      - name: Create new private release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.get_release.outputs.new_tag }}
@@ -145,3 +145,22 @@ jobs:
           files: android/app/build/outputs/apk/release/app-release-signed.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 17. Crear latest.yml para Android/Electron
+      - name: Generate latest.yml
+        run: |
+          echo "version: ${{ steps.get_release.outputs.new_tag }}" > latest.yml
+          echo "path: app-release-signed.apk" >> latest.yml
+          echo "releaseDate: $(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> latest.yml
+
+      # 18. Subir APK y latest.yml al repo público
+      - name: Upload new release to public repo
+        run: |
+          gh release create ${{ steps.get_release.outputs.new_tag }} \
+            android/app/build/outputs/apk/release/app-release-signed.apk \
+            latest.yml \
+            -R JulioC9808-ops/Sistema-Updates \
+            -t "Version ${{ steps.get_release.outputs.new_tag }}" \
+            -n "Actualización automática"
+        env:
+          GH_TOKEN: ${{ secrets.UPDATES_TOKEN }}
