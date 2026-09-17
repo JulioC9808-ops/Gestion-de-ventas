@@ -92,8 +92,8 @@ public class MainActivity extends BridgeActivity {
             updateBarContainer.setVisibility(View.VISIBLE);
         }
 
-        // 👉 URL del APK en GitHub Releases
-        String apkUrl = "https://github.com/JulioC9808-ops/Sistema-Updates/releases/latest/download/app-release.apk";
+        // 👉 URL del APK en GitHub Releases (nombre real del asset subido por el workflow)
+        String apkUrl = "https://github.com/JulioC9808-ops/Sistema-Updates/releases/latest/download/app-release-signed.apk";
 
         DownloadManager.Request request = new DownloadManager.Request(Uri.parse(apkUrl));
         request.setTitle("Descargando actualización");
@@ -126,7 +126,8 @@ public class MainActivity extends BridgeActivity {
 
     private void applyUpdate() {
         File apkFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "update.apk");
-        Uri apkUri = FileProvider.getUriForFile(this, getPackageName() + ".provider", apkFile);
+        // La autoridad DEBE coincidir exactamente con la declarada en AndroidManifest.xml
+        Uri apkUri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", apkFile);
 
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
