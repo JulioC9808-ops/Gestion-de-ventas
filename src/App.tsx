@@ -10,6 +10,7 @@ import EulaGate from "@/components/EulaGate";
 import TitleBar from "@/components/TitleBar";
 import UpdateChecker from "@/components/UpdateChecker";
 import UpdateBar from "@/components/UpdateBar";
+import AnnouncementChecker from "@/components/AnnouncementChecker";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import { useEffect, useState } from "react";
@@ -36,6 +37,7 @@ const App = () => {
           <AuthProvider>
             <TitleBar />
             <UpdateChecker />
+            <AnnouncementChecker />
             <IntroPlayer />
             <EulaGate />
 
