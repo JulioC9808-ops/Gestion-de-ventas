@@ -2,7 +2,7 @@
   "name": "gestion-ventas",
   "productName": "Gestion De Ventas",
   "private": true,
-  "version": "1.3.6",
+  "version": "1.3.7",
   "description": "Gestion De Ventas",
   "author": "Julio_GE",
   "type": "module",
@@ -26,6 +26,11 @@
   "build": {
     "appId": "app.gestion.ventas",
     "productName": "Gestion De Ventas",
+    "publish": {
+      "provider": "github",
+      "owner": "JulioC9808-ops",
+      "repo": "Sistema-Updates"
+    },
     "directories": {
       "output": "dist-installer",
       "buildResources": "resources"
