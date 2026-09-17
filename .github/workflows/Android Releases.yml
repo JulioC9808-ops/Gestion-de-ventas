@@ -1,163 +1,93 @@
-name: Releases Android APK
+name: Build and Release Windows
 
 on:
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
-      # 1. Checkout
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # 2. Node
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          registry-url: https://registry.npmjs.org
+          node-version: 18
+          cache: 'npm'
 
-      # 2.1 Configurar caché de Electron
-      - name: Configure Electron cache
+      - name: Clean install
+        shell: cmd
         run: |
-          export ELECTRON_CACHE=$HOME/.cache/electron
-          export ELECTRON_SKIP_BINARY_DOWNLOAD=0
+          if exist node_modules rd /s /q node_modules
+          if exist package-lock.json del package-lock.json
+          npm install --force
 
-      # 2.2 Instalar dependencias con reintento
-      - name: Install dependencies
-        run: npm ci --registry=https://registry.npmjs.org/ || npm ci --registry=https://registry.npmjs.org/
+      - name: Fix Rollup native dependency
+        run: npm install @rollup/rollup-win32-x64-msvc --save-dev
 
-      # 3. Build web
-      - name: Build web assets
+      - name: Prepare NSIS license encoding
+        shell: powershell
+        run: |
+          $path = "resources/license.txt"
+
+          $content = [System.IO.File]::ReadAllText(
+            $path,
+            [System.Text.Encoding]::UTF8
+          )
+
+          [System.IO.File]::WriteAllText(
+            $path,
+            $content,
+            [System.Text.Encoding]::GetEncoding(1252)
+          )
+
+          Write-Host "License converted to Windows-1252 successfully."
+
+      - name: Build app
+        shell: cmd
         run: npm run build
 
-      - name: Sync Capacitor
-        run: npx --no-install cap sync android
-
-      # 4. Java (usar Java 17)
-      - name: Setup JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      # 5. Android SDK
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          cmdline-tools-version: 12266719
-          accept-android-sdk-licenses: true
-          log-accepted-android-sdk-licenses: true
-          packages: platform-tools
-
-      # 6. Aceptar TODAS las licencias
-      - name: Accept ALL Android SDK licenses
-        run: yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses
-
-      # 7. Instalar SDKs necesarios
-      - name: Install Android SDK packages
-        run: |
-          sdkmanager "platform-tools" \
-                     "platforms;android-33" \
-                     "platforms;android-34" \
-                     "build-tools;34.0.0"
-
-      # 8. Permisos gradlew
-      - name: Grant execute permission for gradlew
-        run: chmod +x android/gradlew
-
-      # 9. Limpiar restos de Lovable y caches
-      - name: Remove old Lovable package
-        run: rm -rf android/app/src/main/java/app
-
-      - name: Clean Gradle
-        working-directory: android
-        run: ./gradlew clean
-
-      # 10. Build APK (unsigned)
-      - name: Build Android APK
-        working-directory: android
-        run: ./gradlew assembleRelease --no-daemon --stacktrace
-
-      # 11. Decode keystore desde secreto
-      - name: Decode Keystore
-        run: echo "$KEYSTORE_BASE64" | base64 --decode > my-release-key.keystore
+      - name: Package and publish Electron app
+        shell: cmd
         env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          GH_TOKEN: ${{ secrets.UPDATES_TOKEN }}
+        run: npx electron-builder --publish always
 
-      # 12. Zipalign + Firmar APK con apksigner (v1, v2, v3)
-      - name: Zipalign APK
-        run: |
-          $ANDROID_HOME/build-tools/34.0.0/zipalign -p -f 4 \
-            android/app/build/outputs/apk/release/app-release-unsigned.apk \
-            android/app/build/outputs/apk/release/app-release-aligned.apk
-
-      - name: Sign APK with apksigner
-        run: |
-          $ANDROID_HOME/build-tools/34.0.0/apksigner sign \
-            --ks my-release-key.keystore \
-            --ks-key-alias gestionventas \
-            --ks-pass pass:${{ secrets.KEYSTORE_PASSWORD }} \
-            --key-pass pass:${{ secrets.KEY_PASSWORD }} \
-            --v1-signing-enabled true \
-            --v2-signing-enabled true \
-            --v3-signing-enabled true \
-            --out android/app/build/outputs/apk/release/app-release-signed.apk \
-            android/app/build/outputs/apk/release/app-release-aligned.apk
-
-      # 13. Verificar firma del APK
-      - name: Verify APK signature
-        run: |
-          $ANDROID_HOME/build-tools/34.0.0/apksigner verify --verbose \
-            android/app/build/outputs/apk/release/app-release-signed.apk
-
-      # 14. Subir APK firmado como artifact
-      - name: Upload APK artifact
+      - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GestionDeSistema-release-apk
-          path: android/app/build/outputs/apk/release/app-release-signed.apk
-          if-no-files-found: error
+          name: windows-installer
+          path: dist-installer/*.exe
           retention-days: 3
 
-      # 15. Auto-incrementar versión y subir a Releases PRIVADO
+      # ---- Copia de respaldo en el repo privado (opcional, solo registro interno) ----
+
       - name: Get latest release tag
         id: get_release
+        shell: bash
         run: |
           latest=$(gh api repos/${{ github.repository }}/releases/latest --jq .tag_name 2>/dev/null || echo "1.0.0")
           IFS='.' read -r major minor patch <<< "$latest"
           new_patch=$((patch + 1))
           new_tag="${major}.${minor}.${new_patch}"
-          echo "new_tag=$new_tag" >> $GITHUB_OUTPUT
+          echo "new_tag=$new_tag" >> "$GITHUB_OUTPUT"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create new private release
+      - name: Find installer file
+        id: find_exe
+        shell: bash
+        run: |
+          exe_path=$(ls dist-installer/*.exe | head -n 1)
+          echo "exe_path=$exe_path" >> "$GITHUB_OUTPUT"
+
+      - name: Create private release copy
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.get_release.outputs.new_tag }}
-          name: "Gestion de Ventas v${{ steps.get_release.outputs.new_tag }}"
-          files: android/app/build/outputs/apk/release/app-release-signed.apk
+          name: "Gestion de Ventas v${{ steps.get_release.outputs.new_tag }} (Windows)"
+          files: ${{ steps.find_exe.outputs.exe_path }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # 17. Crear latest.yml para Android/Electron
-      - name: Generate latest.yml
-        run: |
-          echo "version: ${{ steps.get_release.outputs.new_tag }}" > latest.yml
-          echo "path: app-release-signed.apk" >> latest.yml
-          echo "releaseDate: $(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> latest.yml
-
-      # 18. Subir APK y latest.yml al repo público
-      - name: Upload new release to public repo
-        run: |
-          gh release create ${{ steps.get_release.outputs.new_tag }} \
-            android/app/build/outputs/apk/release/app-release-signed.apk \
-            latest.yml \
-            -R JulioC9808-ops/Sistema-Updates \
-            -t "Version ${{ steps.get_release.outputs.new_tag }}" \
-            -n "Actualización automática"
-        env:
-          GH_TOKEN: ${{ secrets.UPDATES_TOKEN }}
