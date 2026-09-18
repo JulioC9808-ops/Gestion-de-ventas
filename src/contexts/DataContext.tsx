@@ -97,7 +97,8 @@ const DEFAULT_PRODUCTS: Product[] = [];
 const DEMO_PRODUCT_IDS = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'];
 const DEMO_WIPE_FLAG = '__demo_products_wiped_v1';
 
-export const GITHUB_UPDATES_URL = 'https://github.com/JulioC9808-ops/Gestion-de-ventas-PC';
+// Repo donde se publican las versiones de PC (el aviso de actualización es solo PC)
+export const GITHUB_UPDATES_URL = 'https://github.com/JulioC9808-ops/Sistema-Updates';
 
 const DEFAULT_SETTINGS: AppSettings = {
   businessName: 'Mi Negocio',
@@ -183,12 +184,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
       loaded.telegramUrl = 'https://t.me/+G8geeJ1gwYo4N2Ex';
       dirty = true;
     }
-    if (!loaded.githubUpdatesUrl) {
+    // Migración: el repo antiguo de actualizaciones no existe, apuntar al correcto
+    if (!loaded.githubUpdatesUrl || loaded.githubUpdatesUrl.includes('Gestion-de-ventas-PC')) {
       loaded.githubUpdatesUrl = GITHUB_UPDATES_URL;
       dirty = true;
-    }
-    if (loaded.fontColor && loaded.fontColor.toLowerCase() !== '#000000') {
-      // no forzamos, respetamos elección; solo aseguramos que existe algo legible por defecto
     }
     if (dirty) save('settings', loaded);
     return loaded;
@@ -213,7 +212,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setSettings(load<AppSettings>('settings', DEFAULT_SETTINGS));
         return;
       }
-
       switch (event.key) {
         case 'products':
           setProducts(load<Product[]>('products', DEFAULT_PRODUCTS));
@@ -237,7 +235,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
           break;
       }
     };
-
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
@@ -274,10 +271,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const addToStock = useCallback((productId: string, qty: number, userId: string): boolean => {
     const product = products.find(p => p.id === productId);
     if (!product || product.inventoryQty < qty) return false;
-
     // Deduct from inventory
     setP(prev => prev.map(p => p.id === productId ? { ...p, inventoryQty: p.inventoryQty - qty } : p));
-
     setS(prev => {
       const existing = prev.find(s => s.productId === productId);
       if (existing) {
@@ -335,15 +330,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
         return user;
       }));
     }
-
     setSt(prev => ({ ...prev, ...s }));
   }, [settings.defaultSalaryPercent]);
 
   const getProductById = useCallback((id: string) => products.find(p => p.id === id), [products]);
 
   // Al eliminar un movimiento REVERTIMOS la acción:
-  //   - quita del stock de venta la cantidad (nunca por debajo de 0)
-  //   - devuelve la cantidad completa al almacén (inventoryQty del producto)
+  // - quita del stock de venta la cantidad (nunca por debajo de 0)
+  // - devuelve la cantidad completa al almacén (inventoryQty del producto)
   const deleteMovement = useCallback((id: string) => {
     setM(prev => {
       const mov = prev.find(x => x.id === id);
