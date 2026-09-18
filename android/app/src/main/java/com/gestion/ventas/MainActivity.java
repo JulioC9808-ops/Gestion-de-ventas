@@ -92,6 +92,13 @@ public class MainActivity extends BridgeActivity {
             updateBarContainer.setVisibility(View.VISIBLE);
         }
 
+        // FIX 2: borra el APK anterior para que DownloadManager no lo renombre a update-1.apk
+        File oldApk = new File(Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_DOWNLOADS), "update.apk");
+        if (oldApk.exists()) {
+            oldApk.delete();
+        }
+
         // 👉 URL del APK en GitHub Releases (nombre real del asset subido por el workflow)
         String apkUrl = "https://github.com/JulioC9808-ops/Sistema-Updates/releases/latest/download/app-release-signed.apk";
 
@@ -121,11 +128,21 @@ public class MainActivity extends BridgeActivity {
             }
         };
 
-        registerReceiver(receiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+        // FIX 1: en Android 13+ hay que declarar si el receiver es EXPORTED o NOT_EXPORTED.
+        // Si no, lanza SecurityException y la app se cierra al abrir (tu caso: targetSdk 34).
+        // Se usa RECEIVER_EXPORTED porque el broadcast lo envía com.android.providers.downloads.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(receiver,
+                    new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
+                    Context.RECEIVER_EXPORTED);
+        } else {
+            registerReceiver(receiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+        }
     }
 
     private void applyUpdate() {
-        File apkFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "update.apk");
+        File apkFile = new File(Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_DOWNLOADS), "update.apk");
         // La autoridad DEBE coincidir exactamente con la declarada en AndroidManifest.xml
         Uri apkUri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", apkFile);
 
