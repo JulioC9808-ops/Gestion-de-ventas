@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { toast } from 'sonner';
 import { useData } from '@/contexts/DataContext';
 
@@ -31,10 +32,12 @@ export default function UpdateChecker() {
   const { settings } = useData();
 
   useEffect(() => {
+    // En Android las actualizaciones las maneja el sistema nativo (barra de
+    // descarga con su propia versión), este aviso es SOLO para PC.
+    if (Capacitor.isNativePlatform()) return;
     if (!navigator.onLine || !settings.githubUpdatesUrl) return;
     const repository = parseGithubRepository(settings.githubUpdatesUrl);
     if (!repository) return;
-
     const checkKey = `update_check_${repository.owner}_${repository.repo}`;
     const lastCheck = Number(localStorage.getItem(checkKey) || 0);
     if (Date.now() - lastCheck < CHECK_INTERVAL_MS) return;
