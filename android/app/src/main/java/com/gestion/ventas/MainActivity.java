@@ -42,7 +42,7 @@ public class MainActivity extends BridgeActivity {
 
     private static final int CAMERA_REQUEST_CODE = 8021;
     private static final String CRASH_FILE = "crash_log.txt";
-    // Archivo de versión en Sistema-Updates (lo creas tú, ver abajo)
+    // Archivo de versión en Sistema-Updates
     private static final String VERSION_URL =
             "https://raw.githubusercontent.com/JulioC9808-ops/Sistema-Updates/main/android-version.json";
 
@@ -52,8 +52,7 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        // 1) Capturador de errores PRIMERO que todo (permanente: si algo truena,
-        //    la próxima apertura muestra el error en pantalla)
+        // 1) Capturador de errores PRIMERO que todo
         installCrashHandler();
 
         SplashScreen.installSplashScreen(this);
@@ -79,8 +78,7 @@ public class MainActivity extends BridgeActivity {
             s.setTextZoom(100);
         }
 
-        // NO descarga nada al abrir: solo CONSULTA si hay versión nueva.
-        // Si la hay, pregunta Sí/No. Si dices No, vuelve a preguntar la próxima apertura.
+        // Solo CONSULTA si hay versión nueva. Si la hay, pregunta Sí/No.
         checkForUpdateAsync();
     }
 
@@ -155,7 +153,7 @@ public class MainActivity extends BridgeActivity {
                 if (remote <= 0 || remote <= current) return; // nada nuevo, no pregunta
                 runOnUiThread(() -> showUpdateDialog());
             } catch (Exception ignored) {
-                // Sin internet o error: no pregunta nada. Reintenta en la próxima apertura.
+                // Sin internet o error: no pregunta. Reintenta en la próxima apertura.
             }
         }).start();
     }
@@ -214,4 +212,88 @@ public class MainActivity extends BridgeActivity {
         Toast.makeText(this, "Descargando actualización...", Toast.LENGTH_SHORT).show();
 
         // Borra el APK anterior para que DownloadManager no lo renombre a update-1.apk
-        File oldAp
+        File oldApk = new File(Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_DOWNLOADS), "update.apk");
+        if (oldApk.exists()) {
+            oldApk.delete();
+        }
+
+        String apkUrl = "https://github.com/JulioC9808-ops/Sistema-Updates/releases/download/android/app-release-signed.apk";
+
+        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(apkUrl));
+        request.setTitle("Descargando actualización");
+        request.setDescription("Preparando nueva versión...");
+        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
+        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "update.apk");
+
+        downloadManager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+        downloadId = downloadManager.enqueue(request);
+
+        downloadReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
+                if (id == downloadId) {
+                    handleDownloadFinished();
+                }
+            }
+        };
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(downloadReceiver,
+                    new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
+                    Context.RECEIVER_EXPORTED);
+        } else {
+            registerReceiver(downloadReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+        }
+    }
+
+    private void handleDownloadFinished() {
+        int status = queryDownloadStatus();
+
+        if (status == DownloadManager.STATUS_SUCCESSFUL) {
+            // Sonido al terminar (protegido: nunca debe tirar la app)
+            try {
+                MediaPlayer player = MediaPlayer.create(MainActivity.this, R.raw.update_finish);
+                if (player != null) {
+                    player.start();
+                }
+            } catch (Exception ignored) {
+            }
+            // El usuario ya dijo Sí: lanzamos el instalador directo
+            applyUpdate();
+        } else if (status != -1) {
+            Toast.makeText(this, "No se pudo descargar la actualización", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private int queryDownloadStatus() {
+        try {
+            DownloadManager.Query query = new DownloadManager.Query().setFilterById(downloadId);
+            Cursor cursor = downloadManager.query(query);
+            if (cursor != null && cursor.moveToFirst()) {
+                int status = cursor.getInt(
+                        cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));
+                cursor.close();
+                return status;
+            }
+        } catch (Exception ignored) {
+        }
+        return -1;
+    }
+
+    private void applyUpdate() {
+        File apkFile = new File(Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_DOWNLOADS), "update.apk");
+        if (!apkFile.exists()) {
+            Toast.makeText(this, "No se encontró el archivo de actualización", Toast.LENGTH_LONG).show();
+            return;
+        }
+        Uri apkUri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", apkFile);
+
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        startActivity(intent);
+    }
+}
