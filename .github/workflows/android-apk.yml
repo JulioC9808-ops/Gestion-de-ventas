@@ -1,9 +1,6 @@
-name: Build Android APK
+name: AAndroid-Releases
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:
@@ -116,7 +113,7 @@ jobs:
           $ANDROID_HOME/build-tools/34.0.0/apksigner verify --verbose \
             android/app/build/outputs/apk/release/app-release-signed.apk
 
-      # 14. Subir APK firmado
+      # 14. Subir APK firmado como artifact (copia de seguridad)
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
@@ -124,3 +121,20 @@ jobs:
           path: android/app/build/outputs/apk/release/app-release-signed.apk
           if-no-files-found: error
           retention-days: 3
+
+      # 15. Publicar APK en Sistema-Updates (release con tag fijo "android")
+      - name: Publish APK to Sistema-Updates
+        env:
+          GH_TOKEN: ${{ secrets.UPDATES_TOKEN }}
+        run: |
+          cp android/app/build/outputs/apk/release/app-release-signed.apk ./app-release-signed.apk
+          # Crea el release "android" si no existe; si ya existe, sigue
+          gh release view android --repo JulioC9808-ops/Sistema-Updates > /dev/null 2>&1 || \
+          gh release create android \
+            --repo JulioC9808-ops/Sistema-Updates \
+            --title "Android (última compilación)" \
+            --notes "Build automático de $(date +%Y-%m-%d) — commit ${GITHUB_SHA::7}"
+          # Reemplaza el APK anterior (--clobber = sobrescribe)
+          gh release upload android app-release-signed.apk \
+            --repo JulioC9808-ops/Sistema-Updates \
+            --clobber
