@@ -1,4 +1,4 @@
-name: Android Releases
+name: Build Android APK + Publicar
 
 on:
   workflow_dispatch:
@@ -122,7 +122,8 @@ jobs:
           if-no-files-found: error
           retention-days: 3
 
-      # 15. Publicar APK en Sistema-Updates (release con tag fijo "android")
+      # 15. Publicar APK en Sistema-Updates (tag fijo "android", marcado
+      #     pre-release para que NO interfiera con las actualizaciones de PC)
       - name: Publish APK to Sistema-Updates
         env:
           GH_TOKEN: ${{ secrets.UPDATES_TOKEN }}
@@ -133,7 +134,10 @@ jobs:
           gh release create android \
             --repo JulioC9808-ops/Sistema-Updates \
             --title "Android (última compilación)" \
+            --prerelease \
             --notes "Build automático de $(date +%Y-%m-%d) — commit ${GITHUB_SHA::7}"
+          # Asegura que siempre quede marcado como pre-release
+          gh release edit android --repo JulioC9808-ops/Sistema-Updates --prerelease
           # Reemplaza el APK anterior (--clobber = sobrescribe)
           gh release upload android app-release-signed.apk \
             --repo JulioC9808-ops/Sistema-Updates \
