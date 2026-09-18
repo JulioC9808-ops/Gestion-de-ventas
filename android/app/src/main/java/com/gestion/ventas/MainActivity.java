@@ -1,8 +1,11 @@
 package com.gestion.ventas;
 
 import android.Manifest;
+import android.app.AlertDialog;
 import android.app.DownloadManager;
 import android.content.BroadcastReceiver;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -14,6 +17,7 @@ import android.webkit.WebView;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Environment;
@@ -26,10 +30,15 @@ import androidx.core.content.FileProvider;
 import com.getcapacitor.BridgeActivity;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileWriter;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
 public class MainActivity extends BridgeActivity {
 
     private static final int CAMERA_REQUEST_CODE = 8021;
+    private static final String CRASH_FILE = "crash_log.txt";
 
     // --- referencias a la barra ---
     private ProgressBar progressBar;
@@ -38,11 +47,17 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // 1) Instala el capturador de errores PRIMERO que todo
+        installCrashHandler();
+
         // Inicializa el splash theme ANTES de todo
         SplashScreen.installSplashScreen(this);
 
         registerPlugin(LocalSyncPlugin.class);
         super.onCreate(savedInstanceState);
+
+        // 2) Si la última vez la app se cerró por un error, muéstralo AHORA
+        showCrashLogIfAny();
 
         // Pide el permiso de cámara al iniciar
         requestCameraPermissionIfNeeded();
@@ -74,6 +89,58 @@ public class MainActivity extends BridgeActivity {
         startUpdateDownload();
     }
 
+    // ================= CAPTURADOR DE ERRORES =================
+    // Si la app truena por CUALQUIER motivo, guarda el error completo en
+    // memoria interna. Se muestra en pantalla la próxima vez que se abra.
+    private void installCrashHandler() {
+        final Thread.UncaughtExceptionHandler defaultHandler =
+                Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
+            try {
+                StringWriter sw = new StringWriter();
+                throwable.printStackTrace(new PrintWriter(sw));
+                File logFile = new File(getFilesDir(), CRASH_FILE);
+                try (FileWriter writer = new FileWriter(logFile, true)) {
+                    writer.write("\n==== CRASH " + new java.util.Date() + " ====\n");
+                    writer.write(sw.toString());
+                }
+            } catch (Exception ignored) {
+            }
+            if (defaultHandler != null) {
+                defaultHandler.uncaughtException(thread, throwable);
+            }
+        });
+    }
+
+    private void showCrashLogIfAny() {
+        try {
+            File logFile = new File(getFilesDir(), CRASH_FILE);
+            if (!logFile.exists() || logFile.length() == 0) return;
+
+            byte[] bytes = new byte[(int) Math.min(logFile.length(), 100000)];
+            int n;
+            try (FileInputStream in = new FileInputStream(logFile)) {
+                n = in.read(bytes);
+            }
+            String log = (n > 0) ? new String(bytes, 0, n) : "(log vacío)";
+            logFile.delete(); // solo se muestra una vez
+
+            new AlertDialog.Builder(this)
+                    .setTitle("La app se cerró inesperadamente")
+                    .setMessage(log)
+                    .setPositiveButton("Cerrar", null)
+                    .setNeutralButton("Copiar", (d, w) -> {
+                        ClipboardManager cm = (ClipboardManager)
+                                getSystemService(Context.CLIPBOARD_SERVICE);
+                        cm.setPrimaryClip(ClipData.newPlainText("crash", log));
+                        Toast.makeText(this, "Copiado", Toast.LENGTH_SHORT).show();
+                    })
+                    .show();
+        } catch (Exception ignored) {
+        }
+    }
+    // =========================================================
+
     private void requestCameraPermissionIfNeeded() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return;
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
@@ -92,7 +159,7 @@ public class MainActivity extends BridgeActivity {
             updateBarContainer.setVisibility(View.VISIBLE);
         }
 
-        // FIX 2: borra el APK anterior para que DownloadManager no lo renombre a update-1.apk
+        // Borra el APK anterior para que DownloadManager no lo renombre a update-1.apk
         File oldApk = new File(Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_DOWNLOADS), "update.apk");
         if (oldApk.exists()) {
@@ -128,9 +195,7 @@ public class MainActivity extends BridgeActivity {
             }
         };
 
-        // FIX 1: en Android 13+ hay que declarar si el receiver es EXPORTED o NOT_EXPORTED.
-        // Si no, lanza SecurityException y la app se cierra al abrir (tu caso: targetSdk 34).
-        // Se usa RECEIVER_EXPORTED porque el broadcast lo envía com.android.providers.downloads.
+        // En Android 13+ hay que declarar si el receiver es EXPORTED o NOT_EXPORTED.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(receiver,
                     new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
