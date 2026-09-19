@@ -50,13 +50,13 @@ export default function Login() {
       return;
     }
     if (target.role !== 'admin') {
-      setForgotResult('Solo los administradores pueden recuperar su contraseña. Pídele a tu Jefe que te de una nueva.');
+      setForgotResult('Solo los administradores pueden recuperar su contraseña. Pídele al Admin que te de una nueva contraseña.');
       return;
     }
     setForgotResult(
       target.passwordHint
         ? `Administrador «${target.name}». Tu nota para recordar la contraseña es: “${target.passwordHint}”`
-        : `Administrador «${target.name}». No guardaste ninguna nota. Pídele al desarrollador que le restablezca los datos de su cuenta.`,
+        : `Administrador «${target.name}». No guardaste ninguna nota. Si no recuerdas la contraseña puedes contactar al desarrollador y pedirle restablecer su contraseña por la Predeterminada.`,
     );
   };
 
