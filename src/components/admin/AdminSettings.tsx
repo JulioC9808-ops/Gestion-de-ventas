@@ -5,7 +5,7 @@ import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Palette, Type, Layout, DollarSign, Users as UsersIcon, Info, Settings as SettingsIcon, RefreshCw, ShieldCheck, DownloadCloud } from 'lucide-react';
+import { Palette, Type, Layout, DollarSign, Users as UsersIcon, Info, Settings as SettingsIcon, ShieldCheck, DownloadCloud } from 'lucide-react';
 import { toast } from 'sonner';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import UserManagement from '@/components/admin/UserManagement';
@@ -48,10 +48,43 @@ const FONT_COLORS = [
   { value: '#d97706', label: 'Ámbar', preview: '#d97706' },
 ];
 
-function ImportantNotes() {
+/**
+ * Botón reutilizable de comprobación manual de actualizaciones.
+ * - Android: consulta al sistema nativo (muestra "estás actualizado" o el diálogo de update).
+ * - PC / Web: consulta GitHub; si no hay nada dice "Tu programa está actualizado",
+ *   si hay versión nueva muestra "¿Deseas descargarla?" con Sí / No.
+ */
+function CheckUpdatesButton() {
   const { settings } = useData();
   const [checking, setChecking] = useState(false);
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={checking}
+      onClick={async () => {
+        setChecking(true);
+        try {
+          if (Capacitor.isNativePlatform()) {
+            await NativeAppUpdate.checkForUpdate();
+          } else {
+            await checkPCUpdates(settings.githubUpdatesUrl || GITHUB_UPDATES_URL, true);
+          }
+        } catch (err) {
+          console.error('Error al comprobar actualizaciones:', err);
+          toast.error('Error al comprobar actualizaciones.');
+        } finally {
+          setChecking(false);
+        }
+      }}
+    >
+      <DownloadCloud className={`w-4 h-4 mr-1.5 ${checking ? 'animate-bounce' : ''}`} />
+      Buscar Actualizaciones
+    </Button>
+  );
+}
 
+function ImportantNotes() {
   return (
     <div className="glass-card p-6 max-w-2xl">
       <h3 className="font-display font-bold text-lg italic mb-3">¡Hola, espero que tengas buen día!</h3>
@@ -64,69 +97,32 @@ function ImportantNotes() {
         <p><strong>5-</strong> No fuerces el programa (se puede desinstalar y volver a instalar sin problemas ya que este hace un <em>BACKUP</em> en sus archivos internos).</p>
         <p><strong>6-</strong> Este programa tiene un sistema <em>¡Anti-Hacking!</em> que si se detecta que intentan configurarlo externamente este borrará archivos necesarios dentro de sí mismo para su funcionamiento adecuado.</p>
         <p className="pt-2 border-t border-border italic">Muchas gracias por su atención, y le deseo buena suerte. Espero que me vuelva a contactar y si le gustó la aplicación me encantaría que me recomendara… .</p>
-        <div className="pt-4 border-t border-border flex items-center justify-between not-italic">
-          <div>
-            <p className="font-semibold text-foreground text-sm">Privacidad y Protección de Datos</p>
-            <p className="text-xs text-muted-foreground">Consulte los términos de privacidad y uso de permisos de la aplicación.</p>
-          </div>
-          <PrivacyPolicyDialog
-            trigger={
-              <Button variant="outline" size="sm">
-                <ShieldCheck className="w-4 h-4 mr-1.5" />
-                Ver Política
-              </Button>
-            }
-          />
+      </div>
+      <div className="pt-4 border-t border-border flex items-center justify-between not-italic">
+        <div>
+          <p className="font-semibold text-foreground text-sm">Privacidad y Protección de Datos</p>
+          <p className="text-xs text-muted-foreground">Consulte los términos de privacidad y uso de permisos de la aplicación.</p>
         </div>
-        <div className="pt-4 border-t border-border flex items-center justify-between not-italic">
-          <div>
-            <p className="font-semibold text-foreground text-sm flex items-center gap-2">
-              <span>Actualizaciones del Sistema</span>
-              <span className="text-[11px] font-mono font-normal px-2 py-0.5 rounded bg-muted text-muted-foreground border border-border">
-                v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.3.7'}
-              </span>
-            </p>
-            <p className="text-xs text-muted-foreground">Compruebe si existe una nueva versión con mejoras y correcciones.</p>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={checking}
-            onClick={async () => {
-              setChecking(true);
-              try {
-                if (Capacitor.isNativePlatform()) {
-                  toast.info('Consultando servidor de actualizaciones de Android...');
-                  await NativeAppUpdate.checkForUpdate();
-                } else if (window.desktopBridge?.isElectron && window.desktopBridge?.updates?.check) {
-                  toast.info('Comprobando actualizaciones de Electron...');
-                  const result = await window.desktopBridge.updates.check();
-                  if (result && result.success) {
-                    if (result.updateInfo) {
-                      toast.success(`Actualización encontrada: v${result.updateInfo.version || ''}. Descargando paquete...`);
-                    } else {
-                      toast.info(`La aplicación ya está en la versión más reciente (v${typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.3.7'}).`);
-                    }
-                  } else {
-                    // Fallback a comprobar releases en GitHub si autoUpdater no tiene release empaquetado
-                    await checkPCUpdates(settings.githubUpdatesUrl || GITHUB_UPDATES_URL, true);
-                  }
-                } else {
-                  // Navegador web o PC
-                  await checkPCUpdates(settings.githubUpdatesUrl || GITHUB_UPDATES_URL, true);
-                }
-              } catch (err) {
-                console.error('Error al comprobar actualizaciones:', err);
-                toast.error('Error al comprobar actualizaciones.');
-              } finally {
-                setChecking(false);
-              }
-            }}
-          >
-            <DownloadCloud className={`w-4 h-4 mr-1.5 ${checking ? 'animate-bounce' : ''}`} />
-            Buscar Actualizaciones
-          </Button>
+        <PrivacyPolicyDialog
+          trigger={
+            <Button variant="outline" size="sm">
+              <ShieldCheck className="w-4 h-4 mr-1.5" />
+              Ver Política
+            </Button>
+          }
+        />
+      </div>
+      <div className="pt-4 border-t border-border flex items-center justify-between not-italic">
+        <div>
+          <p className="font-semibold text-foreground text-sm flex items-center gap-2">
+            <span>Actualizaciones del Sistema</span>
+            <span className="text-[11px] font-mono font-normal px-2 py-0.5 rounded bg-muted text-muted-foreground border border-border">
+              v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.3.7'}
+            </span>
+          </p>
+          <p className="text-xs text-muted-foreground">Compruebe si existe una nueva versión con mejoras y correcciones.</p>
         </div>
+        <CheckUpdatesButton />
       </div>
     </div>
   );
@@ -263,7 +259,7 @@ function GeneralSettings() {
                 </div>
                 <p className="text-xs mt-2">Lateral Izquierdo</p>
               </button>
-              <button onClick={() => setNavPosition('side-right')} className={`flex-1 p-3 rounded-lg border-2 text-center transition-all ${navPosition === 'side-right' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}>
+              <button onClick={() => setNavPosition('side-right')} className={`flex-1 p-3 rounded-lg border-2 text-center transition-all ${navPosition === 'side-right' ? 'border-primary bg-primary/5' : 'border-border hover:border-border/50'}`}>
                 <div className="flex gap-1">
                   <div className="flex-1 h-10 bg-muted rounded" />
                   <div className="w-4 h-10 bg-primary/30 rounded" />
@@ -272,6 +268,7 @@ function GeneralSettings() {
               </button>
             </div>
           </div>
+
           <div className="border-t border-border pt-4">
             <label className="flex items-center justify-between gap-3 cursor-pointer">
               <div>
@@ -285,6 +282,7 @@ function GeneralSettings() {
               <input type="checkbox" checked={salaryByPercentEnabled} onChange={e => setSalaryByPercentEnabled(e.target.checked)} className="w-5 h-5 accent-primary" />
             </label>
           </div>
+
           {salaryByPercentEnabled && (
             <div>
               <label className="text-sm font-medium flex items-center gap-2">
@@ -312,6 +310,12 @@ function GeneralSettings() {
         <a href={telegramUrl} target="_blank" rel="noreferrer" className="inline-block mt-3 text-sm text-primary underline break-all">
           {telegramUrl}
         </a>
+        <div className="mt-4 pt-4 border-t border-border">
+          <p className="text-xs text-muted-foreground mb-2">
+            Comprueba si hay una nueva versión: te diremos si estás actualizado o te preguntará si deseas descargarla.
+          </p>
+          <CheckUpdatesButton />
+        </div>
       </div>
     </div>
   );
@@ -326,7 +330,6 @@ export default function AdminSettings() {
           <HelpTip>Gestiona usuarios, revisa las notas importantes y personaliza la apariencia del sistema.</HelpTip>
         </div>
       </div>
-
       <Tabs defaultValue="users" className="w-full">
         <TabsList className="mb-6">
           <TabsTrigger value="users"><UsersIcon className="w-4 h-4 mr-2" />Usuarios</TabsTrigger>
