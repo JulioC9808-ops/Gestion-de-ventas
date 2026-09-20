@@ -250,24 +250,26 @@ export default function Reports() {
             </table>
           </>
         )}
-      </div>
 
-      {/* Zona peligrosa: borrar todo el historial */}
-     <Button
-  variant="destructive"
-  size="sm"
-  onClick={() => {
-    if (!confirm('¿Seguro que quieres BORRAR TODO el historial de ventas? Esta acción es irreversible.')) return;
-    if (!confirm('Confirmación final: se eliminarán todos los cierres. ¿Continuar?')) return;
-    clearReports();
-    toast.success('Historial de ventas eliminado');
-  }}
->
-  <Trash2 className="w-4 h-4 mr-2" />
-  Borrar todo el historial
-</Button>
-        </div>
-      )}
+        {/* Botón para borrar todo el historial */}
+        {reports.length > 0 && (
+          <div className="mt-6 flex justify-end">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => {
+                if (!confirm('¿Seguro que quieres BORRAR TODO el historial de ventas? Esta acción es irreversible.')) return;
+                if (!confirm('Confirmación final: se eliminarán todos los cierres. ¿Continuar?')) return;
+                clearReports();
+                toast.success('Historial de ventas eliminado');
+              }}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Borrar todo el historial
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
