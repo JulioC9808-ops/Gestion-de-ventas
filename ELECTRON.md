@@ -40,13 +40,12 @@ Sale en `electron-release/`.
 
 **Método: GitHub Actions (compila en la nube).**
 
-1. Sube el proyecto a un repo de GitHub (Lovable puede hacerlo desde el botón
-   "Export to GitHub").
+1. Sube el proyecto a tu repositorio de GitHub (`JulioC9808-ops`).
 2. En GitHub abre la pestaña **Actions** → activa los workflows si te lo pide.
 3. Cada `push` a `main` dispara la build automáticamente. También puedes
    dispararla manualmente: **Actions → Build Android APK → Run workflow**.
-4. Cuando termine (5-8 min), abre la ejecución y descarga el artifact
-   **GestionDeVentas-debug-apk**. Dentro está `app-debug.apk`.
+4. Cuando termine, abre la ejecución y descarga el artifact
+   **GestionDeVentas-release-apk**. Dentro está el APK listo para instalar.
 5. Copia el APK al celular e instálalo (permite "orígenes desconocidos").
 
 El workflow (`.github/workflows/android-apk.yml`) hace todo:
