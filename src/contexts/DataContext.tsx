@@ -115,7 +115,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   navPosition: 'top',
   defaultSalaryPercent: 2,
   salaryByPercentEnabled: false,
-  telegramUrl: 'https://t.me/+G8geeJ1gwYo4N2Ex',
+  telegramUrl: 'telegramUrl: 'https://t.me/Gestion_Ventas',',
   githubUpdatesUrl: GITHUB_UPDATES_URL,
   announcementUrl: DEFAULT_ANNOUNCEMENT_URL,
 };
