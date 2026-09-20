@@ -102,6 +102,7 @@ export default function AdminOverview({ onNav }: Props) {
           </p>
         )}
       </div>
+      <RatesCard />
 
       <div className="glass-card p-6">
         <div className="flex items-center justify-between mb-4">
@@ -153,6 +154,7 @@ export default function AdminOverview({ onNav }: Props) {
     </div>
   );
 }
+
 
 // ============ Pie chart en SVG puro (sin dependencias) ============
 function SalesPieChart({ data }: { data: { cash: number; transfer: number; vip: number; total: number } }) {
