@@ -33,12 +33,17 @@ export function loadCachedSnapshot(): RatesSnapshot | null {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(raw) as unknown;
     if (
       parsed &&
-      typeof parsed.sourceTimestamp === 'number' &&
-      Array.isArray(parsed.rates) &&
-      parsed.rates.every((r: any) => typeof r.code === 'string' && typeof r.value === 'number')
+      typeof parsed === 'object' &&
+      'sourceTimestamp' in parsed &&
+      typeof (parsed as RatesSnapshot).sourceTimestamp === 'number' &&
+      Array.isArray((parsed as RatesSnapshot).rates) &&
+      (parsed as RatesSnapshot).rates.every((r: unknown) => 
+        typeof r === 'object' && r !== null && 'code' in r && 'value' in r &&
+        typeof (r as CurrencyRate).code === 'string' && typeof (r as CurrencyRate).value === 'number'
+      )
     ) {
       return parsed as RatesSnapshot;
     }
@@ -51,16 +56,19 @@ export function loadCachedSnapshot(): RatesSnapshot | null {
 function saveSnapshot(s: RatesSnapshot) {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify(s));
-  } catch {}
+  } catch {
+    // Ignored if storage is full or restricted
+  }
 }
 
 // La API puede devolver { trm: { USD: 330 } } (tasa única) o
 // { trm: { USD: { buy: x, sell: y } } } (compra/venta). Normalizamos ambas formas.
-function parseResponse(json: any): RatesSnapshot {
-  const trm = json?.trm || json?.rates || {};
-  let serverTs = Number(json?.timestamp);
+function parseResponse(json: unknown): RatesSnapshot {
+  const payload = json as Record<string, unknown> | null;
+  const trm = (payload?.trm || payload?.rates || {}) as Record<string, unknown>;
+  let serverTs = Number(payload?.timestamp);
   if (!isFinite(serverTs) || serverTs <= 0) serverTs = Date.now();
-  else if (String(json.timestamp).length <= 10) serverTs = serverTs * 1000; // epoch en segundos
+  else if (String(payload?.timestamp).length <= 10) serverTs = serverTs * 1000; // epoch en segundos
   if (serverTs > Date.now() + 24 * 3600 * 1000) serverTs = Date.now(); // rechaza futuros
 
   const rates: CurrencyRate[] = [];
@@ -68,7 +76,7 @@ function parseResponse(json: any): RatesSnapshot {
     if (typeof val === 'number') {
       rates.push({ code, value: val });
     } else if (val && typeof val === 'object') {
-      const o = val as any;
+      const o = val as Record<string, unknown>;
       const buy = Number(o.buy ?? o.compra);
       const sell = Number(o.sell ?? o.venta);
       const value = !isNaN(sell) ? sell : !isNaN(buy) ? buy : NaN;
@@ -82,7 +90,9 @@ function parseResponse(json: any): RatesSnapshot {
   }
   const clean = rates.filter(r => isFinite(r.value));
   if (!clean.length) throw new Error('La respuesta no contiene tasas válidas');
-  return { fetchedAt: new Date().toISOString(), sourceTimestamp: serverTs, rates: clean };
+  const snapshot: RatesSnapshot = { fetchedAt: new Date().toISOString(), sourceTimestamp: serverTs, rates: clean };
+  saveSnapshot(snapshot);
+  return snapshot;
 }
 
 export async function fetchRates(): Promise<RatesSnapshot> {

@@ -7,6 +7,8 @@ import android.net.NetworkCapabilities
 import android.os.Build
 import androidx.core.content.pm.PackageInfoCompat
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.gestion.ventas.updates.model.UpdateInfo
 import com.gestion.ventas.updates.network.UpdateApiService
