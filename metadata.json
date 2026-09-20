@@ -1,0 +1,6 @@
+{
+  "name": "Gestion de Ventas",
+  "description": "Sistema de gestión de ventas, stock, turnos y reportes para jefes y dependientes.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

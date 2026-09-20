@@ -93,21 +93,45 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate latest.yml
+      - name: Prepare latest.yml for auto-updater
         shell: bash
         run: |
-          echo "version: ${{ steps.get_release.outputs.new_tag }}" > latest.yml
-          echo "path: ${{ steps.find_exe.outputs.exe_name }}" >> latest.yml
-          echo "releaseDate: $(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> latest.yml
+          if [ -f "dist-installer/latest.yml" ]; then
+            cp "dist-installer/latest.yml" ./latest.yml
+            echo "Using electron-builder generated dist-installer/latest.yml"
+          else
+            exe_file="${{ steps.find_exe.outputs.exe_path }}"
+            exe_name="${{ steps.find_exe.outputs.exe_name }}"
+            sha512_hash=$(sha512sum "$exe_file" | awk '{print $1}' | xxd -r -p | base64)
+            size_bytes=$(stat -c%s "$exe_file" 2>/dev/null || wc -c < "$exe_file")
+            cat <<EOF > latest.yml
+version: ${{ steps.get_release.outputs.new_tag }}
+files:
+  - url: $exe_name
+    sha512: $sha512_hash
+    size: $size_bytes
+path: $exe_name
+sha512: $sha512_hash
+releaseDate: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+EOF
+          fi
+          cat latest.yml
 
       - name: Upload new release to public repo
         shell: bash
         run: |
+          BLOCKMAP_FILE=$(ls dist-installer/*.blockmap 2>/dev/null | head -n 1 || echo "")
+          EXTRA_ARGS=""
+          if [ -n "$BLOCKMAP_FILE" ] && [ -f "$BLOCKMAP_FILE" ]; then
+            EXTRA_ARGS="$BLOCKMAP_FILE"
+          fi
+
           gh release create ${{ steps.get_release.outputs.new_tag }} \
             "${{ steps.find_exe.outputs.exe_path }}" \
             latest.yml \
+            $EXTRA_ARGS \
             -R JulioC9808-ops/Sistema-Updates \
             -t "Version ${{ steps.get_release.outputs.new_tag }} (Windows)" \
-            -n "Actualización automática de Windows"
+            -n "Actualización automática de Windows - Gestión de Ventas v${{ steps.get_release.outputs.new_tag }}"
         env:
           GH_TOKEN: ${{ secrets.UPDATES_TOKEN }}

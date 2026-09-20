@@ -56,13 +56,13 @@ jobs:
       - name: Accept ALL Android SDK licenses
         run: yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses
 
-      # 7. Instalar SDKs necesarios
+      # 7. Instalar SDKs necesarios (incluyendo Android 15 / API 35)
       - name: Install Android SDK packages
         run: |
           sdkmanager "platform-tools" \
-                     "platforms;android-33" \
                      "platforms;android-34" \
-                     "build-tools;34.0.0"
+                     "platforms;android-35" \
+                     "build-tools;35.0.0"
 
       # 8. Permisos gradlew
       - name: Grant execute permission for gradlew
@@ -76,10 +76,12 @@ jobs:
         working-directory: android
         run: ./gradlew clean
 
-      # 10. Build APK (unsigned)
-      - name: Build Android APK
+      # 10. Build APK y AAB (Android App Bundle para Google Play)
+      - name: Build Android APK and AAB Bundle
         working-directory: android
-        run: ./gradlew assembleRelease --no-daemon --stacktrace
+        run: |
+          ./gradlew assembleRelease --no-daemon --stacktrace
+          ./gradlew bundleRelease --no-daemon --stacktrace
 
       # 11. Decode keystore desde secreto
       - name: Decode Keystore
@@ -90,13 +92,13 @@ jobs:
       # 12. Zipalign + Firmar APK con apksigner (v1, v2, v3)
       - name: Zipalign APK
         run: |
-          $ANDROID_HOME/build-tools/34.0.0/zipalign -p -f 4 \
+          $ANDROID_HOME/build-tools/35.0.0/zipalign -p -f 4 \
             android/app/build/outputs/apk/release/app-release-unsigned.apk \
             android/app/build/outputs/apk/release/app-release-aligned.apk
 
       - name: Sign APK with apksigner
         run: |
-          $ANDROID_HOME/build-tools/34.0.0/apksigner sign \
+          $ANDROID_HOME/build-tools/35.0.0/apksigner sign \
             --ks my-release-key.keystore \
             --ks-key-alias gestionventas \
             --ks-pass pass:${{ secrets.KEYSTORE_PASSWORD }} \
@@ -107,18 +109,47 @@ jobs:
             --out android/app/build/outputs/apk/release/app-release-signed.apk \
             android/app/build/outputs/apk/release/app-release-aligned.apk
 
-      # 13. Verificar firma del APK
+      # 13. Firmar AAB (Android App Bundle) para Google Play con jarsigner
+      - name: Sign AAB for Google Play
+        run: |
+          cp android/app/build/outputs/bundle/release/app-release.aab android/app/build/outputs/bundle/release/app-release-signed.aab
+          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
+            -keystore my-release-key.keystore \
+            -storepass "${{ secrets.KEYSTORE_PASSWORD }}" \
+            -keypass "${{ secrets.KEY_PASSWORD }}" \
+            android/app/build/outputs/bundle/release/app-release-signed.aab \
+            gestionventas
+
+      # 14. Verificar firma del APK
       - name: Verify APK signature
         run: |
-          $ANDROID_HOME/build-tools/34.0.0/apksigner verify --verbose \
+          $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose \
             android/app/build/outputs/apk/release/app-release-signed.apk
 
-      # 14. Subir APK firmado como artifact (copia de seguridad)
+      # 14.1 Calcular y mostrar hash SHA-256 para android-version.json
+      - name: Calculate SHA-256 hash for in-app updates
+        run: |
+          APK_HASH=$(sha256sum android/app/build/outputs/apk/release/app-release-signed.apk | awk '{print $1}')
+          echo "================================================="
+          echo "APK SHA-256 HASH: $APK_HASH"
+          echo "================================================="
+          echo "apk_sha256=$APK_HASH" >> $GITHUB_ENV
+
+      # 15. Subir APK firmado como artifact (instalación directa)
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: GestionDeSistema-release-apk
           path: android/app/build/outputs/apk/release/app-release-signed.apk
+          if-no-files-found: error
+          retention-days: 3
+
+      # 16. Subir AAB firmado como artifact (listo para Google Play Console)
+      - name: Upload AAB artifact (Google Play Bundle)
+        uses: actions/upload-artifact@v4
+        with:
+          name: GestionDeSistema-release-aab-playstore
+          path: android/app/build/outputs/bundle/release/app-release-signed.aab
           if-no-files-found: error
           retention-days: 3
 

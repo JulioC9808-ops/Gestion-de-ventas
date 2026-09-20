@@ -61,7 +61,9 @@ function verifyIntegrity() {
         return;
       }
     }
-  } catch {}
+  } catch {
+    // Integrity check failed or localStorage unavailable
+  }
 }
 
 verifyIntegrity();
@@ -97,8 +99,10 @@ const DEFAULT_PRODUCTS: Product[] = [];
 const DEMO_PRODUCT_IDS = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'];
 const DEMO_WIPE_FLAG = '__demo_products_wiped_v1';
 
-// Repo donde se publican las versiones de PC (el aviso de actualización es solo PC)
+// Repo donde se publican las versiones de PC y Android
 export const GITHUB_UPDATES_URL = 'https://github.com/JulioC9808-ops/Sistema-Updates';
+// Ruta por defecto para avisos y comunicados
+export const DEFAULT_ANNOUNCEMENT_URL = 'https://raw.githubusercontent.com/JulioC9808-ops/Sistema-Updates/main/announcement.json';
 
 const DEFAULT_SETTINGS: AppSettings = {
   businessName: 'Mi Negocio',
@@ -113,6 +117,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   salaryByPercentEnabled: false,
   telegramUrl: 'https://t.me/+G8geeJ1gwYo4N2Ex',
   githubUpdatesUrl: GITHUB_UPDATES_URL,
+  announcementUrl: DEFAULT_ANNOUNCEMENT_URL,
 };
 
 // Migración: borra SOLO los productos de demostración (y su stock/movimientos),
@@ -139,7 +144,9 @@ function wipeDemoProducts() {
       }
     }
     localStorage.setItem(DEMO_WIPE_FLAG, '1');
-  } catch {}
+  } catch {
+    // Ignore error if localStorage is not accessible
+  }
 }
 
 wipeDemoProducts();
@@ -187,6 +194,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     // Migración: el repo antiguo de actualizaciones no existe, apuntar al correcto
     if (!loaded.githubUpdatesUrl || loaded.githubUpdatesUrl.includes('Gestion-de-ventas-PC')) {
       loaded.githubUpdatesUrl = GITHUB_UPDATES_URL;
+      dirty = true;
+    }
+    if (!loaded.announcementUrl || loaded.announcementUrl.includes('Gestion-de-ventas-PC')) {
+      loaded.announcementUrl = DEFAULT_ANNOUNCEMENT_URL;
       dirty = true;
     }
     if (dirty) save('settings', loaded);

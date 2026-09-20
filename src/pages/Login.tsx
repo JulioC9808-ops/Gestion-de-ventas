@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import HelpTip from '@/components/HelpTip';
 import QrDisplay from '@/components/QrDisplay';
+import PrivacyPolicyDialog from '@/components/PrivacyPolicyDialog';
 
 const DEV_WHATSAPP = '+5351616816';
 const DEV_PHONE_TEL = 'tel:+5351616816';
@@ -171,7 +172,11 @@ export default function Login() {
             <HelpTip>Si tienes problemas para entrar o algún error del sistema, contacta al desarrollador.</HelpTip>
           </div>
 
-          <p className="text-center text-xs text-muted-foreground mt-6">
+          <div className="mt-4 flex justify-center">
+            <PrivacyPolicyDialog />
+          </div>
+
+          <p className="text-center text-xs text-muted-foreground mt-4">
             © {new Date().getFullYear()} {settings.businessName}. Todos los derechos reservados.
           </p>
         </div>

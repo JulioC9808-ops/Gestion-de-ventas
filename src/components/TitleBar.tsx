@@ -9,7 +9,7 @@ import { Coffee } from 'lucide-react';
  * Región arrastrable: -webkit-app-region: drag; botones con no-drag.
  */
 export default function TitleBar() {
-  const bridge = typeof window !== 'undefined' ? (window as any).desktopBridge : undefined;
+  const bridge = typeof window !== 'undefined' ? window.desktopBridge : undefined;
   const { settings } = useData();
   const [isMax, setIsMax] = useState(false);
 

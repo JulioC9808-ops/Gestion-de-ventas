@@ -87,6 +87,13 @@
     min-height: 100vh;
   }
 
+  /* Cumplimiento de accesibilidad táctil para Android / dispositivos móviles */
+  @media (pointer: coarse) {
+    button, [role="button"], input[type="button"], input[type="submit"], select {
+      min-height: 44px;
+    }
+  }
+
   * {
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--primary) / 0.65) hsl(var(--muted));

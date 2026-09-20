@@ -92,6 +92,7 @@ export interface AppSettings {
   introEnabled?: boolean;
   telegramUrl?: string | null;
   githubUpdatesUrl?: string | null;
+  announcementUrl?: string | null;
   eulaText?: string | null; // texto EULA que se muestra la primera vez
   salesChartResetAt?: string | null; // ISO date: solo cuentan reportes con date >= a esta
 }

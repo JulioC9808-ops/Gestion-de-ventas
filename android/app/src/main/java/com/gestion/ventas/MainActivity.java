@@ -25,30 +25,23 @@ import androidx.core.splashscreen.SplashScreen;
 import androidx.core.content.FileProvider;
 
 import com.getcapacitor.BridgeActivity;
+import com.gestion.ventas.updates.UpdateManager;
 
-import org.json.JSONObject;
-
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
-import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.net.HttpURLConnection;
-import java.net.URL;
 
 public class MainActivity extends BridgeActivity {
 
     private static final int CAMERA_REQUEST_CODE = 8021;
     private static final String CRASH_FILE = "crash_log.txt";
-    // Archivo de versión en Sistema-Updates
+    // Archivo de versión remoto para actualizaciones automáticas
     private static final String VERSION_URL =
             "https://raw.githubusercontent.com/JulioC9808-ops/Sistema-Updates/main/android-version.json";
 
-    private long downloadId = -1;
-    private DownloadManager downloadManager;
-    private BroadcastReceiver downloadReceiver;
+    private UpdateManager updateManager;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -58,6 +51,7 @@ public class MainActivity extends BridgeActivity {
         SplashScreen.installSplashScreen(this);
 
         registerPlugin(LocalSyncPlugin.class);
+        registerPlugin(com.gestion.ventas.updates.AppUpdatePlugin.class);
         super.onCreate(savedInstanceState);
 
         // 2) Si la última vez la app se cerró por un error, muéstralo AHORA
@@ -78,20 +72,16 @@ public class MainActivity extends BridgeActivity {
             s.setTextZoom(100);
         }
 
-        // Solo CONSULTA si hay versión nueva. Si la hay, pregunta Sí/No.
-        checkForUpdateAsync();
+        // Sistema de actualizaciones in-app con descarga streaming, barra de progreso y SHA-256
+        updateManager = UpdateManager.Companion.init(this, VERSION_URL, 12L);
     }
 
     @Override
-    public void onDestroy() {
-        if (downloadReceiver != null) {
-            try {
-                unregisterReceiver(downloadReceiver);
-            } catch (Exception ignored) {
-            }
-            downloadReceiver = null;
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (updateManager != null) {
+            updateManager.onActivityResult(requestCode);
         }
-        super.onDestroy();
     }
 
     // ================= CAPTURADOR DE ERRORES =================
@@ -144,57 +134,6 @@ public class MainActivity extends BridgeActivity {
     }
     // =========================================================
 
-    // ================= CHEQUEO DE ACTUALIZACIÓN =================
-    private void checkForUpdateAsync() {
-        new Thread(() -> {
-            try {
-                long remote = fetchLatestVersionCode();
-                long current = getCurrentVersionCode();
-                if (remote <= 0 || remote <= current) return; // nada nuevo, no pregunta
-                runOnUiThread(() -> showUpdateDialog());
-            } catch (Exception ignored) {
-                // Sin internet o error: no pregunta. Reintenta en la próxima apertura.
-            }
-        }).start();
-    }
-
-    private long fetchLatestVersionCode() throws Exception {
-        URL url = new URL(VERSION_URL + "?t=" + System.currentTimeMillis());
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setConnectTimeout(8000);
-        conn.setReadTimeout(8000);
-        conn.setInstanceFollowRedirects(true);
-        int code = conn.getResponseCode();
-        if (code != 200) throw new Exception("HTTP " + code);
-        StringBuilder sb = new StringBuilder();
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(conn.getInputStream(), "UTF-8"))) {
-            String line;
-            while ((line = reader.readLine()) != null) sb.append(line);
-        } finally {
-            conn.disconnect();
-        }
-        return new JSONObject(sb.toString()).getLong("versionCode");
-    }
-
-    private long getCurrentVersionCode() throws Exception {
-        PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
-        return info.getLongVersionCode();
-    }
-
-    private void showUpdateDialog() {
-        try {
-            new AlertDialog.Builder(this)
-                    .setTitle("¡Se ha encontrado una nueva versión!")
-                    .setMessage("¿Deseas actualizar?")
-                    .setPositiveButton("Sí", (d, w) -> startUpdateDownload())
-                    .setNegativeButton("No", null) // se quita; vuelve a preguntar al reabrir
-                    .show();
-        } catch (Exception ignored) {
-        }
-    }
-    // ============================================================
-
     private void requestCameraPermissionIfNeeded() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return;
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
@@ -205,95 +144,5 @@ public class MainActivity extends BridgeActivity {
                     CAMERA_REQUEST_CODE
             );
         }
-    }
-
-    // --- descarga (SOLO se ejecuta si el usuario dijo Sí) ---
-    private void startUpdateDownload() {
-        Toast.makeText(this, "Descargando actualización...", Toast.LENGTH_SHORT).show();
-
-        // Borra el APK anterior para que DownloadManager no lo renombre a update-1.apk
-        File oldApk = new File(Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_DOWNLOADS), "update.apk");
-        if (oldApk.exists()) {
-            oldApk.delete();
-        }
-
-        String apkUrl = "https://github.com/JulioC9808-ops/Sistema-Updates/releases/download/android/app-release-signed.apk";
-
-        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(apkUrl));
-        request.setTitle("Descargando actualización");
-        request.setDescription("Preparando nueva versión...");
-        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
-        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "update.apk");
-
-        downloadManager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
-        downloadId = downloadManager.enqueue(request);
-
-        downloadReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
-                if (id == downloadId) {
-                    handleDownloadFinished();
-                }
-            }
-        };
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(downloadReceiver,
-                    new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
-                    Context.RECEIVER_EXPORTED);
-        } else {
-            registerReceiver(downloadReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
-        }
-    }
-
-    private void handleDownloadFinished() {
-        int status = queryDownloadStatus();
-
-        if (status == DownloadManager.STATUS_SUCCESSFUL) {
-            // Sonido al terminar (protegido: nunca debe tirar la app)
-            try {
-                MediaPlayer player = MediaPlayer.create(MainActivity.this, R.raw.update_finish);
-                if (player != null) {
-                    player.start();
-                }
-            } catch (Exception ignored) {
-            }
-            // El usuario ya dijo Sí: lanzamos el instalador directo
-            applyUpdate();
-        } else if (status != -1) {
-            Toast.makeText(this, "No se pudo descargar la actualización", Toast.LENGTH_LONG).show();
-        }
-    }
-
-    private int queryDownloadStatus() {
-        try {
-            DownloadManager.Query query = new DownloadManager.Query().setFilterById(downloadId);
-            Cursor cursor = downloadManager.query(query);
-            if (cursor != null && cursor.moveToFirst()) {
-                int status = cursor.getInt(
-                        cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));
-                cursor.close();
-                return status;
-            }
-        } catch (Exception ignored) {
-        }
-        return -1;
-    }
-
-    private void applyUpdate() {
-        File apkFile = new File(Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_DOWNLOADS), "update.apk");
-        if (!apkFile.exists()) {
-            Toast.makeText(this, "No se encontró el archivo de actualización", Toast.LENGTH_LONG).show();
-            return;
-        }
-        Uri apkUri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", apkFile);
-
-        Intent intent = new Intent(Intent.ACTION_VIEW);
-        intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        startActivity(intent);
     }
 }

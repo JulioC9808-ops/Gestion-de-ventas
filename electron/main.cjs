@@ -116,32 +116,98 @@ app.whenReady().then(() => {
   createWindow();
 
   // CONFIGURAR AUTO-UPDATER
+  autoUpdater.logger = console;
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = false;
+  autoUpdater.allowPrerelease = true; // Permite releases marcados como prerelease en GitHub
+  autoUpdater.allowDowngrade = false;
+
   autoUpdater.setFeedURL({
     provider: 'github',
     owner: 'JulioC9808-ops',
-    repo: 'Sistema-Updates'
+    repo: 'Sistema-Updates',
+    private: false
   });
 
-  autoUpdater.checkForUpdates();
-
   // EVENTOS DEL AUTO-UPDATER
-  autoUpdater.on('update-available', () => {
-    if (mainWindow) mainWindow.webContents.send('update_available');
+  autoUpdater.on('checking-for-update', () => {
+    console.log('[AutoUpdater] Comprobando actualizaciones en JulioC9808-ops/Sistema-Updates...');
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('update_checking');
+    }
+  });
+
+  autoUpdater.on('update-available', (info) => {
+    console.log('[AutoUpdater] Actualización disponible:', info?.version);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('update_available', info);
+    }
+  });
+
+  autoUpdater.on('update-not-available', (info) => {
+    console.log('[AutoUpdater] No hay actualizaciones disponibles:', info?.version);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('update_not_available', info);
+    }
   });
 
   autoUpdater.on('download-progress', (progress) => {
-    if (mainWindow) mainWindow.webContents.send('update_progress', progress.percent);
+    const percent = progress ? progress.percent : 0;
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('update_progress', percent);
+    }
   });
 
-  autoUpdater.on('update-downloaded', () => {
-    if (mainWindow) mainWindow.webContents.send('update_downloaded');
-    // Ya no instalamos automáticamente, esperamos al botón "Aplicar cambios"
+  autoUpdater.on('update-downloaded', (info) => {
+    console.log('[AutoUpdater] Actualización descargada exitosamente:', info?.version);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('update_downloaded', info);
+    }
   });
+
+  autoUpdater.on('error', (err) => {
+    console.warn('[AutoUpdater] Aviso o error en comprobación:', err?.message || err);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('update_error', err?.message || String(err));
+    }
+  });
+
+  // Comprobación inicial diferida para arranque rápido y no bloqueante
+  setTimeout(() => {
+    try {
+      autoUpdater.checkForUpdates().catch((err) => {
+        console.warn('[AutoUpdater] Comprobación inicial no completada:', err?.message || err);
+      });
+    } catch (e) {
+      console.warn('[AutoUpdater] Error al comprobar actualización al inicio:', e);
+    }
+  }, 3500);
+});
+
+// IPC: comprobación manual de actualización
+ipcMain.handle('update:check', async () => {
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    return {
+      success: true,
+      updateInfo: result?.updateInfo || null,
+    };
+  } catch (err) {
+    console.warn('[AutoUpdater] Error en update:check IPC:', err?.message || err);
+    return {
+      success: false,
+      error: err?.message || String(err),
+    };
+  }
 });
 
 // IPC: aplicar update desde el renderer
 ipcMain.on('apply_update', () => {
-  autoUpdater.quitAndInstall();
+  try {
+    autoUpdater.quitAndInstall(false, true);
+  } catch (err) {
+    console.error('[AutoUpdater] Error ejecutando quitAndInstall:', err);
+  }
 });
 
 app.on('window-all-closed', () => {

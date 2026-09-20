@@ -1,0 +1,8 @@
+{
+  "versionCode": 2,
+  "versionName": "1.3.7",
+  "apkUrl": "https://github.com/JulioC9808-ops/Sistema-Updates/releases/download/android/app-release-signed.apk",
+  "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "changelog": "• Sistema de actualizaciones automáticas con verificación SHA-256.\n• Mejoras de rendimiento en sincronización Wi-Fi local.\n• Corrección de estilos y accesibilidad en dispositivos móviles.",
+  "mandatory": false
+}

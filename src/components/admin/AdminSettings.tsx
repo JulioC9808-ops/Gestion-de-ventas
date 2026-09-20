@@ -5,9 +5,18 @@ import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Palette, Type, Layout, DollarSign, Users as UsersIcon, Info, Settings as SettingsIcon, RefreshCw } from 'lucide-react';
+import { Palette, Type, Layout, DollarSign, Users as UsersIcon, Info, Settings as SettingsIcon, RefreshCw, ShieldCheck, DownloadCloud } from 'lucide-react';
 import { toast } from 'sonner';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import UserManagement from '@/components/admin/UserManagement';
+import PrivacyPolicyDialog from '@/components/PrivacyPolicyDialog';
+import { checkPCUpdates } from '@/lib/updates';
+import { GITHUB_UPDATES_URL } from '@/contexts/DataContext';
+
+interface AppUpdatePluginInterface {
+  checkForUpdate(): Promise<{ status: string }>;
+}
+const NativeAppUpdate = registerPlugin<AppUpdatePluginInterface>('AppUpdate');
 
 const THEMES = [
   { value: 'white', label: 'Blanco Puro', preview: 'bg-white border border-gray-300' },
@@ -40,6 +49,9 @@ const FONT_COLORS = [
 ];
 
 function ImportantNotes() {
+  const { settings } = useData();
+  const [checking, setChecking] = useState(false);
+
   return (
     <div className="glass-card p-6 max-w-2xl">
       <h3 className="font-display font-bold text-lg italic mb-3">¡Hola, espero que tengas buen día!</h3>
@@ -52,6 +64,64 @@ function ImportantNotes() {
         <p><strong>5-</strong> No fuerces el programa (se puede desinstalar y volver a instalar sin problemas ya que este hace un <em>BACKUP</em> en sus archivos internos).</p>
         <p><strong>6-</strong> Este programa tiene un sistema <em>¡Anti-Hacking!</em> que si se detecta que intentan configurarlo externamente este borrará archivos necesarios dentro de sí mismo para su funcionamiento adecuado.</p>
         <p className="pt-2 border-t border-border italic">Muchas gracias por su atención, y le deseo buena suerte. Espero que me vuelva a contactar y si le gustó la aplicación me encantaría que me recomendara… .</p>
+        <div className="pt-4 border-t border-border flex items-center justify-between not-italic">
+          <div>
+            <p className="font-semibold text-foreground text-sm">Privacidad y Protección de Datos</p>
+            <p className="text-xs text-muted-foreground">Consulte los términos de privacidad y uso de permisos de la aplicación.</p>
+          </div>
+          <PrivacyPolicyDialog
+            trigger={
+              <Button variant="outline" size="sm">
+                <ShieldCheck className="w-4 h-4 mr-1.5" />
+                Ver Política
+              </Button>
+            }
+          />
+        </div>
+        <div className="pt-4 border-t border-border flex items-center justify-between not-italic">
+          <div>
+            <p className="font-semibold text-foreground text-sm">Actualizaciones del Sistema</p>
+            <p className="text-xs text-muted-foreground">Compruebe si existe una nueva versión con mejoras y correcciones.</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={checking}
+            onClick={async () => {
+              setChecking(true);
+              try {
+                if (Capacitor.isNativePlatform()) {
+                  toast.info('Consultando servidor de actualizaciones de Android...');
+                  await NativeAppUpdate.checkForUpdate();
+                } else if (window.desktopBridge?.isElectron && window.desktopBridge?.updates?.check) {
+                  toast.info('Comprobando actualizaciones de Electron...');
+                  const result = await window.desktopBridge.updates.check();
+                  if (result && result.success) {
+                    if (result.updateInfo) {
+                      toast.success(`Actualización encontrada: v${result.updateInfo.version || ''}. Descargando paquete...`);
+                    } else {
+                      toast.info(`La aplicación ya está en la versión más reciente (v1.3.7).`);
+                    }
+                  } else {
+                    // Fallback a comprobar releases en GitHub si autoUpdater no tiene release empaquetado
+                    await checkPCUpdates(settings.githubUpdatesUrl || GITHUB_UPDATES_URL, true);
+                  }
+                } else {
+                  // Navegador web o PC
+                  await checkPCUpdates(settings.githubUpdatesUrl || GITHUB_UPDATES_URL, true);
+                }
+              } catch (err) {
+                console.error('Error al comprobar actualizaciones:', err);
+                toast.error('Error al comprobar actualizaciones.');
+              } finally {
+                setChecking(false);
+              }
+            }}
+          >
+            <DownloadCloud className={`w-4 h-4 mr-1.5 ${checking ? 'animate-bounce' : ''}`} />
+            Buscar Actualizaciones
+          </Button>
+        </div>
       </div>
     </div>
   );

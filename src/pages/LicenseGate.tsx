@@ -46,7 +46,9 @@ function readLicense(): LicenseState {
       localStorage.setItem('license_state', JSON.stringify(state));
       return state;
     }
-  } catch {}
+  } catch {
+    // Ignore invalid license state
+  }
   return { type: 'none' };
 }
 

@@ -1,11 +1,12 @@
 import React, { useState, useRef } from 'react';
 import AppLayout from '@/components/AppLayout';
-import { Settings, Key, RotateCcw, Image, Send, UserCog } from 'lucide-react';
-import { useData } from '@/contexts/DataContext';
+import { Settings, Key, RotateCcw, Image, Send, UserCog, Megaphone, CheckCircle2, RefreshCw } from 'lucide-react';
+import { useData, GITHUB_UPDATES_URL, DEFAULT_ANNOUNCEMENT_URL } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { fetchAnnouncement } from '@/lib/announcements';
 
 const NAV = [
   { label: 'Configuración', icon: Settings, key: 'config', tip: 'Cambia el nombre del negocio y otras configuraciones generales.' },
@@ -21,8 +22,10 @@ export default function DevPanel() {
   const { settings, updateSettings, users, updateUser, resetAdminCredentials } = useData();
   const { currentUser } = useAuth();
   const [businessName, setBusinessName] = useState(settings.businessName);
-  const [telegramUrl, setTelegramUrl] = useState(settings.telegramUrl || 'https://t.me/Gestion_Ventas');
-  const [githubUpdatesUrl, setGithubUpdatesUrl] = useState(settings.githubUpdatesUrl || '');
+  const [telegramUrl, setTelegramUrl] = useState(settings.telegramUrl || 'https://t.me/+G8geeJ1gwYo4N2Ex');
+  const [githubUpdatesUrl, setGithubUpdatesUrl] = useState(settings.githubUpdatesUrl || GITHUB_UPDATES_URL);
+  const [announcementUrl, setAnnouncementUrl] = useState(settings.announcementUrl || DEFAULT_ANNOUNCEMENT_URL);
+  const [testingAnnouncement, setTestingAnnouncement] = useState(false);
   const [currentPwd, setCurrentPwd] = useState('');
   const [newPwd, setNewPwd] = useState('');
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -143,24 +146,111 @@ export default function DevPanel() {
       {active === 'updates' && (
         <div>
           <div className="page-header">
-            <h1 className="page-title">Canales de Actualización</h1>
+            <h1 className="page-title">Canales de Actualización y Avisos</h1>
+            <p className="text-sm text-muted-foreground mt-1">Configuración del repositorio central y la ruta de comunicados del sistema.</p>
           </div>
-          <div className="glass-card p-6 max-w-lg space-y-6">
+          <div className="glass-card p-6 max-w-xl space-y-6">
             <div>
               <label className="text-sm font-medium">Link de Telegram (Actualizaciones)</label>
               <div className="flex gap-2 mt-1">
                 <Input value={telegramUrl} onChange={e => setTelegramUrl(e.target.value)} placeholder="https://t.me/..." />
               </div>
             </div>
+
             <div>
-              <label className="text-sm font-medium">Repositorio público de GitHub</label>
-              <Input value={githubUpdatesUrl} onChange={e => setGithubUpdatesUrl(e.target.value)} placeholder="https://github.com/usuario/repositorio" />
-              <p className="text-xs text-muted-foreground mt-2">La aplicación consultará las publicaciones de Releases cuando tenga internet.</p>
+              <label className="text-sm font-medium">Repositorio público de GitHub (PC y Android)</label>
+              <Input
+                value={githubUpdatesUrl}
+                onChange={e => setGithubUpdatesUrl(e.target.value)}
+                placeholder="https://github.com/JulioC9808-ops/Sistema-Updates"
+              />
+              <p className="text-xs text-muted-foreground mt-1.5">
+                Repositorio donde se publican las releases de Windows (Electron) y el APK de Android.
+              </p>
             </div>
-            <Button onClick={() => {
-              updateSettings({ telegramUrl: telegramUrl.trim(), githubUpdatesUrl: githubUpdatesUrl.trim() || null });
-              toast.success('Canales de actualización guardados');
-            }}>Guardar canales</Button>
+
+            <div className="pt-2 border-t border-border">
+              <label className="text-sm font-medium flex items-center gap-2">
+                <Megaphone className="w-4 h-4 text-amber-500" />
+                Ruta / URL del Announcement (announcement.json)
+              </label>
+              <Input
+                className="mt-1.5 font-mono text-xs"
+                value={announcementUrl}
+                onChange={e => setAnnouncementUrl(e.target.value)}
+                placeholder="https://raw.githubusercontent.com/JulioC9808-ops/Sistema-Updates/main/announcement.json"
+              />
+              <p className="text-xs text-muted-foreground mt-1.5">
+                Archivo JSON remoto con los anuncios, comunicados y alertas del sistema.
+              </p>
+
+              <div className="flex gap-2 mt-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={testingAnnouncement}
+                  onClick={async () => {
+                    if (!announcementUrl.trim()) {
+                      toast.error('Indica una URL válida de announcement.');
+                      return;
+                    }
+                    setTestingAnnouncement(true);
+                    try {
+                      const data = await fetchAnnouncement(announcementUrl.trim());
+                      if (!data) throw new Error('Respuesta vacía');
+                      toast.success(`Anuncio verificado: "${data.title || 'Sin título'}"`, {
+                        description: `[Activo: ${data.active ? 'SÍ' : 'NO'}] ID: ${data.id || 'N/A'}. Mensaje: ${data.message || 'Sin mensaje'}`,
+                        duration: 8000,
+                      });
+                    } catch (err) {
+                      toast.error('Error al consultar anuncio remoto', {
+                        description: err instanceof Error ? err.message : String(err),
+                        duration: 8000,
+                      });
+                    } finally {
+                      setTestingAnnouncement(false);
+                    }
+                  }}
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${testingAnnouncement ? 'animate-spin' : ''}`} />
+                  Probar ruta de anuncio
+                </Button>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-border flex flex-wrap items-center justify-between gap-3">
+              <Button onClick={() => {
+                updateSettings({
+                  telegramUrl: telegramUrl.trim(),
+                  githubUpdatesUrl: githubUpdatesUrl.trim() || null,
+                  announcementUrl: announcementUrl.trim() || null,
+                });
+                toast.success('Canales de actualización y ruta de anuncios guardados correctamente');
+              }}>
+                Guardar cambios
+              </Button>
+
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => {
+                  setGithubUpdatesUrl(GITHUB_UPDATES_URL);
+                  setAnnouncementUrl(DEFAULT_ANNOUNCEMENT_URL);
+                  setTelegramUrl('https://t.me/+G8geeJ1gwYo4N2Ex');
+                  updateSettings({
+                    githubUpdatesUrl: GITHUB_UPDATES_URL,
+                    announcementUrl: DEFAULT_ANNOUNCEMENT_URL,
+                    telegramUrl: 'https://t.me/+G8geeJ1gwYo4N2Ex',
+                  });
+                  toast.success('Rutas restablecidas a los canales oficiales de Sistema-Updates');
+                }}
+              >
+                Restablecer a valores de Sistema-Updates
+              </Button>
+            </div>
           </div>
         </div>
       )}

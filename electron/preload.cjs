@@ -54,14 +54,36 @@ contextBridge.exposeInMainWorld('desktopBridge', {
 
   // --- AUTO-UPDATER EVENTS ---
   updates: {
+    check: () => ipcRenderer.invoke('update:check'),
+    onChecking: (cb) => {
+      const listener = () => cb();
+      ipcRenderer.on('update_checking', listener);
+      return () => ipcRenderer.removeListener('update_checking', listener);
+    },
     onAvailable: (cb) => {
-      ipcRenderer.on('update_available', () => cb());
+      const listener = (_e, info) => cb(info);
+      ipcRenderer.on('update_available', listener);
+      return () => ipcRenderer.removeListener('update_available', listener);
+    },
+    onNotAvailable: (cb) => {
+      const listener = (_e, info) => cb(info);
+      ipcRenderer.on('update_not_available', listener);
+      return () => ipcRenderer.removeListener('update_not_available', listener);
     },
     onProgress: (cb) => {
-      ipcRenderer.on('update_progress', (_e, percent) => cb(percent));
+      const listener = (_e, percent) => cb(percent);
+      ipcRenderer.on('update_progress', listener);
+      return () => ipcRenderer.removeListener('update_progress', listener);
     },
     onDownloaded: (cb) => {
-      ipcRenderer.on('update_downloaded', () => cb());
+      const listener = (_e, info) => cb(info);
+      ipcRenderer.on('update_downloaded', listener);
+      return () => ipcRenderer.removeListener('update_downloaded', listener);
+    },
+    onError: (cb) => {
+      const listener = (_e, err) => cb(err);
+      ipcRenderer.on('update_error', listener);
+      return () => ipcRenderer.removeListener('update_error', listener);
     },
     applyChanges: () => {
       ipcRenderer.send('apply_update');
