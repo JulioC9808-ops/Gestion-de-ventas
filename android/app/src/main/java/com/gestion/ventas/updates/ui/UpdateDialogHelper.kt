@@ -4,9 +4,7 @@ import android.app.Activity
 import android.app.Dialog
 import android.content.Context
 import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.view.Gravity
-import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.ProgressBar
@@ -14,12 +12,12 @@ import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import com.gestion.ventas.updates.model.UpdateInfo
-import com.google.android.material.button.MaterialButton
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.util.Locale
 
 /**
- * Gestor de diálogos personalizados de actualización (Changelog, Progreso, Verificación y Errores).
+ * Gestor de diálogos de actualización (Changelog, Progreso, Verificación y Errores).
+ * Utiliza androidx.appcompat.app.AlertDialog.Builder para garantizar compatibilidad total
+ * con cualquier tema de Android sin requerir atributos específicos de Material.
  */
 class UpdateDialogHelper(private val activity: Activity) {
 
@@ -97,7 +95,7 @@ class UpdateDialogHelper(private val activity: Activity) {
         scrollView.addView(tvChangelog)
         container.addView(scrollView)
 
-        val builder = MaterialAlertDialogBuilder(context)
+        val builder = AlertDialog.Builder(context)
             .setTitle("🚀 Nueva versión disponible")
             .setView(container)
             .setCancelable(!info.mandatory)
@@ -182,7 +180,7 @@ class UpdateDialogHelper(private val activity: Activity) {
 
         container.addView(infoRow)
 
-        val dialog = MaterialAlertDialogBuilder(context)
+        val dialog = AlertDialog.Builder(context)
             .setTitle("Descargando actualización")
             .setView(container)
             .setCancelable(false)
@@ -236,7 +234,7 @@ class UpdateDialogHelper(private val activity: Activity) {
      */
     fun showUnknownSourcesPermissionDialog(onAuthorize: () -> Unit, onCancel: () -> Unit) {
         dismissCurrent()
-        MaterialAlertDialogBuilder(activity)
+        AlertDialog.Builder(activity)
             .setTitle("Permiso de instalación requerido")
             .setMessage("Para completar la actualización automática, debe permitir que esta aplicación instale aplicaciones desconocidas en los ajustes del sistema.")
             .setPositiveButton("Ir a Ajustes") { _, _ -> onAuthorize() }
@@ -250,7 +248,7 @@ class UpdateDialogHelper(private val activity: Activity) {
      */
     fun showErrorDialog(message: String, onRetry: (() -> Unit)? = null) {
         dismissCurrent()
-        val builder = MaterialAlertDialogBuilder(activity)
+        val builder = AlertDialog.Builder(activity)
             .setTitle("Aviso de actualización")
             .setMessage(message)
             .setPositiveButton("Aceptar", null)

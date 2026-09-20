@@ -32,6 +32,13 @@ export default defineConfig(({ mode }) => ({
     outDir: "dist",
     assetsDir: "assets",
     emptyOutDir: true,
+    sourcemap: false,
+    minify: "esbuild",
+    chunkSizeWarningLimit: 1200,
+  },
+  esbuild: {
+    drop: mode === "production" ? ["console", "debugger"] : [],
+    legalComments: "none",
   },
 }));
 

@@ -44,8 +44,22 @@ function createWindow() {
       nodeIntegration: false,
       sandbox: false,
       preload: path.join(__dirname, 'preload.cjs'),
+      devTools: !app.isPackaged,
     },
   });
+
+  if (app.isPackaged) {
+    // Bloquear atajos comunes de DevTools como F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U
+    mainWindow.webContents.on('before-input-event', (event, input) => {
+      if (
+        input.key === 'F12' ||
+        ((input.control || input.meta) && input.shift && (input.key.toLowerCase() === 'i' || input.key.toLowerCase() === 'j')) ||
+        ((input.control || input.meta) && input.key.toLowerCase() === 'u')
+      ) {
+        event.preventDefault();
+      }
+    });
+  }
 
   const indexHtml = path.join(__dirname, '..', 'dist', 'index.html');
   mainWindow.loadFile(indexHtml).catch((err) => {

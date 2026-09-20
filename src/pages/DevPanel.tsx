@@ -220,16 +220,35 @@ export default function DevPanel() {
             </div>
 
             <div className="pt-4 border-t border-border flex flex-wrap items-center justify-between gap-3">
-              <Button onClick={() => {
-                updateSettings({
-                  telegramUrl: telegramUrl.trim(),
-                  githubUpdatesUrl: githubUpdatesUrl.trim() || null,
-                  announcementUrl: announcementUrl.trim() || null,
-                });
-                toast.success('Canales de actualización y ruta de anuncios guardados correctamente');
-              }}>
-                Guardar cambios
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={() => {
+                  updateSettings({
+                    telegramUrl: telegramUrl.trim(),
+                    githubUpdatesUrl: githubUpdatesUrl.trim() || null,
+                    announcementUrl: announcementUrl.trim() || null,
+                  });
+                  toast.success('Canales de actualización y ruta de anuncios guardados correctamente');
+                }}>
+                  Guardar cambios
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={async () => {
+                    if (window.Capacitor?.isNativePlatform?.()) {
+                      const { checkNativeAppUpdate } = await import('@/lib/appUpdate');
+                      await checkNativeAppUpdate();
+                      toast.info('Comprobando actualizaciones en Android...');
+                    } else {
+                      toast.info('Comprobación nativa disponible en la app Android instalada.');
+                    }
+                  }}
+                >
+                  <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+                  Buscar actualización ahora
+                </Button>
+              </div>
 
               <Button
                 type="button"

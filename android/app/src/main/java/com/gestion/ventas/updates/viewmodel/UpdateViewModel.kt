@@ -139,7 +139,10 @@ class UpdateViewModel(
             val result = apiService.fetchUpdateInfo(endpointUrl)
             result.onSuccess { info ->
                 val (currentCode, currentName) = getCurrentVersion()
-                if (info.versionCode > currentCode) {
+                val isNewCode = info.versionCode > currentCode
+                val isNewName = isVersionNameGreater(info.versionName, currentName)
+                
+                if (isNewCode || isNewName) {
                     _uiState.value = UpdateUiState.UpdateAvailable(
                         updateInfo = info,
                         currentVersionCode = currentCode,
@@ -228,6 +231,26 @@ class UpdateViewModel(
 
     fun resetState() {
         _uiState.value = UpdateUiState.Idle
+    }
+
+    private fun isVersionNameGreater(remote: String, current: String): Boolean {
+        if (remote.isBlank() || current.isBlank()) return false
+        try {
+            val cleanRemote = remote.replace(Regex("[^0-9.]"), "")
+            val cleanCurrent = current.replace(Regex("[^0-9.]"), "")
+            val rParts = cleanRemote.split(".").map { it.toIntOrNull() ?: 0 }
+            val cParts = cleanCurrent.split(".").map { it.toIntOrNull() ?: 0 }
+            val maxLen = maxOf(rParts.size, cParts.size)
+            for (i in 0 until maxLen) {
+                val r = rParts.getOrElse(i) { 0 }
+                val c = cParts.getOrElse(i) { 0 }
+                if (r > c) return true
+                if (r < c) return false
+            }
+        } catch (e: Exception) {
+            // Ignored, fallback to false
+        }
+        return false
     }
 
     fun getDownloadedFile(): File? = activeDownloadedApk
