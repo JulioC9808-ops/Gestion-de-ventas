@@ -138,7 +138,7 @@ export default function LicenseGate({ children }: LicenseGateProps) {
         clearEmployeeLicense();
         logout();
         setEmpLicense(null);
-        toast.error('Tu licencia de empleado (24 h) caducó. Escanea de nuevo el QR del jefe.');
+        toast.error('Tu licencia de <strong>empleado<strong> (24 h) caducó. Escanea de nuevo el QR del Admin.');
       }
     }, 60 * 1000);
     return () => clearInterval(id);
@@ -177,7 +177,7 @@ export default function LicenseGate({ children }: LicenseGateProps) {
     try {
       const packet = await receiveEmployeeShare(raw);
       if (!packet) {
-        toast.error('Este no es el QR de activación que te dio el jefe.');
+        toast.error('Este no es el QR de activación que te dio el Admin.');
         return;
       }
 
@@ -206,15 +206,15 @@ export default function LicenseGate({ children }: LicenseGateProps) {
       setTimeout(() => {
         if (login(u, p)) {
           setScanOpen(false);
-          toast.success(`Datos recibidos y activado por ${EMPLOYEE_LICENSE_HOURS} h. Licencia de SOLO EMPLEADO.`);
+          toast.success(`Datos recibidos y activado por ${EMPLOYEE_LICENSE_HOURS} h. <strong>Licencia de SOLO EMPLEADO<strong>.`);
         } else {
           clearEmployeeLicense();
           setEmpLicense(null);
-          toast.error('No se pudo activar con ese QR. Pide al jefe que lo genere otra vez.');
+          toast.error('No se pudo activar con ese QR. Pide al admin que lo genere otra vez.');
         }
       }, 200);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'No se pudo recibir los datos del jefe.');
+      toast.error(error instanceof Error ? error.message : 'No se pudo recibir los datos del admin.');
     } finally {
       setReceiving(false);
     }
@@ -301,13 +301,13 @@ export default function LicenseGate({ children }: LicenseGateProps) {
           {mobile && (
             <div className="mt-5 rounded-lg border border-border/60 bg-secondary/40 p-3">
               <p className="text-xs text-muted-foreground mb-2">
-                ¿Eres empleado? Pídele a tu jefe el <strong>QR de activación</strong> desde
+                ¿Eres empleado? Pídele a un Admin el <strong>QR de activación</strong> desde
                 Ajustes → Usuarios. Te dará acceso por {EMPLOYEE_LICENSE_HOURS} horas con licencia de
                 <strong> SOLO EMPLEADO</strong> (sin panel de administración).
               </p>
               <Button variant="secondary" className="w-full h-11" onClick={() => setScanOpen(true)}>
                 <ScanLine className="w-4 h-4 mr-2" />
-                Escanear QR del jefe (empleado)
+                Escanear QR del admin <strong>Modo Empleado<strong>
               </Button>
             </div>
           )}
@@ -341,7 +341,7 @@ export default function LicenseGate({ children }: LicenseGateProps) {
         onScan={handleEmployeeScan}
         keepOpen
         title="Activación de empleado"
-        hint={receiving ? 'Recibiendo datos del jefe…' : 'Apunta al QR que te muestra el jefe (Ajustes → Usuarios). Ambos teléfonos deben estar en la misma red Wi‑Fi.'}
+        hint={receiving ? 'Recibiendo datos del jefe…' : 'Apunta al QR que te muestra el Admin (Ajustes → Usuarios). Ambos teléfonos deben estar en la misma red Wi‑Fi.'}
       />
 
       <Dialog open={showQr} onOpenChange={setShowQr}>
