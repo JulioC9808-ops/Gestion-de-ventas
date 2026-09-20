@@ -4,11 +4,15 @@ import android.app.Activity
 import android.app.Dialog
 import android.content.Context
 import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.ViewGroup
+import android.view.WindowManager
+import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
-import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import com.gestion.ventas.updates.model.UpdateInfo
@@ -16,8 +20,8 @@ import java.util.Locale
 
 /**
  * Gestor de diálogos de actualización (Changelog, Progreso, Verificación y Errores).
- * Utiliza androidx.appcompat.app.AlertDialog.Builder para garantizar compatibilidad total
- * con cualquier tema de Android sin requerir atributos específicos de Material.
+ * El aviso de nueva versión es una TARJETA COMPACTA (estilo notificación) anclada
+ * abajo a la derecha, con el logo de la app y botones Sí / No siempre visibles.
  */
 class UpdateDialogHelper(private val activity: Activity) {
 
@@ -29,7 +33,8 @@ class UpdateDialogHelper(private val activity: Activity) {
     private var tvProgressStatus: TextView? = null
 
     /**
-     * Muestra el diálogo con el changelog y opciones de actualización.
+     * Tarjeta pequeña de actualización: logo + texto + Sí / No.
+     * Tocar fuera = "No" (se quita y vuelve a preguntar en la próxima apertura).
      */
     fun showUpdateAvailableDialog(
         info: UpdateInfo,
@@ -37,80 +42,112 @@ class UpdateDialogHelper(private val activity: Activity) {
         onPostponeClicked: () -> Unit
     ) {
         dismissCurrent()
-
+        if (activity.isFinishing || activity.isDestroyed) return
         val context = activity
         val dp = context.resources.displayMetrics.density
 
-        val container = LinearLayout(context).apply {
+        var dialogRef: Dialog? = null
+
+        // --- Tarjeta ---
+        val card = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding((14 * dp).toInt(), (12 * dp).toInt(), (14 * dp).toInt(), (12 * dp).toInt())
+            background = GradientDrawable().apply {
+                cornerRadius = 18f * dp
+                setColor(Color.parseColor("#FAFAFA"))
+                setStroke((1 * dp).toInt(), Color.parseColor("#D1D5DB"))
+            }
+        }
+
+        // --- Logo de la app ---
+        val iconView = ImageView(context).apply {
+            val drawable = try {
+                context.packageManager.getApplicationIcon(context.packageName)
+            } catch (e: Exception) {
+                null
+            }
+            if (drawable != null) setImageDrawable(drawable)
+            layoutParams = LinearLayout.LayoutParams((40 * dp).toInt(), (40 * dp).toInt()).apply {
+                marginEnd = (12 * dp).toInt()
+            }
+        }
+        card.addView(iconView)
+
+        // --- Textos ---
+        val textCol = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding((20 * dp).toInt(), (16 * dp).toInt(), (20 * dp).toInt(), (8 * dp).toInt())
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
-
-        // Subtítulo con versión
-        val tvVersion = TextView(context).apply {
-            text = "Versión ${info.versionName} (Build ${info.versionCode})"
+        val tvTitle = TextView(context).apply {
+            text = "Nueva versión disponible"
             textSize = 14f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(Color.parseColor("#111827"))
+        }
+        val tvSub = TextView(context).apply {
+            text = "v${info.versionName} — ¿Deseas descargarla?"
+            textSize = 12f
             setTextColor(Color.parseColor("#4B5563"))
-            setPadding(0, 0, 0, (8 * dp).toInt())
         }
-        container.addView(tvVersion)
+        textCol.addView(tvTitle)
+        textCol.addView(tvSub)
+        card.addView(textCol)
 
-        // Indicador si es obligatoria
-        if (info.mandatory) {
-            val tvMandatory = TextView(context).apply {
-                text = "⚠️ Esta actualización es obligatoria para continuar operando."
+        // --- Botones compactos ---
+        fun miniButton(label: String, bgColor: String, fgColor: String, onClick: () -> Unit): TextView {
+            return TextView(context).apply {
+                text = label
                 textSize = 13f
-                setTextColor(Color.parseColor("#DC2626"))
-                setPadding(0, 0, 0, (12 * dp).toInt())
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(Color.parseColor(fgColor))
+                gravity = Gravity.CENTER
+                setPadding((14 * dp).toInt(), (8 * dp).toInt(), (14 * dp).toInt(), (8 * dp).toInt())
+                background = GradientDrawable().apply {
+                    cornerRadius = 12f * dp
+                    setColor(Color.parseColor(bgColor))
+                }
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply { marginStart = (8 * dp).toInt() }
+                setOnClickListener {
+                    dialogRef?.dismiss()
+                    onClick()
+                }
             }
-            container.addView(tvMandatory)
         }
-
-        // Encabezado de notas
-        val tvNotesHeader = TextView(context).apply {
-            text = "Novedades y cambios:"
-            textSize = 14f
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            setTextColor(Color.parseColor("#1F2937"))
-            setPadding(0, 0, 0, (6 * dp).toInt())
-        }
-        container.addView(tvNotesHeader)
-
-        // Scrollview para el changelog
-        val scrollView = ScrollView(context).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                (140 * dp).toInt()
-            )
-            setBackgroundColor(Color.parseColor("#F3F4F6"))
-            setPadding((12 * dp).toInt(), (10 * dp).toInt(), (12 * dp).toInt(), (10 * dp).toInt())
-        }
-
-        val tvChangelog = TextView(context).apply {
-            text = if (info.changelog.isNotBlank()) info.changelog else "Mejoras de rendimiento y corrección de errores."
-            textSize = 13f
-            setTextColor(Color.parseColor("#374151"))
-            setLineSpacing(4f, 1.15f)
-        }
-        scrollView.addView(tvChangelog)
-        container.addView(scrollView)
-
-        val builder = AlertDialog.Builder(context)
-            .setTitle("🚀 Nueva versión disponible")
-            .setView(container)
-            .setCancelable(!info.mandatory)
-            .setPositiveButton("Actualizar") { _, _ ->
-                onUpdateClicked()
-            }
 
         if (!info.mandatory) {
-            builder.setNegativeButton("Más tarde") { _, _ ->
-                onPostponeClicked()
-            }
+            card.addView(miniButton("No", "#E5E7EB", "#374151") { onPostponeClicked() })
         }
+        card.addView(miniButton("Sí", "#2563EB", "#FFFFFF") { onUpdateClicked() })
 
-        val dialog = builder.create()
+        // --- Contenedor con margen respecto a los bordes de la pantalla ---
+        val root = FrameLayout(context).apply {
+            setPadding((12 * dp).toInt(), 0, (12 * dp).toInt(), (16 * dp).toInt())
+        }
+        root.addView(card)
+
+        // --- Dialog anclado abajo a la derecha ---
+        val dialog = Dialog(context)
+        dialogRef = dialog
+        dialog.setContentView(root)
+        dialog.setCancelable(!info.mandatory)
         dialog.setCanceledOnTouchOutside(!info.mandatory)
+        if (!info.mandatory) {
+            dialog.setOnCancelListener { onPostponeClicked() }
+        }
+        dialog.window?.apply {
+            setBackgroundDrawableResource(android.R.color.transparent)
+            setGravity(Gravity.BOTTOM or Gravity.END)
+            val metrics = android.util.DisplayMetrics()
+            @Suppress("DEPRECATION")
+            (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager)
+                .defaultDisplay.getMetrics(metrics)
+            val widthPx = minOf((340 * dp).toInt(), metrics.widthPixels - (24 * dp).toInt())
+            setLayout(widthPx, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
         currentDialog = dialog
         dialog.show()
     }
@@ -120,15 +157,12 @@ class UpdateDialogHelper(private val activity: Activity) {
      */
     fun showDownloadingDialog(isMandatory: Boolean) {
         dismissCurrent()
-
         val context = activity
         val dp = context.resources.displayMetrics.density
-
         val container = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setPadding((24 * dp).toInt(), (20 * dp).toInt(), (24 * dp).toInt(), (20 * dp).toInt())
         }
-
         tvProgressStatus = TextView(context).apply {
             text = "Iniciando descarga de la actualización..."
             textSize = 14f
@@ -136,7 +170,6 @@ class UpdateDialogHelper(private val activity: Activity) {
             setPadding(0, 0, 0, (12 * dp).toInt())
         }
         container.addView(tvProgressStatus)
-
         progressBar = ProgressBar(context, null, android.R.attr.progressBarStyleHorizontal).apply {
             isIndeterminate = true
             max = 100
@@ -146,7 +179,6 @@ class UpdateDialogHelper(private val activity: Activity) {
             )
         }
         container.addView(progressBar)
-
         val infoRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             layoutParams = LinearLayout.LayoutParams(
@@ -156,15 +188,13 @@ class UpdateDialogHelper(private val activity: Activity) {
                 topMargin = (10 * dp).toInt()
             }
         }
-
         tvProgressPercent = TextView(context).apply {
             text = "0%"
             textSize = 12f
-            setTypeface(null, android.graphics.Typeface.BOLD)
+            setTypeface(null, Typeface.BOLD)
             setTextColor(Color.parseColor("#1F2937"))
         }
         infoRow.addView(tvProgressPercent)
-
         tvProgressBytes = TextView(context).apply {
             text = "Calculando tamaño..."
             textSize = 12f
@@ -177,15 +207,12 @@ class UpdateDialogHelper(private val activity: Activity) {
             )
         }
         infoRow.addView(tvProgressBytes)
-
         container.addView(infoRow)
-
         val dialog = AlertDialog.Builder(context)
             .setTitle("Descargando actualización")
             .setView(container)
             .setCancelable(false)
             .create()
-
         dialog.setCanceledOnTouchOutside(false)
         progressDialog = dialog
         currentDialog = dialog
@@ -205,7 +232,6 @@ class UpdateDialogHelper(private val activity: Activity) {
                 progressBar?.isIndeterminate = true
                 tvProgressPercent?.text = "Descargando..."
             }
-
             val currentMb = currentBytes / (1024.0 * 1024.0)
             if (totalBytes > 0) {
                 val totalMb = totalBytes / (1024.0 * 1024.0)
@@ -225,7 +251,7 @@ class UpdateDialogHelper(private val activity: Activity) {
             progressBar?.isIndeterminate = true
             tvProgressStatus?.text = "Verificando integridad SHA-256 del APK..."
             tvProgressPercent?.text = "Validando..."
-            tvProgressBytes?.text = "Seguridad criptográfica"
+            tvProgressBytes?.text = "Seguridad"
         }
     }
 
@@ -236,7 +262,7 @@ class UpdateDialogHelper(private val activity: Activity) {
         dismissCurrent()
         AlertDialog.Builder(activity)
             .setTitle("Permiso de instalación requerido")
-            .setMessage("Para completar la actualización automática, debe permitir que esta aplicación instale aplicaciones desconocidas en los ajustes del sistema.")
+            .setMessage("Para completar la actualización, debe permitir que esta aplicación instale aplicaciones desconocidas en los ajustes del sistema.")
             .setPositiveButton("Ir a Ajustes") { _, _ -> onAuthorize() }
             .setNegativeButton("Cancelar") { _, _ -> onCancel() }
             .setCancelable(false)
@@ -249,16 +275,14 @@ class UpdateDialogHelper(private val activity: Activity) {
     fun showErrorDialog(message: String, onRetry: (() -> Unit)? = null) {
         dismissCurrent()
         val builder = AlertDialog.Builder(activity)
-            .setTitle("Aviso de actualización")
-            .setMessage(message)
-            .setPositiveButton("Aceptar", null)
-
+        builder.setTitle("Aviso de actualización")
+        builder.setMessage(message)
+        builder.setPositiveButton("Aceptar", null)
         if (onRetry != null) {
             builder.setNeutralButton("Reintentar") { _, _ ->
                 onRetry()
             }
         }
-
         builder.show()
     }
 
