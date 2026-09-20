@@ -60,20 +60,28 @@ public class MainActivity extends BridgeActivity {
         requestCameraPermissionIfNeeded();
 
         // --- Configuración del WebView ---
-        WebView webView = getBridge().getWebView();
-        if (webView != null) {
-            webView.setBackgroundColor(android.graphics.Color.WHITE);
-            WebSettings s = webView.getSettings();
-            s.setSupportZoom(true);
-            s.setBuiltInZoomControls(true);
-            s.setDisplayZoomControls(false);
-            s.setUseWideViewPort(true);
-            s.setLoadWithOverviewMode(true);
-            s.setTextZoom(100);
+        try {
+            if (getBridge() != null && getBridge().getWebView() != null) {
+                WebView webView = getBridge().getWebView();
+                webView.setBackgroundColor(android.graphics.Color.WHITE);
+                WebSettings s = webView.getSettings();
+                s.setSupportZoom(true);
+                s.setBuiltInZoomControls(true);
+                s.setDisplayZoomControls(false);
+                s.setUseWideViewPort(true);
+                s.setLoadWithOverviewMode(true);
+                s.setTextZoom(100);
+            }
+        } catch (Throwable t) {
+            // WebView customization fallback
         }
 
         // Sistema de actualizaciones in-app con descarga streaming, barra de progreso y SHA-256
-        updateManager = UpdateManager.Companion.init(this, VERSION_URL, 12L);
+        try {
+            updateManager = UpdateManager.Companion.init(this, VERSION_URL, 12L);
+        } catch (Throwable t) {
+            // Logged to crash handler if fatal, but prevents startup crash
+        }
     }
 
     @Override

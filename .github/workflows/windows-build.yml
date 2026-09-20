@@ -24,8 +24,7 @@ jobs:
         shell: cmd
         run: |
           if exist node_modules rd /s /q node_modules
-          if exist package-lock.json del package-lock.json
-          npm install --force
+          npm install --force --no-audit
 
       - name: Fix Rollup native dependency
         run: npm install @rollup/rollup-win32-x64-msvc --save-dev

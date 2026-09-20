@@ -128,6 +128,9 @@ class UpdateCheckWorker(
             .setAutoCancel(true)
             .build()
 
-        notificationManager.notify(NOTIFICATION_ID, notification)
+        try {
+            notificationManager.notify(NOTIFICATION_ID, notification)
+        } catch (ignored: Throwable) {
+        }
     }
 }

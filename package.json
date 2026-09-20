@@ -74,7 +74,7 @@
       "menuCategory": "GestionDeVentas",
       "installerLanguages": ["es_ES"],
       "language": "3082",
-      "multiLanguageInstaller": true,
+      "multiLanguageInstaller": false,
       "displayLanguageSelector": false
     }
   },

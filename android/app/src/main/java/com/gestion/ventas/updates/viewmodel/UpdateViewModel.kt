@@ -71,7 +71,7 @@ sealed class UpdateUiState {
 /**
  * ViewModel que orquesta la verificación, descarga y validación de integridad del APK.
  */
-class UpdateViewModel(
+class UpdateViewModel @JvmOverloads constructor(
     application: Application,
     private val apiService: UpdateApiService = UpdateApiService()
 ) : AndroidViewModel(application) {

@@ -30,7 +30,7 @@ jobs:
 
       # 2.2 Instalar dependencias con reintento
       - name: Install dependencies
-        run: npm ci --registry=https://registry.npmjs.org/ || npm ci --registry=https://registry.npmjs.org/
+        run: npm ci --registry=https://registry.npmjs.org/ || npm install --no-audit --registry=https://registry.npmjs.org/
 
       # 3. Build web
       - name: Build web assets

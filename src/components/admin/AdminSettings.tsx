@@ -80,7 +80,12 @@ function ImportantNotes() {
         </div>
         <div className="pt-4 border-t border-border flex items-center justify-between not-italic">
           <div>
-            <p className="font-semibold text-foreground text-sm">Actualizaciones del Sistema</p>
+            <p className="font-semibold text-foreground text-sm flex items-center gap-2">
+              <span>Actualizaciones del Sistema</span>
+              <span className="text-[11px] font-mono font-normal px-2 py-0.5 rounded bg-muted text-muted-foreground border border-border">
+                v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.3.7'}
+              </span>
+            </p>
             <p className="text-xs text-muted-foreground">Compruebe si existe una nueva versión con mejoras y correcciones.</p>
           </div>
           <Button
@@ -100,7 +105,7 @@ function ImportantNotes() {
                     if (result.updateInfo) {
                       toast.success(`Actualización encontrada: v${result.updateInfo.version || ''}. Descargando paquete...`);
                     } else {
-                      toast.info(`La aplicación ya está en la versión más reciente (v1.3.7).`);
+                      toast.info(`La aplicación ya está en la versión más reciente (v${typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.3.7'}).`);
                     }
                   } else {
                     // Fallback a comprobar releases en GitHub si autoUpdater no tiene release empaquetado

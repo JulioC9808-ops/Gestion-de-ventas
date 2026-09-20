@@ -66,7 +66,12 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
                   <Coffee className="w-4 h-4 text-sidebar-primary-foreground" />
                 </div>
               )}
-              <h2 className="font-display font-bold text-sm text-sidebar-foreground">{settings.businessName}</h2>
+              <div className="flex items-center gap-1.5">
+                <h2 className="font-display font-bold text-sm text-sidebar-foreground">{settings.businessName}</h2>
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sidebar-accent/80 text-sidebar-foreground/80 border border-sidebar-border/50">
+                  v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.3.7'}
+                </span>
+              </div>
               <span className="text-xs text-sidebar-foreground/60 capitalize ml-1">
                 {currentUser?.role === 'dev' ? 'Desarrollador' : currentUser?.role === 'admin' ? 'Admin' : 'Empleado'}
               </span>
@@ -155,9 +160,17 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
               </div>
             )}
             {!collapsed && (
-              <div className="min-w-0">
-                <h2 className="font-display font-bold text-sm text-sidebar-foreground truncate">{settings.businessName}</h2>
-                <p className="text-xs text-sidebar-foreground/60 capitalize">{currentUser?.role === 'dev' ? 'Desarrollador' : currentUser?.role === 'admin' ? 'Administrador' : 'Empleado'}</p>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-1">
+                  <h2 className="font-display font-bold text-sm text-sidebar-foreground truncate">{settings.businessName}</h2>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sidebar-accent/90 text-sidebar-foreground/80 border border-sidebar-border/40 shrink-0">
+                    v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.3.7'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-sidebar-foreground/60 capitalize mt-0.5">
+                  <span>{currentUser?.role === 'dev' ? 'Desarrollador' : currentUser?.role === 'admin' ? 'Administrador' : 'Empleado'}</span>
+                  {native && <span className="text-[10px] font-medium text-emerald-500 font-sans">Android</span>}
+                </div>
               </div>
             )}
           </div>
@@ -213,7 +226,10 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-sidebar-foreground truncate">{currentUser?.name}</p>
-                <p className="text-xs text-sidebar-foreground/50">@{currentUser?.username}</p>
+                <div className="flex items-center justify-between text-xs text-sidebar-foreground/50">
+                  <span className="truncate">@{currentUser?.username}</span>
+                  <span className="font-mono text-[10px] opacity-75">{native ? 'Android' : 'PC'}</span>
+                </div>
               </div>
             </div>
           )}
