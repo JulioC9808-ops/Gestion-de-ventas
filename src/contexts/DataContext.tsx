@@ -100,7 +100,7 @@ const DEMO_PRODUCT_IDS = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'];
 const DEMO_WIPE_FLAG = '__demo_products_wiped_v1';
 
 // Repo donde se publican las versiones de PC y Android
-export const GITHUB_UPDATES_URL = 'https://github.com/JulioC9808-ops/Sistema-Updates';
+export const GITHUB_UPDATES_URL = 'https://github.com/JulioC9808-ops/Sistema-Updates',
 // Ruta por defecto para avisos y comunicados
 export const DEFAULT_ANNOUNCEMENT_URL = 'https://raw.githubusercontent.com/JulioC9808-ops/Sistema-Updates/main/announcement.json';
 
