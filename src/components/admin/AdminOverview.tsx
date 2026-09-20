@@ -4,6 +4,8 @@ import { useData } from '@/contexts/DataContext';
 import { Package, Users, TrendingUp, DollarSign, Crown, PieChart as PieIcon, RefreshCw, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import RatesCard from '@/components/RatesCard';
+
 
 interface Props {
   onNav?: (key: string) => void;
