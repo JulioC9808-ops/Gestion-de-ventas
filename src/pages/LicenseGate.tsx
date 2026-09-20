@@ -138,7 +138,7 @@ export default function LicenseGate({ children }: LicenseGateProps) {
         clearEmployeeLicense();
         logout();
         setEmpLicense(null);
-        toast.error('Tu licencia de <strong>empleado<strong> (24 h) caducó. Escanea de nuevo el QR del Admin.');
+        toast.error('Tu licencia de <strong>empleado</strong> (24 h) caducó. Escanea de nuevo el QR del Admin.');
       }
     }, 60 * 1000);
     return () => clearInterval(id);
@@ -206,7 +206,7 @@ export default function LicenseGate({ children }: LicenseGateProps) {
       setTimeout(() => {
         if (login(u, p)) {
           setScanOpen(false);
-          toast.success(`Datos recibidos y activado por ${EMPLOYEE_LICENSE_HOURS} h. <strong>Licencia de SOLO EMPLEADO<strong>.`);
+          toast.success(`Datos recibidos y activado por ${EMPLOYEE_LICENSE_HOURS} h. <strong>Licencia de SOLO EMPLEADO</strong>.`);
         } else {
           clearEmployeeLicense();
           setEmpLicense(null);
@@ -307,7 +307,7 @@ export default function LicenseGate({ children }: LicenseGateProps) {
               </p>
               <Button variant="secondary" className="w-full h-11" onClick={() => setScanOpen(true)}>
                 <ScanLine className="w-4 h-4 mr-2" />
-                Escanear QR del admin <strong>Modo Empleado<strong>
+                Escanear QR del admin <strong>Modo Empleado</strong>
               </Button>
             </div>
           )}
