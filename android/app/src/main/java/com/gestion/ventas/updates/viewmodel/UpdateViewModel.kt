@@ -71,10 +71,19 @@ sealed class UpdateUiState {
 /**
  * ViewModel que orquesta la verificación, descarga y validación de integridad del APK.
  */
-class UpdateViewModel @JvmOverloads constructor(
+class UpdateViewModel(
     application: Application,
     private val apiService: UpdateApiService = UpdateApiService()
 ) : AndroidViewModel(application) {
+
+    constructor(application: Application) : this(application, UpdateApiService())
+
+    class Factory(private val application: Application) : ViewModelProvider.Factory {
+        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+            @Suppress("UNCHECKED_CAST")
+            return UpdateViewModel(application) as T
+        }
+    }
 
     private val _uiState = MutableStateFlow<UpdateUiState>(UpdateUiState.Idle)
     val uiState: StateFlow<UpdateUiState> = _uiState.asStateFlow()

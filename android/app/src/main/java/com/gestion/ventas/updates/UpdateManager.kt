@@ -23,7 +23,7 @@ class UpdateManager private constructor(
     private val endpointUrl: String
 ) {
     private val viewModel: UpdateViewModel =
-        ViewModelProvider(activity)[UpdateViewModel::class.java]
+        ViewModelProvider(activity, UpdateViewModel.Factory(activity.application))[UpdateViewModel::class.java]
     private val dialogHelper = UpdateDialogHelper(activity)
     private var pendingApkToInstall: File? = null
 
