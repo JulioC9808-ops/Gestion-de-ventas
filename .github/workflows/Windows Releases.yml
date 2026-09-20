@@ -21,7 +21,6 @@ jobs:
         shell: cmd
         run: |
           if exist node_modules rd /s /q node_modules
-          if exist package-lock.json del package-lock.json
           npm install --force
 
       - name: Fix Rollup native dependency
@@ -31,18 +30,8 @@ jobs:
         shell: powershell
         run: |
           $path = "resources/license.txt"
-
-          $content = [System.IO.File]::ReadAllText(
-            $path,
-            [System.Text.Encoding]::UTF8
-          )
-
-          [System.IO.File]::WriteAllText(
-            $path,
-            $content,
-            [System.Text.Encoding]::GetEncoding(1252)
-          )
-
+          $content = [System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8)
+          [System.IO.File]::WriteAllText($path, $content, [System.Text.Encoding]::GetEncoding(1252))
           Write-Host "License converted to Windows-1252 successfully."
 
       - name: Build app
@@ -67,14 +56,14 @@ jobs:
       - name: Get latest release tag
         id: get_release
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           latest=$(gh api repos/${{ github.repository }}/releases/latest --jq .tag_name 2>/dev/null || echo "1.0.0")
           IFS='.' read -r major minor patch <<< "$latest"
           new_patch=$((patch + 1))
           new_tag="${major}.${minor}.${new_patch}"
           echo "new_tag=$new_tag" >> "$GITHUB_OUTPUT"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Find installer file
         id: find_exe
@@ -102,36 +91,38 @@ jobs:
           else
             exe_file="${{ steps.find_exe.outputs.exe_path }}"
             exe_name="${{ steps.find_exe.outputs.exe_name }}"
-            sha512_hash=$(sha512sum "$exe_file" | awk '{print $1}' | xxd -r -p | base64)
+            sha512_b64=$(sha512sum "$exe_file" | awk '{print $1}' | xxd -r -p | base64)
             size_bytes=$(stat -c%s "$exe_file" 2>/dev/null || wc -c < "$exe_file")
-            cat <<EOF > latest.yml
-version: ${{ steps.get_release.outputs.new_tag }}
-files:
-  - url: $exe_name
-    sha512: $sha512_hash
-    size: $size_bytes
-path: $exe_name
-sha512: $sha512_hash
-releaseDate: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
-EOF
+            {
+              echo "version: ${{ steps.get_release.outputs.new_tag }}"
+              echo "path: $exe_name"
+              echo "sha512: $sha512_b64"
+              echo "releaseDate: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+              echo "files:"
+              echo "  - url: $exe_name"
+              echo "    sha512: $sha512_b64"
+              echo "    size: $size_bytes"
+            } > latest.yml
           fi
           cat latest.yml
 
       - name: Upload new release to public repo
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.UPDATES_TOKEN }}
         run: |
+          TAG="${{ steps.get_release.outputs.new_tag }}"
+          EXE="${{ steps.find_exe.outputs.exe_path }}"
           BLOCKMAP_FILE=$(ls dist-installer/*.blockmap 2>/dev/null | head -n 1 || echo "")
           EXTRA_ARGS=""
           if [ -n "$BLOCKMAP_FILE" ] && [ -f "$BLOCKMAP_FILE" ]; then
             EXTRA_ARGS="$BLOCKMAP_FILE"
           fi
-
-          gh release create ${{ steps.get_release.outputs.new_tag }} \
-            "${{ steps.find_exe.outputs.exe_path }}" \
-            latest.yml \
-            $EXTRA_ARGS \
-            -R JulioC9808-ops/Sistema-Updates \
-            -t "Version ${{ steps.get_release.outputs.new_tag }} (Windows)" \
-            -n "Actualización automática de Windows - Gestión de Ventas v${{ steps.get_release.outputs.new_tag }}"
-        env:
-          GH_TOKEN: ${{ secrets.UPDATES_TOKEN }}
+          if gh release view "$TAG" -R JulioC9808-ops/Sistema-Updates > /dev/null 2>&1; then
+            gh release upload "$TAG" "$EXE" latest.yml $EXTRA_ARGS -R JulioC9808-ops/Sistema-Updates --clobber
+          else
+            gh release create "$TAG" "$EXE" latest.yml $EXTRA_ARGS \
+              -R JulioC9808-ops/Sistema-Updates \
+              -t "Version $TAG (Windows)" \
+              -n "Actualización automática de Windows - Gestión de Ventas v$TAG"
+          fi
