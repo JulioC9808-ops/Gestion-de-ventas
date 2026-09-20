@@ -100,7 +100,7 @@ const DEMO_PRODUCT_IDS = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'];
 const DEMO_WIPE_FLAG = '__demo_products_wiped_v1';
 
 // Repo donde se publican las versiones de PC y Android
-export const GITHUB_UPDATES_URL = 'https://github.com/JulioC9808-ops/Sistema-Updates',
+export const GITHUB_UPDATES_URL = 'https://github.com/JulioC9808-ops/Sistema-Updates';
 // Ruta por defecto para avisos y comunicados
 export const DEFAULT_ANNOUNCEMENT_URL = 'https://raw.githubusercontent.com/JulioC9808-ops/Sistema-Updates/main/announcement.json';
 
@@ -115,7 +115,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   navPosition: 'top',
   defaultSalaryPercent: 2,
   salaryByPercentEnabled: false,
-  telegramUrl: 'telegramUrl: https://t.me/Gestion_Ventas';
+  telegramUrl: 'https://t.me/Gestion_Ventas',
   githubUpdatesUrl: GITHUB_UPDATES_URL,
   announcementUrl: DEFAULT_ANNOUNCEMENT_URL,
 };
@@ -188,7 +188,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       dirty = true;
     }
     if (!loaded.telegramUrl || loaded.telegramUrl.includes('Agu7IJDwGU4NGM5')) {
-      loaded.telegramUrl = telegramUrl: 'https://t.me/Gestion_Ventas';
+      loaded.telegramUrl = 'https://t.me/Gestion_Ventas';
       dirty = true;
     }
     // Migración: el repo antiguo de actualizaciones no existe, apuntar al correcto
