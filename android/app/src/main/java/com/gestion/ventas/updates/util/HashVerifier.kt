@@ -8,12 +8,11 @@ import java.security.MessageDigest
 
 /**
  * Utilidad para cálculo y verificación del hash SHA-256 de archivos APK.
+ * Regla: solo se verifica si el servidor entrega un hash con formato válido
+ * (64 caracteres hexadecimales). Si no, se omite la verificación.
  */
 object HashVerifier {
 
-    /**
-     * Calcula el hash SHA-256 del archivo en streaming para evitar uso excesivo de memoria.
-     */
     suspend fun calculateSha256(file: File): String = withContext(Dispatchers.IO) {
         val digest = MessageDigest.getInstance("SHA-256")
         FileInputStream(file).use { fis ->
@@ -31,15 +30,17 @@ object HashVerifier {
         sb.toString()
     }
 
-    /**
-     * Compara el hash SHA-256 del archivo con el hash esperado.
-     */
+    private fun isValidSha256(hash: String): Boolean {
+        if (hash.length != 64) return false
+        return hash.all { it.isDigit() || it in 'a'..'f' || it in 'A'..'F' }
+    }
+
     suspend fun verify(file: File, expectedSha256: String): Boolean {
-        if (expectedSha256.isBlank()) {
-            // Si el servidor no proveyó hash, consideramos que no se pudo verificar la integridad
-            return false
-        }
+        val expected = expectedSha256.trim()
+        // Sin hash válido en el servidor: se omite la verificación de integridad
+        // (permite actualizar aunque el json no tenga el hash del APK actual)
+        if (!isValidSha256(expected)) return true
         val computed = calculateSha256(file)
-        return computed.equals(expectedSha256.trim(), ignoreCase = true)
+        return computed.equals(expected, ignoreCase = true)
     }
 }
