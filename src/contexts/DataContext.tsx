@@ -188,7 +188,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       dirty = true;
     }
     if (!loaded.telegramUrl || loaded.telegramUrl.includes('Agu7IJDwGU4NGM5')) {
-      loaded.telegramUrl = 'https://t.me/+G8geeJ1gwYo4N2Ex';
+      loaded.telegramUrl = telegramUrl: 'https://t.me/Gestion_Ventas';
       dirty = true;
     }
     // Migración: el repo antiguo de actualizaciones no existe, apuntar al correcto
