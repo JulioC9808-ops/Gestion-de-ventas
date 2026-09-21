@@ -149,7 +149,7 @@
     "@types/qrcode": "^1.5.6",
     "@types/react": "^18.3.23",
     "asarmor": "^1.4.0",
-    "electron": "^28.3.3",
+    "electron": "^29.4.6",
     "electron-builder": "^25.1.8",
     "eslint": "^9.32.0",
     "eslint-plugin-react-hooks": "^5.2.0",
