@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Protección: bytecode y backup temporal del main (Capa 3)
+electron/main.jsc
+electron/main.dev.cjs
+
+# Salidas de build
+dist-installer
+electron-release
