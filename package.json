@@ -32,6 +32,7 @@
       "repo": "Sistema-Updates"
       "afterPack": "scripts/afterPack.cjs",
       "build:protected": "vite build && node scripts/obfuscate.cjs",
+      "electron:installer": "node scripts/protect-build.cjs",
     },
     "directories": {
       "output": "dist-installer",
