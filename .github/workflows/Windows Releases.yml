@@ -1,6 +1,9 @@
 name: Release Windows
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -14,17 +17,28 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
-          cache: 'npm'
+          node-version: 22
+          # cache: 'npm'  # Deshabilitado intencionalmente para forzar una instalación limpia
 
       - name: Clean install
         shell: cmd
         run: |
           if exist node_modules rd /s /q node_modules
-          npm install --force
+          if exist package-lock.json del /f /q package-lock.json
+          npm install --include=optional --no-audit --no-fund --registry=https://registry.npmjs.org/
 
-      - name: Fix Rollup native dependency
-        run: npm install @rollup/rollup-win32-x64-msvc --save-dev
+      - name: Fix native dependencies (Rollup + SWC)
+        shell: cmd
+        run: |
+          npm install @rollup/rollup-win32-x64-msvc --save-dev --include=optional
+          npm install @swc/core-win32-x64-msvc --save-dev --include=optional
+
+      - name: Verify native bindings
+        shell: cmd
+        run: |
+          node -e "require('@rollup/rollup-win32-x64-msvc'); console.log('Rollup binding OK');"
+          node -e "require('@swc/core-win32-x64-msvc'); console.log('SWC binding OK');"
+          node -e "const swc = require('@swc/core'); console.log('SWC core loads OK, version:', swc.version);"
 
       - name: Prepare NSIS license encoding
         shell: powershell
@@ -50,7 +64,7 @@ jobs:
           name: windows-installer
           path: dist-installer/*.exe
           retention-days: 3
-
+          
       # ---- A partir de aquí: publicar en Releases ----
       - name: Get latest release tag
         id: get_release
