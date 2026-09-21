@@ -9,7 +9,9 @@ import type { User } from '@/types';
 import { isMobileDevice } from '@/lib/platform';
 import QrDisplay from '@/components/QrDisplay';
 import { buildBackup } from '@/lib/backup';
-import { startEmployeeShare, stopEmployeeShare } from '@/lib/syncTransport';
+import { startEmployeeShare, stopEmployeeShare, type EmployeeLicenseGrant } from '@/lib/syncTransport';
+import { getAdminLicenseGrant } from '@/pages/LicenseGate';
+import { daysRemaining, readLinkedLicense } from '@/lib/employeeLicense';
 
 export default function UserManagement() {
   const { users, addUser, updateUser, deleteUser, settings, products, stock, movements, reports } = useData();
@@ -17,19 +19,23 @@ export default function UserManagement() {
   const [editing, setEditing] = useState<User | null>(null);
   const [form, setForm] = useState({ username: '', password: '', name: '', role: 'employee' as 'employee' | 'admin', salaryPercent: '', passwordHint: '' });
   const [qrUser, setQrUser] = useState<User | null>(null);
+  const [qrMode, setQrMode] = useState<'h24' | 'admin' | 'permanent'>('h24');
   const [qrPayload, setQrPayload] = useState<string | null>(null);
   const [qrError, setQrError] = useState<string | null>(null);
   const mobile = isMobileDevice();
 
   const visibleUsers = users.filter(u => u.role !== 'dev');
-
   // El primer administrador creado no puede perder su rol (protección anti-lockout).
   const firstAdminId = [...users]
     .filter(u => u.role === 'admin')
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())[0]?.id;
   const isProtectedAdmin = editing && editing.id === firstAdminId;
 
-  // Un solo QR: lleva la cuenta del empleado + TODOS los datos actuales (por Wi‑Fi local).
+  // Expiración de la licencia del admin (para el modo "igual que la del admin").
+  const adminGrant = getAdminLicenseGrant();
+  const adminDays = adminGrant?.expiresAt ? Math.max(1, Math.ceil((adminGrant.expiresAt - Date.now()) / (24 * 60 * 60 * 1000))) : null;
+
+  // Un solo QR: licencia elegida + cuenta del empleado + SUS datos (nunca los de otros).
   useEffect(() => {
     if (!qrUser) {
       setQrPayload(null);
@@ -40,8 +46,18 @@ export default function UserManagement() {
     let cancelled = false;
     setQrPayload(null);
     setQrError(null);
+
+    const license: EmployeeLicenseGrant = qrMode === 'h24'
+      ? { mode: 'h24', issuedAt: Date.now() }
+      : qrMode === 'admin'
+        ? { mode: 'admin', expiresAt: adminGrant?.expiresAt ?? null, issuedAt: Date.now() }
+        : { mode: 'permanent', issuedAt: Date.now() };
+
+    // SEGURIDAD: el respaldo solo lleva al usuario destino (nunca admins ni otros empleados).
+    const targetOnly = users.filter(u => u.id === qrUser.id && u.role !== 'admin' && u.role !== 'dev');
+
     startEmployeeShare({
-      v: 2,
+      v: 3,
       account: {
         u: qrUser.username,
         p: qrUser.password,
@@ -50,15 +66,15 @@ export default function UserManagement() {
         s: qrUser.salaryPercent ?? settings.defaultSalaryPercent ?? 2,
         h: qrUser.passwordHint ?? null,
       },
-      backup: buildBackup({ products, stock, movements, users, reports, settings }),
+      license,
+      backup: buildBackup({ products, stock, movements, users: targetOnly, reports, settings }),
     })
       .then(code => { if (!cancelled) setQrPayload(code); })
       .catch(err => {
         if (!cancelled) setQrError(err instanceof Error ? err.message : 'No se pudo preparar el QR.');
       });
     return () => { cancelled = true; };
-  }, [qrUser, products, stock, movements, users, reports, settings]);
-
+  }, [qrUser, qrMode, products, stock, movements, users, reports, settings]);
 
   const openNew = () => {
     setEditing(null);
@@ -85,7 +101,11 @@ export default function UserManagement() {
     setDialogOpen(false);
   };
 
-
+  const currentEmployeeDays = qrUser ? (() => {
+    const linked = readLinkedLicense();
+    if (!linked || linked.username !== qrUser.username || linked.expiresAt === null) return null;
+    return daysRemaining(linked);
+  })() : null;
 
   return (
     <div>
@@ -99,7 +119,6 @@ export default function UserManagement() {
           Nuevo Usuario
         </Button>
       </div>
-
 
       <div className="glass-card p-6">
         <table className="data-table">
@@ -217,10 +236,33 @@ export default function UserManagement() {
           </DialogHeader>
           {qrUser && (
             <div className="flex flex-col items-center gap-3 py-2">
+              <div className="w-full space-y-1">
+                <label className="text-sm font-medium">Licencia que recibirá {qrUser.name}:</label>
+                <select
+                  value={qrMode}
+                  onChange={e => setQrMode(e.target.value as 'h24' | 'admin' | 'permanent')}
+                  className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                >
+                  <option value="h24">Solo 24 horas</option>
+                  <option value="admin" disabled={!adminGrant}>
+                    {adminGrant
+                      ? adminGrant.expiresAt === null
+                        ? 'Igual que la mía (permanente)'
+                        : `Igual que la mía (${adminDays} día${adminDays === 1 ? '' : 's'} restantes)`
+                      : 'Igual que la mía (sin licencia activa)'}
+                  </option>
+                  <option value="permanent">Permanente</option>
+                </select>
+                {currentEmployeeDays !== null && (
+                  <p className="text-xs text-muted-foreground">
+                    Este empleado ya tiene licencia por ~{currentEmployeeDays} día(s). Escanear nunca la acorta.
+                  </p>
+                )}
+              </div>
               <p className="text-sm text-muted-foreground text-center">
                 Que <strong>{qrUser.name}</strong> escanee este QR desde la pantalla de
-                <strong> Activación</strong> en su celular. Recibirá su cuenta y todos los datos
-                (productos, precios, stock, movimientos y cierres). Ambos teléfonos deben estar en la misma red Wi‑Fi.
+                <strong> Activación</strong> en su celular. Recibirá su cuenta y todos los datos.
+                Sin internet: por Wi-Fi local o WiFi Direct.
               </p>
               <div className="bg-white p-3 rounded-lg min-h-[240px] min-w-[240px] flex items-center justify-center">
                 {qrPayload
