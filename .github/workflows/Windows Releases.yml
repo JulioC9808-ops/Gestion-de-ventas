@@ -38,11 +38,11 @@ jobs:
         shell: cmd
         run: npm run build
 
-      - name: Package Electron app
+      - name: Package Electron app (PROTEGIDO)
         shell: cmd
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: npx electron-builder
+        run: npm run electron:installer
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
@@ -52,7 +52,6 @@ jobs:
           retention-days: 3
 
       # ---- A partir de aquí: publicar en Releases ----
-
       - name: Get latest release tag
         id: get_release
         shell: bash
