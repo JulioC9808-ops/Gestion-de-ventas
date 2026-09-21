@@ -7,7 +7,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { ShieldCheck, Camera, Database, Lock, EyeOff, FileText } from 'lucide-react';
 
 interface PrivacyPolicyDialogProps {
@@ -22,7 +21,6 @@ export default function PrivacyPolicyDialog({
   onOpenChange: setControlledOpen,
 }: PrivacyPolicyDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
-
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
   const onOpenChange = isControlled ? setControlledOpen! : setInternalOpen;
@@ -39,9 +37,8 @@ export default function PrivacyPolicyDialog({
           </Button>
         </DialogTrigger>
       )}
-
-      <DialogContent className="max-w-2xl max-h-[85vh] p-0 flex flex-col overflow-hidden">
-        <DialogHeader className="p-6 pb-2 border-b border-border/50">
+      <DialogContent className="w-[calc(100%-1rem)] max-w-2xl max-h-[85dvh] p-0 flex flex-col min-h-0 overflow-hidden">
+        <DialogHeader className="shrink-0 p-4 sm:p-6 pb-2 border-b border-border/50">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-lg bg-primary/10 text-primary">
               <ShieldCheck className="w-5 h-5" />
@@ -53,7 +50,7 @@ export default function PrivacyPolicyDialog({
           </div>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 p-6 text-sm leading-relaxed space-y-4">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6 text-sm leading-relaxed">
           <div className="space-y-4">
             <section className="space-y-2">
               <h4 className="font-semibold text-foreground flex items-center gap-2">
@@ -130,9 +127,9 @@ export default function PrivacyPolicyDialog({
               </p>
             </section>
           </div>
-        </ScrollArea>
+        </div>
 
-        <div className="p-4 border-t border-border/50 bg-muted/20 flex justify-end">
+        <div className="shrink-0 p-4 border-t border-border/50 bg-muted/20 flex justify-end">
           <Button onClick={() => onOpenChange(false)}>Entendido</Button>
         </div>
       </DialogContent>
