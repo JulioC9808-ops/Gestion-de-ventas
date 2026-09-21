@@ -7,6 +7,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme="light"
       className="toaster group"
+      closeButton
       style={
         {
           // Forzar que el toast use los mismos tokens del tema activo
@@ -27,6 +28,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           actionButton: "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
           cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
           title: "group-[.toast]:text-card-foreground",
+          closeButton: "group-[.toast]:bg-muted group-[.toast]:text-foreground group-[.toast]:border-border",
         },
       }}
       {...props}
