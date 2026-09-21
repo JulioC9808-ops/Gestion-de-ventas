@@ -1,6 +1,8 @@
 import LZString from 'lz-string';
 import type { BackupPayload } from '@/lib/backup';
 import type { ShiftReport } from '@/types';
+import { WiFiDirect, WD_QR_PREFIX } from './wifiDirect';
+import { Capacitor } from '@capacitor/core';
 
 export interface EmployeeSyncPackage {
   v: 2;
