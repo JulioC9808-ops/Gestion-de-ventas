@@ -51,6 +51,7 @@ public class MainActivity extends BridgeActivity {
         SplashScreen.installSplashScreen(this);
 
         registerPlugin(LocalSyncPlugin.class);
+        registerPlugin(com.gestion.ventas.WiFiDirectPlugin.class);
         registerPlugin(com.gestion.ventas.updates.AppUpdatePlugin.class);
         super.onCreate(savedInstanceState);
 
