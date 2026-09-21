@@ -12,6 +12,8 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Servicio de red basado en OkHttp para consultar versiones y descargar APKs.
+ * La descarga soporta REANUDACIÓN (HTTP Range): si existe un archivo parcial
+ * previo, continúa desde donde se quedó en vez de empezar desde cero.
  */
 class UpdateApiService(
     private val client: OkHttpClient = OkHttpClient.Builder()
@@ -21,9 +23,6 @@ class UpdateApiService(
         .build()
 ) {
 
-    /**
-     * Consulta el endpoint remoto de actualización y parsea el JSON a UpdateInfo.
-     */
     suspend fun fetchUpdateInfo(endpointUrl: String): Result<UpdateInfo> = withContext(Dispatchers.IO) {
         try {
             val urlWithTimestamp = if (endpointUrl.contains("?")) {
@@ -55,45 +54,53 @@ class UpdateApiService(
         }
     }
 
-    /**
-     * Descarga el APK con reporte de progreso en tiempo real.
-     */
     suspend fun downloadApk(
         apkUrl: String,
         destinationFile: File,
+        resumeFromBytes: Long = 0L,
         onProgress: (progress: Int, currentBytes: Long, totalBytes: Long) -> Unit
     ): Result<File> = withContext(Dispatchers.IO) {
         var tempFile: File? = null
         try {
-            // Asegurar directorio contenedor
             destinationFile.parentFile?.mkdirs()
             tempFile = File(destinationFile.parentFile, "${destinationFile.name}.tmp")
-            if (tempFile.exists()) {
-                tempFile.delete()
-            }
 
-            val request = Request.Builder()
+            var baseBytes = 0L
+            val canTryResume = resumeFromBytes > 0 && tempFile.exists() && tempFile.length() > 0
+            if (canTryResume) baseBytes = tempFile.length()
+
+            val requestBuilder = Request.Builder()
                 .url(apkUrl)
                 .header("Accept-Encoding", "identity")
-                .build()
+            if (canTryResume) requestBuilder.header("Range", "bytes=$baseBytes-")
 
-            val response = client.newCall(request).execute()
+            val response = client.newCall(requestBuilder.build()).execute()
             if (!response.isSuccessful) {
                 return@withContext Result.failure(
                     IOException("Error al descargar APK: HTTP ${response.code}")
                 )
             }
 
+            // Solo se reanuda si el servidor respondió 206 Partial Content.
+            // Si respondió 200, se descarta el parcial y se empieza de cero.
+            var resuming = canTryResume && response.code == 206
+            if (!resuming) {
+                baseBytes = 0L
+                if (tempFile.exists()) tempFile.delete()
+            }
+
             val body = response.body
                 ?: return@withContext Result.failure(IOException("El cuerpo del archivo descargado está vacío"))
 
-            val totalBytes = body.contentLength()
+            val contentLength = body.contentLength()
+            val totalBytes = if (contentLength > 0) baseBytes + contentLength else -1L
+
             val inputStream = body.byteStream()
-            val outputStream = FileOutputStream(tempFile)
+            val outputStream = FileOutputStream(tempFile, resuming)
 
             val buffer = ByteArray(8192)
             var bytesRead: Int
-            var currentBytes: Long = 0
+            var currentBytes: Long = baseBytes
             var lastProgress = -1
 
             inputStream.use { input ->
@@ -101,7 +108,6 @@ class UpdateApiService(
                     while (input.read(buffer).also { bytesRead = it } != -1) {
                         output.write(buffer, 0, bytesRead)
                         currentBytes += bytesRead
-
                         if (totalBytes > 0) {
                             val progress = ((currentBytes * 100) / totalBytes).toInt()
                             if (progress != lastProgress) {
@@ -116,7 +122,6 @@ class UpdateApiService(
                 }
             }
 
-            // Renombrar archivo temporal al definitivo
             if (destinationFile.exists()) {
                 destinationFile.delete()
             }
@@ -126,7 +131,8 @@ class UpdateApiService(
 
             Result.success(destinationFile)
         } catch (e: Exception) {
-            tempFile?.delete()
+            // Importante: NO se borra el .tmp aquí — así el próximo intento
+            // (incluso tras cerrar la app) reanuda la descarga.
             Result.failure(e)
         }
     }
