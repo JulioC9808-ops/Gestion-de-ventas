@@ -30,6 +30,7 @@
       "provider": "github",
       "owner": "JulioC9808-ops",
       "repo": "Sistema-Updates"
+      "afterPack": "scripts/afterPack.cjs",
     },
     "directories": {
       "output": "dist-installer",
