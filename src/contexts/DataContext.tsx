@@ -43,9 +43,7 @@ function fingerprint(value: string): string {
   }
   return h.toString(16);
 }
-
 const PROTECTED_KEYS = ['products', 'stock', 'reports', 'movements', 'users', 'settings'];
-
 function verifyIntegrity() {
   try {
     for (const key of PROTECTED_KEYS) {
@@ -65,14 +63,12 @@ function verifyIntegrity() {
     // Integrity check failed or localStorage unavailable
   }
 }
-
 verifyIntegrity();
 
 function load<T>(key: string, fallback: T): T {
   const saved = localStorage.getItem(key);
   return saved ? JSON.parse(saved) : fallback;
 }
-
 function save<T>(key: string, data: T) {
   const serialized = JSON.stringify(data);
   localStorage.setItem(key, serialized);
@@ -103,6 +99,8 @@ const DEMO_WIPE_FLAG = '__demo_products_wiped_v1';
 export const GITHUB_UPDATES_URL = 'https://github.com/JulioC9808-ops/Sistema-Updates';
 // Ruta por defecto para avisos y comunicados
 export const DEFAULT_ANNOUNCEMENT_URL = 'https://raw.githubusercontent.com/JulioC9808-ops/Sistema-Updates/main/announcement.json';
+// Canal oficial de Telegram
+export const DEFAULT_TELEGRAM_URL = 'https://t.me/Gestion_Ventas';
 
 const DEFAULT_SETTINGS: AppSettings = {
   businessName: 'Mi Negocio',
@@ -115,7 +113,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   navPosition: 'top',
   defaultSalaryPercent: 2,
   salaryByPercentEnabled: false,
-  telegramUrl: 'https://t.me/Gestion_Ventas',
+  telegramUrl: DEFAULT_TELEGRAM_URL,
   githubUpdatesUrl: GITHUB_UPDATES_URL,
   announcementUrl: DEFAULT_ANNOUNCEMENT_URL,
 };
@@ -148,7 +146,6 @@ function wipeDemoProducts() {
     // Ignore error if localStorage is not accessible
   }
 }
-
 wipeDemoProducts();
 
 const DEFAULT_USERS: User[] = [
@@ -187,8 +184,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       loaded.theme = 'white';
       dirty = true;
     }
-    if (!loaded.telegramUrl || loaded.telegramUrl.includes('Agu7IJDwGU4NGM5')) {
-      loaded.telegramUrl = 'https://t.me/Gestion_Ventas';
+    // Migración: actualizar el canal de Telegram al público actual
+    if (!loaded.telegramUrl || loaded.telegramUrl.includes('Agu7IJDwGU4NGM5') || loaded.telegramUrl.includes('+G8geeJ1gwYo4N2Ex')) {
+      loaded.telegramUrl = DEFAULT_TELEGRAM_URL;
       dirty = true;
     }
     // Migración: el repo antiguo de actualizaciones no existe, apuntar al correcto
