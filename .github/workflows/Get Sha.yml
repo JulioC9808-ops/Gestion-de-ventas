@@ -1,0 +1,25 @@
+name: Get Cert SHA-256
+
+on:
+  workflow_dispatch:
+
+jobs:
+  print-cert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Decode keystore and print fingerprints
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > my-release-key.keystore
+          keytool -list -v \
+            -keystore my-release-key.keystore \
+            -alias gestionventas \
+            -storepass "$KEYSTORE_PASSWORD" | grep -iE "SHA1|SHA256"
