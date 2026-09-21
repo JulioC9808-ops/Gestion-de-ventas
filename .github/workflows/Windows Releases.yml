@@ -125,3 +125,58 @@ jobs:
               -t "Version $TAG (Windows)" \
               -n "Actualización automática de Windows - Gestión de Ventas v$TAG"
           fi
+                # ---- Notificar a Telegram (mensaje) ----
+      - name: Notify Telegram channel
+        if: success()
+        shell: bash
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          TAG="${{ steps.get_release.outputs.new_tag }}"
+          URL="https://github.com/JulioC9808-ops/Sistema-Updates/releases/tag/${TAG}"
+
+          MESSAGE="🚀 <b>Nueva versión disponible</b>
+
+          📦 <b>Gestión de Ventas</b> — Windows
+          🏷️ Versión: <code>v${TAG}</code>
+
+          ⬇️ <a href=\"${URL}\">Descargar actualización</a>
+
+          <i>El instalador también está adjunto en el siguiente mensaje.</i>"
+
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d chat_id="@Gestion_Ventas" \
+            -d parse_mode="HTML" \
+            -d disable_web_page_preview="false" \
+            --data-urlencode "text=${MESSAGE}"
+
+      # ---- Subir el .exe a Telegram ----
+      - name: Upload installer to Telegram
+        if: success()
+        shell: bash
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          TAG="${{ steps.get_release.outputs.new_tag }}"
+          EXE="${{ steps.find_exe.outputs.exe_path }}"
+          EXE_NAME="${{ steps.find_exe.outputs.exe_name }}"
+          SIZE_MB=$(du -m "$EXE" | cut -f1)
+
+          echo "Subiendo ${EXE_NAME} (${SIZE_MB} MB) a Telegram..."
+
+          RESPONSE=$(curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
+            -F chat_id="@Gestion_Ventas" \
+            -F document=@"${EXE}" \
+            -F caption="💾 <b>Gestión de Ventas v${TAG}</b> — Instalador Windows (<code>${EXE_NAME}</code>)" \
+            -F parse_mode="HTML")
+
+          echo "$RESPONSE"
+
+          # Verificar que Telegram aceptó el archivo
+          if echo "$RESPONSE" | grep -q '"ok":true'; then
+            echo "✅ Instalador subido a Telegram correctamente."
+          else
+            echo "❌ Error al subir el instalador a Telegram."
+            echo "$RESPONSE"
+            exit 1
+          fi
