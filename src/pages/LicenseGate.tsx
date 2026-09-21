@@ -1,24 +1,24 @@
 import React, { useEffect, useState } from 'react';
-import { Shield, Key, MessageCircle, Clock, Infinity as InfinityIcon, QrCode, AlertTriangle, ScanLine } from 'lucide-react';
+import { Shield, Key, MessageCircle, Clock, Infinity as InfinityIcon, QrCode, ScanLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import QrDisplay from '@/components/QrDisplay';
 import QrScannerModal from '@/components/QrScannerModal';
-import { getMachineId, isDesktop } from '@/lib/machine';
+import { getDeviceId, isDesktop, type HardwareComponents } from '@/lib/machine';
 import { isMobileDevice } from '@/lib/platform';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
 import {
-  readEmployeeLicense, saveEmployeeLicense, isEmployeeLicenseActive,
-  employeeHoursRemaining, clearEmployeeLicense, EMPLOYEE_LICENSE_HOURS,
+  readLinkedLicense, saveLinkedLicense, isEmployeeLicenseActive,
+  daysRemaining, hoursRemaining, clearEmployeeLicense, H24_MS,
 } from '@/lib/employeeLicense';
 import { receiveEmployeeShare } from '@/lib/syncTransport';
 import { toast } from 'sonner';
 
 const LIFETIME_LICENSE = '08022664107';
 const TIMED_LICENSE = 'J260208c';
-const TIMED_DURATION_DAYS = 37;
+const TIMED_DURATION_MS = 37 * 24 * 60 * 60 * 1000;
 const DEV_WHATSAPP = '+5351616816';
 const DEV_PHONE_TEL = 'tel:+5351616816';
 
@@ -26,68 +26,146 @@ interface LicenseGateProps {
   children: React.ReactNode;
 }
 
+interface DeviceInfo {
+  id: string | null;
+  hw: HardwareComponents | null;
+}
+
 type LicenseState =
   | { type: 'none' }
-  | { type: 'lifetime'; machineId?: string | null }
-  | { type: 'timed'; activatedAt: number; machineId?: string | null };
+  | {
+      type: 'lifetime';
+      deviceId?: string | null;
+      hw?: HardwareComponents;
+      rebound?: number;
+      lastSeenAt?: number;
+    }
+  | {
+      type: 'timed';
+      activatedAt: number;
+      /** Expiración explícita (epoch ms). En estados viejos se calcula de activatedAt. */
+      expiresAt: number;
+      deviceId?: string | null;
+      hw?: HardwareComponents;
+      rebound?: number;
+      lastSeenAt?: number;
+    };
 
-function readLicense(): LicenseState {
-  try {
-    const raw = localStorage.getItem('license_state');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed?.type === 'lifetime') return { type: 'lifetime', machineId: parsed.machineId ?? null };
-      if (parsed?.type === 'timed' && typeof parsed.activatedAt === 'number') {
-        return { type: 'timed', activatedAt: parsed.activatedAt, machineId: parsed.machineId ?? null };
-      }
-    }
-    if (localStorage.getItem('license_key') === LIFETIME_LICENSE) {
-      const state: LicenseState = { type: 'lifetime', machineId: getMachineId() };
-      localStorage.setItem('license_state', JSON.stringify(state));
-      return state;
-    }
-  } catch {
-    // Ignore invalid license state
+const LICENSE_KEY = 'license_state';
+
+function normalize(state: any): LicenseState {
+  if (!state || typeof state !== 'object') return { type: 'none' };
+  if (state.type === 'lifetime') {
+    return {
+      type: 'lifetime',
+      deviceId: state.deviceId ?? state.machineId ?? null,
+      hw: state.hw,
+      rebound: state.rebound,
+      lastSeenAt: state.lastSeenAt,
+    };
+  }
+  if (state.type === 'timed' && typeof state.activatedAt === 'number') {
+    return {
+      type: 'timed',
+      activatedAt: state.activatedAt,
+      expiresAt: typeof state.expiresAt === 'number' ? state.expiresAt : state.activatedAt + TIMED_DURATION_MS,
+      deviceId: state.deviceId ?? state.machineId ?? null,
+      hw: state.hw,
+      rebound: state.rebound,
+      lastSeenAt: state.lastSeenAt,
+    };
   }
   return { type: 'none' };
 }
 
+function readLicense(): LicenseState {
+  try {
+    const raw = localStorage.getItem(LICENSE_KEY);
+    if (raw) return normalize(JSON.parse(raw));
+    // Clave guardada de versiones muy viejas (activación directa).
+    if (localStorage.getItem('license_key') === LIFETIME_LICENSE) {
+      const state: LicenseState = { type: 'lifetime' };
+      localStorage.setItem(LICENSE_KEY, JSON.stringify(state));
+      return state;
+    }
+  } catch {
+    // Estado corrupto: se ignora.
+  }
+  return { type: 'none' };
+}
+
+function persistLicense(state: LicenseState) {
+  const withSeen: any = { ...state, lastSeenAt: Date.now() };
+  localStorage.setItem(LICENSE_KEY, JSON.stringify(withSeen));
+  return withSeen as LicenseState;
+}
+
+/** Anti-reloj: la expiración se compara contra max(ahora, último arranque visto). */
+function effectiveNow(state: LicenseState): number {
+  const last = state.type !== 'none' && state.lastSeenAt ? state.lastSeenAt : 0;
+  const now = Date.now();
+  return now < last ? last : now;
+}
+
+function isTimedActive(state: Extract<LicenseState, { type: 'timed' }>): boolean {
+  return effectiveNow(state) < state.expiresAt;
+}
+
 /**
- * Verifica que la licencia guardada corresponda a esta máquina.
- * Solo aplica en Electron (desktop). En web/dev retorna true siempre.
- * Si la carpeta AppData se copia a otra PC, el machineId no coincidirá
- * y la licencia se invalida automáticamente.
+ * Verificación de dispositivo con TOLERANCIA:
+ * - PC: coincide el ID combinado, O al menos 3 de 4 componentes de hardware válidos.
+ * - Android: coincide el hash de ANDROID_ID.
+ * - Estados viejos sin ID se adoptan (migración, no consume el rebound).
+ * Devuelve 'ok' | 'rebind' (re-vinculación única) | 'fail'.
  */
-function isSameMachine(state: LicenseState): boolean {
-  if (!isDesktop()) return true;
-  if (state.type === 'none') return true;
-  const current = getMachineId();
-  // Si la licencia guardada no tiene machineId (versión antigua) la "adoptamos"
-  // vinculándola a esta máquina en la próxima escritura.
-  if (!state.machineId) return true;
-  return state.machineId === current;
+function checkMachine(state: LicenseState, device: DeviceInfo): 'ok' | 'rebind' | 'fail' {
+  if (state.type === 'none') return 'ok';
+  if (!state.deviceId) return 'rebind'; // licencia vieja sin vínculo: adoptar
+  if (!device.id) return 'ok'; // sin ID disponible (web/dev): no invalidar
+  if (state.deviceId === device.id) return 'ok';
+  // Tolerancia por hardware en PC: 3 de 4 componentes válidos coinciden.
+  if (isDesktop() && state.hw && device.hw) {
+    const pairs: Array<[string, string]> = [
+      [state.hw.disk, device.hw.disk],
+      [state.hw.bios, device.hw.bios],
+      [state.hw.cpu, device.hw.cpu],
+      [state.hw.ram, device.hw.ram],
+    ];
+    const valid = pairs.filter(([a, b]) => a && b);
+    const matches = valid.filter(([a, b]) => a === b).length;
+    if (valid.length >= 3 && matches >= 3) return 'rebind'; // refresca el vínculo al hardware actual
+  }
+  // Mismatch real: una sola oportunidad de re-vinculación (migración de clientes actuales).
+  if (!state.rebound) return 'rebind';
+  return 'fail';
 }
 
-function isTimedActive(activatedAt: number) {
-  const ms = TIMED_DURATION_DAYS * 24 * 60 * 60 * 1000;
-  return Date.now() - activatedAt < ms;
+function rebind(state: LicenseState, device: DeviceInfo): LicenseState {
+  const base: any = { ...state, rebound: 1 };
+  if (device.id) {
+    base.deviceId = device.id;
+    if (device.hw) base.hw = device.hw;
+  }
+  delete base.machineId;
+  return base as LicenseState;
 }
 
-function daysRemaining(activatedAt: number) {
-  const ms = TIMED_DURATION_DAYS * 24 * 60 * 60 * 1000;
-  const remaining = ms - (Date.now() - activatedAt);
-  return Math.max(0, Math.ceil(remaining / (24 * 60 * 60 * 1000)));
+function daysLeftOf(state: LicenseState): number {
+  if (state.type !== 'timed') return 0;
+  const ms = state.expiresAt - effectiveNow(state);
+  return Math.max(0, Math.ceil(ms / (24 * 60 * 60 * 1000)));
 }
 
 export default function LicenseGate({ children }: LicenseGateProps) {
   const { login, logout } = useAuth();
   const { users, addUser, updateUser, applyBackup } = useData();
   const [license, setLicense] = useState<LicenseState>(() => readLicense());
+  const [device, setDevice] = useState<DeviceInfo | 'pending'>('pending');
   const [key, setKey] = useState('');
   const [error, setError] = useState('');
   const [showQr, setShowQr] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
-  const [empLicense, setEmpLicense] = useState(() => readEmployeeLicense());
+  const [empLicense, setEmpLicense] = useState(() => readLinkedLicense());
   const [showWelcome, setShowWelcome] = useState(() => !localStorage.getItem('welcome_seen'));
   const mobile = isMobileDevice();
 
@@ -96,80 +174,81 @@ export default function LicenseGate({ children }: LicenseGateProps) {
     setShowWelcome(false);
   };
 
-  // re-check daily
+  // Cargar el ID de dispositivo (PC: sincrónico; Android: asíncrono).
   useEffect(() => {
-    const id = setInterval(() => setLicense(readLicense()), 60 * 60 * 1000);
-    return () => clearInterval(id);
+    let alive = true;
+    getDeviceId().then(d => { if (alive) setDevice(d); });
+    return () => { alive = false; };
   }, []);
 
-  // Verificar máquina en cada render/tick
-  const sameMachine = isSameMachine(license);
-
-  // Si la licencia fue copiada de otra PC (machineId no coincide), invalidamos.
+  // Verificar máquina una vez que el ID está cargado.
   useEffect(() => {
-    if (!sameMachine && license.type !== 'none') {
-      localStorage.removeItem('license_state');
-      setLicense({ type: 'none' });
-    }
-  }, [sameMachine, license.type]);
-
-  // Adopción: si estamos en desktop y la licencia guardada NO tiene machineId
-  // (versión antigua), le añadimos el actual sin pedir reactivación.
-  useEffect(() => {
-    if (!isDesktop()) return;
+    if (device === 'pending') return;
     if (license.type === 'none') return;
-    if (license.machineId) return;
-    const id = getMachineId();
-    if (!id) return;
-    const next: LicenseState = { ...license, machineId: id };
-    localStorage.setItem('license_state', JSON.stringify(next));
-    setLicense(next);
-  }, [license]);
+    const verdict = checkMachine(license, device);
+    if (verdict === 'ok') return;
+    if (verdict === 'rebind') {
+      const next = persistLicense(rebind(license, device));
+      setLicense(next);
+      return;
+    }
+    localStorage.removeItem(LICENSE_KEY);
+    setLicense({ type: 'none' });
+    toast.error('La licencia no corresponde a este equipo. Actívala de nuevo.');
+  }, [device, license]);
+
+  // Re-chequeo horario + ancla anti-reloj cada 5 minutos.
+  useEffect(() => {
+    const id = setInterval(() => setLicense(readLicense()), 60 * 60 * 1000);
+    const touch = setInterval(() => {
+      const s = readLicense();
+      if (s.type !== 'none') setLicense(persistLicense(s));
+    }, 5 * 60 * 1000);
+    return () => { clearInterval(id); clearInterval(touch); };
+  }, []);
 
   const employeeActive = isEmployeeLicenseActive(empLicense);
 
-  // Al caducar la licencia de empleado se cierra la sesión y se obliga a
-  // volver a escanear el QR del jefe (así los datos se mantienen sincronizados).
+  // Al caducar la licencia de empleado: cerrar sesión y pedir nuevo escaneo.
   useEffect(() => {
     if (!empLicense) return;
     const id = setInterval(() => {
-      const current = readEmployeeLicense();
+      const current = readLinkedLicense();
       if (current && !isEmployeeLicenseActive(current)) {
         clearEmployeeLicense();
         logout();
         setEmpLicense(null);
-        toast.error('Tu licencia de <strong>empleado</strong> (24 h) caducó. Escanea de nuevo el QR del Admin.');
+        toast.error('Tu licencia de <strong>empleado</strong> caducó. Escanea de nuevo el QR del Admin.');
       }
     }, 60 * 1000);
     return () => clearInterval(id);
   }, [empLicense, logout]);
 
-  const licensed = employeeActive || (sameMachine && (
+  const licensed = employeeActive || (
     license.type === 'lifetime' ||
-    (license.type === 'timed' && isTimedActive(license.activatedAt))
-  ));
+    (license.type === 'timed' && isTimedActive(license))
+  );
 
   const handleActivate = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = key.trim();
-    const mid = getMachineId();
     if (trimmed === LIFETIME_LICENSE) {
-      const state: LicenseState = { type: 'lifetime', machineId: mid };
-      localStorage.setItem('license_state', JSON.stringify(state));
+      const state = persistLicense({ type: 'lifetime' } as LicenseState);
       setLicense(state);
     } else if (trimmed === TIMED_LICENSE) {
-      const state: LicenseState = { type: 'timed', activatedAt: Date.now(), machineId: mid };
-      localStorage.setItem('license_state', JSON.stringify(state));
+      const state = persistLicense({
+        type: 'timed',
+        activatedAt: Date.now(),
+        expiresAt: Date.now() + TIMED_DURATION_MS,
+      } as LicenseState);
       setLicense(state);
     } else {
       setError('Clave de producto inválida');
     }
   };
 
-  // ---- Activación de EMPLEADO con UN solo QR ----
-  // El QR del jefe (Ajustes → Usuarios) trae la cuenta del empleado y todos los datos.
+  // ---- Activación de EMPLEADO con UN solo QR (respeta lo que el admin eligió) ----
   const [receiving, setReceiving] = useState(false);
-
   const handleEmployeeScan = async (text: string) => {
     if (receiving) return;
     const raw = (text || '').trim();
@@ -180,11 +259,9 @@ export default function LicenseGate({ children }: LicenseGateProps) {
         toast.error('Este no es el QR de activación que te dio el Admin.');
         return;
       }
-
-      // 1) Todos los datos del jefe
+      // 1) Todos los datos del jefe (el backup ya solo trae la cuenta del empleado).
       applyBackup(packet.backup);
-
-      // 2) La cuenta del empleado en este dispositivo
+      // 2) La cuenta del empleado en este dispositivo (rol SIEMPRE empleado).
       const { u, p, n, s: sal, h } = packet.account;
       const existing = users.find(x => x.username === u);
       if (existing) {
@@ -199,22 +276,42 @@ export default function LicenseGate({ children }: LicenseGateProps) {
           passwordHint: h ?? null,
         } as never);
       }
-
-      // 3) Licencia de 24 h y entrada
-      const lic = saveEmployeeLicense(u);
+      // 3) Licencia según lo que el admin eligió al generar el QR.
+      const grant = packet.license;
+      let expiresAt: number | null;
+      if (!grant) {
+        expiresAt = Date.now() + H24_MS; // QR v2 viejo: 24 h
+      } else if (grant.mode === 'permanent') {
+        expiresAt = null;
+      } else if (grant.mode === 'admin') {
+        expiresAt = grant.expiresAt ?? null;
+      } else {
+        // h24: rechazar QR reciclado de hace más de 7 días.
+        if (grant.issuedAt && grant.issuedAt < Date.now() - 7 * 24 * 60 * 60 * 1000) {
+          toast.error('Este QR es muy antiguo. Pide al Admin que genere otro.');
+          return;
+        }
+        expiresAt = Date.now() + H24_MS;
+      }
+      const lic = saveLinkedLicense(u, expiresAt);
       setEmpLicense(lic);
       setTimeout(() => {
         if (login(u, p)) {
           setScanOpen(false);
-          toast.success(`Datos recibidos y activado por ${EMPLOYEE_LICENSE_HOURS} h. <strong>Licencia de SOLO EMPLEADO</strong>.`);
+          const remaining = lic.expiresAt === null
+            ? 'permanente'
+            : daysRemaining(lic) >= 1
+              ? `${daysRemaining(lic)} día(s)`
+              : `${hoursRemaining(lic)} h`;
+          toast.success(`Datos recibidos. Licencia de <strong>empleado</strong> activa: <strong>${remaining}</strong>.`);
         } else {
           clearEmployeeLicense();
           setEmpLicense(null);
           toast.error('No se pudo activar con ese QR. Pide al admin que lo genere otra vez.');
         }
       }, 200);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'No se pudo recibir los datos del admin.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'No se pudo recibir los datos del admin.');
     } finally {
       setReceiving(false);
     }
@@ -238,7 +335,8 @@ export default function LicenseGate({ children }: LicenseGateProps) {
 
   if (licensed) return <>{children}{WelcomeDialog}</>;
 
-  const expired = license.type === 'timed' && !isTimedActive(license.activatedAt);
+  const expired = license.type === 'timed' && !isTimedActive(license);
+  const expiredDays = license.type === 'timed' ? daysLeftOf(license) : 0;
 
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, hsl(0 0% 6%), hsl(0 0% 14%), hsl(0 0% 22%))' }}>
@@ -250,10 +348,9 @@ export default function LicenseGate({ children }: LicenseGateProps) {
             </div>
             <h1 className="text-2xl font-bold text-gradient font-display">Activación de Licencia</h1>
             <p className="text-muted-foreground text-sm mt-1 text-center">
-              {expired ? 'Tu licencia temporal ha expirado. Ingrésala de nuevo para renovar 37 días más.' : 'Ingresa tu clave de producto para continuar'}
+              {expired ? `Tu licencia temporal expiró. Ingresa tu clave para renovar 37 días más (${expiredDays} días de margen).` : 'Ingresa tu clave de producto para continuar'}
             </p>
           </div>
-
           <div className="grid grid-cols-2 gap-3 mb-6 text-xs">
             <div className="glass-card p-3 flex items-start gap-2">
               <InfinityIcon className="w-4 h-4 text-primary mt-0.5" />
@@ -270,7 +367,6 @@ export default function LicenseGate({ children }: LicenseGateProps) {
               </div>
             </div>
           </div>
-
           <form onSubmit={handleActivate} className="space-y-5">
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Clave de Producto</label>
@@ -286,24 +382,21 @@ export default function LicenseGate({ children }: LicenseGateProps) {
                 />
               </div>
             </div>
-
             {error && (
               <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg text-center border border-destructive/30">
                 {error}
               </div>
             )}
-
             <Button type="submit" className="w-full h-11 font-semibold text-base">
               Activar Licencia
             </Button>
           </form>
-
           {mobile && (
             <div className="mt-5 rounded-lg border border-border/60 bg-secondary/40 p-3">
               <p className="text-xs text-muted-foreground mb-2">
                 ¿Eres empleado? Pídele a un Admin el <strong>QR de activación</strong> desde
-                Ajustes → Usuarios. Te dará acceso por {EMPLOYEE_LICENSE_HOURS} horas con licencia de
-                <strong> SOLO EMPLEADO</strong> (sin panel de administración).
+                Ajustes → Usuarios. Recibirás tu cuenta, todos los datos y la licencia
+                que el Admin te asigne. No necesitan internet: conecta por Wi-Fi o WiFi Direct.
               </p>
               <Button variant="secondary" className="w-full h-11" onClick={() => setScanOpen(true)}>
                 <ScanLine className="w-4 h-4 mr-2" />
@@ -311,7 +404,6 @@ export default function LicenseGate({ children }: LicenseGateProps) {
               </Button>
             </div>
           )}
-
           <div className="grid grid-cols-2 gap-2 mt-4">
             <Button
               variant="outline"
@@ -328,22 +420,19 @@ export default function LicenseGate({ children }: LicenseGateProps) {
               QR Teléfono
             </Button>
           </div>
-
           <p className="text-center text-xs text-muted-foreground mt-6">
             Contacta al desarrollador para obtener tu clave de producto.
           </p>
         </div>
       </div>
-
       <QrScannerModal
         open={scanOpen}
         onClose={() => setScanOpen(false)}
         onScan={handleEmployeeScan}
         keepOpen
         title="Activación de empleado"
-        hint={receiving ? 'Recibiendo datos del jefe…' : 'Apunta al QR que te muestra el Admin (Ajustes → Usuarios). Ambos teléfonos deben estar en la misma red Wi‑Fi.'}
+        hint={receiving ? 'Recibiendo datos del jefe…' : 'Apunta al QR que te muestra el Admin (Ajustes → Usuarios).'}
       />
-
       <Dialog open={showQr} onOpenChange={setShowQr}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
@@ -360,15 +449,23 @@ export default function LicenseGate({ children }: LicenseGateProps) {
           </div>
         </DialogContent>
       </Dialog>
-
       {WelcomeDialog}
     </div>
   );
 }
 
+/** Info de licencia para otras pantallas (legado). */
 export function getLicenseInfo() {
   const state = readLicense();
   if (state.type === 'lifetime') return { type: 'lifetime' as const };
-  if (state.type === 'timed') return { type: 'timed' as const, daysLeft: daysRemaining(state.activatedAt) };
+  if (state.type === 'timed') return { type: 'timed' as const, daysLeft: daysLeftOf(state) };
   return { type: 'none' as const };
+}
+
+/** Expiración del admin para propagarla en el QR de empleados. null = permanente. */
+export function getAdminLicenseGrant(): { expiresAt: number | null } | null {
+  const state = readLicense();
+  if (state.type === 'lifetime') return { expiresAt: null };
+  if (state.type === 'timed' && isTimedActive(state)) return { expiresAt: state.expiresAt };
+  return null;
 }
