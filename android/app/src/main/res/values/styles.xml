@@ -17,8 +17,7 @@
         <item name="colorAccent">@color/colorAccent</item>
         <item name="colorSurface">#FFFFFF</item>
         <item name="colorOnSurface">#1F2937</item>
-        <!-- Android 15 (targetSdk 35) fuerza edge-to-edge: esto lo desactiva y
-             devuelve el contenido por debajo de la barra de estado/hora -->
+        <!-- Android 15 (targetSdk 35) fuerza edge-to-edge: esto lo desactiva -->
         <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
     </style>
 
@@ -26,5 +25,14 @@
         <item name="windowSplashScreenBackground">@color/splashBackground</item>
         <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
         <item name="android:windowBackground">@color/splashBackground</item>
+    </style>
+
+    <!-- Ventana transparente para las tarjetas de actualización:
+         SOLO se ve la tarjeta bordeada, sin recuadro blanco detrás -->
+    <style name="UpdateCardDialog" parent="Theme.AppCompat.Light.Dialog">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsFloating">true</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:backgroundDimEnabled">true</item>
     </style>
 </resources>
