@@ -22,17 +22,23 @@ jobs:
 
       - name: Clean install
         shell: cmd
-        run: npm install --include=optional --no-audit --registry=https://registry.npmjs.org/
+        run: |
+          if exist node_modules rd /s /q node_modules
+          if exist package-lock.json del /f /q package-lock.json
+          npm install --include=optional --no-audit --no-fund --registry=https://registry.npmjs.org/
 
-      - name: Fix native dependencies (Rollup + SWC)
+      - name: Force install native bindings (Rollup + SWC)
         shell: cmd
         run: |
-          npm install @rollup/rollup-win32-x64-msvc --save-dev
-          npm install @swc/core-win32-x64-msvc --save-dev
+          npm install @rollup/rollup-win32-x64-msvc --save-dev --include=optional
+          npm install @swc/core-win32-x64-msvc --save-dev --include=optional
 
-      - name: Verify SWC binding
+      - name: Verify native bindings
         shell: cmd
-        run: node -e "console.log(require.resolve('@swc/core-win32-x64-msvc'))"
+        run: |
+          node -e "require('@rollup/rollup-win32-x64-msvc'); console.log('Rollup binding OK');"
+          node -e "require('@swc/core-win32-x64-msvc'); console.log('SWC binding OK');"
+          node -e "const swc = require('@swc/core'); console.log('SWC core loads OK, version:', swc.version);"
 
       - name: Prepare NSIS license encoding
         shell: powershell
