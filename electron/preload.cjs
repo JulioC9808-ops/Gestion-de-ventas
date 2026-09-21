@@ -7,28 +7,28 @@ const { contextBridge, ipcRenderer } = require('electron');
 const os = require('os');
 const crypto = require('crypto');
 
-function computeMachineId() {
+function computeHardwareFingerprint() {
   try {
-    const parts = [
-      os.hostname(),
-      os.userInfo().username,
-      os.platform(),
-      os.arch(),
-      Object.values(os.networkInterfaces())
-        .flat()
-        .filter(Boolean)
-        .map((n) => n && n.mac)
-        .filter((m) => m && m !== '00:00:00:00:00:00')
-        .sort()
-        .join('|'),
-    ];
+    const { execSync } = require('child_process');
+    const script = `
+      $disk  = (Get-CimInstance Win32_DiskDrive | Select-Object -First 1).SerialNumber
+      $bios  = (Get-CimInstance Win32_BIOS).SerialNumber
+      $cpu   = (Get-CimInstance Win32_Processor | Select-Object -First 1).ProcessorId
+      $ram   = ((Get-CimInstance Win32_PhysicalMemory | ForEach-Object { $_.SerialNumber }) | Sort-Object) -join '|'
+      "$disk`n$bios`n$cpu`n$ram"
+    `;
+    const out = execSync(
+      `powershell -NoProfile -ExecutionPolicy Bypass -Command "${script.replace(/"/g, '\\"')}"`,
+      { encoding: 'utf8', timeout: 5000, windowsHide: true }
+    ).trim();
+    const parts = out.split('\n').map(s => (s || '').trim().toUpperCase()).slice(0, 4);
     return crypto.createHash('sha256').update(parts.join('##')).digest('hex');
   } catch {
+    // Fallback: sin huella de hardware disponible (no bloquea la app)
     return 'unknown';
   }
 }
-
-const MACHINE_ID = computeMachineId();
+const MACHINE_ID = computeHardwareFingerprint();
 
 contextBridge.exposeInMainWorld('desktopBridge', {
   isElectron: true,
