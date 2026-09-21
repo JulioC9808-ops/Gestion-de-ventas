@@ -45,7 +45,7 @@ class UpdateManager private constructor(
                         dialogHelper.showUpdateAvailableDialog(
                             info = state.updateInfo,
                             onUpdateClicked = {
-                                dialogHelper.showDownloadingDialog(state.updateInfo.mandatory)
+                                dialogHelper.showDownloadingDialog()
                                 viewModel.startDownload(state.updateInfo)
                             },
                             onPostponeClicked = {
@@ -79,7 +79,7 @@ class UpdateManager private constructor(
                     is UpdateUiState.Error -> {
                         val retryAction: (() -> Unit)? = state.retryableInfo?.let { info ->
                             {
-                                dialogHelper.showDownloadingDialog(info.mandatory)
+                                dialogHelper.showDownloadingDialog()
                                 viewModel.startDownload(info)
                             }
                         }
