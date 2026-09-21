@@ -8,7 +8,6 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.wifi.WpsInfo
 import android.net.wifi.p2p.WifiP2pConfig
-import android.net.wifi.p2p.WifiP2pDevice
 import android.net.wifi.p2p.WifiP2pInfo
 import android.net.wifi.p2p.WifiP2pManager
 import android.os.Build
@@ -24,12 +23,8 @@ import okhttp3.Request
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.OutputStream
-import java.net.InetAddress
-import java.net.NetworkInterface
 import java.net.ServerSocket
-import java.net.Socket
 import java.nio.charset.StandardCharsets
-import java.util.Collections
 import java.util.concurrent.TimeUnit
 
 /**
@@ -90,11 +85,20 @@ class WiFiDirectPlugin : Plugin() {
         token = t
         payload = p
 
-        // 1) Nombre visible del grupo = GV-<token> (así el empleado lo identifica)
-        if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-            Build.VERSION.SDK_INT >= 33) {
-            try { mgr.setDeviceName(channel, "GV-$token", null) } catch (ignored: Exception) {}
+        // 1) Nombre visible del grupo = GV-<token> (así el empleado lo identifica).
+        //    setDeviceName() es una API oculta del framework; se invoca por reflexión.
+        try {
+            val method = WifiP2pManager::class.java.getMethod(
+                "setDeviceName",
+                WifiP2pManager.Channel::class.java,
+                String::class.java,
+                WifiP2pManager.ActionListener::class.java
+            )
+            method.invoke(mgr, channel, "GV-$token", null)
+        } catch (ignored: Exception) {
+            // Algunos fabricantes no exponen setDeviceName; se ignora.
         }
+
         // 2) Crear el grupo (el teléfono actúa como punto de acceso directo)
         mgr.createGroup(channel, object : WifiP2pManager.ActionListener {
             override fun onSuccess() {
@@ -268,8 +272,7 @@ class WiFiDirectPlugin : Plugin() {
         call.resolve()
     }
 
-    @Override
-    protected fun handleOnDestroy() {
+    override fun handleOnDestroy() {
         stopServer()
         try { manager?.removeGroup(channel, null) } catch (ignored: Exception) {}
         super.handleOnDestroy()
