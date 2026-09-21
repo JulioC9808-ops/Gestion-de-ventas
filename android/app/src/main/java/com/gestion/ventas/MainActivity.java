@@ -2,44 +2,42 @@ package com.gestion.ventas;
 
 import android.Manifest;
 import android.app.AlertDialog;
-import android.app.DownloadManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
+import android.content.pm.Signature;
 import android.os.Build;
 import android.os.Bundle;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
-import android.media.MediaPlayer;
-import android.net.Uri;
-import android.os.Environment;
 import android.widget.Toast;
-
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.splashscreen.SplashScreen;
-import androidx.core.content.FileProvider;
-
 import com.getcapacitor.BridgeActivity;
 import com.gestion.ventas.updates.UpdateManager;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.security.MessageDigest;
 
 public class MainActivity extends BridgeActivity {
 
     private static final int CAMERA_REQUEST_CODE = 8021;
     private static final String CRASH_FILE = "crash_log.txt";
+
     // Archivo de versión remoto para actualizaciones automáticas
     private static final String VERSION_URL =
             "https://raw.githubusercontent.com/JulioC9808-ops/Sistema-Updates/main/android-version.json";
+
+    // Anti-repackaging: SHA-256 del certificado de firma original.
+    // Si alguien modifica el APK debe re-firmarlo con otra clave -> el hash cambia -> la app se bloquea.
+    private static final String EXPECTED_SIG = "8F9343F18A4AB91098AE352544B9A253822C0A20A4920A39A7F956E3BC91A612";
 
     private UpdateManager updateManager;
 
@@ -53,7 +51,11 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(LocalSyncPlugin.class);
         registerPlugin(com.gestion.ventas.WiFiDirectPlugin.class);
         registerPlugin(com.gestion.ventas.updates.AppUpdatePlugin.class);
+
         super.onCreate(savedInstanceState);
+
+        // 1.1) Verificación anti-repackaging: el APK debe estar firmado con la clave original
+        verifyApkIntegrity();
 
         // 2) Si la última vez la app se cerró por un error, muéstralo AHORA
         showCrashLogIfAny();
@@ -62,7 +64,7 @@ public class MainActivity extends BridgeActivity {
 
         // --- Configuración del WebView ---
         try {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 WebView.setWebContentsDebuggingEnabled(false);
             }
             if (getBridge() != null && getBridge().getWebView() != null) {
@@ -121,7 +123,6 @@ public class MainActivity extends BridgeActivity {
         try {
             File logFile = new File(getFilesDir(), CRASH_FILE);
             if (!logFile.exists() || logFile.length() == 0) return;
-
             byte[] bytes = new byte[(int) Math.min(logFile.length(), 100000)];
             int n;
             try (FileInputStream in = new FileInputStream(logFile)) {
@@ -129,7 +130,6 @@ public class MainActivity extends BridgeActivity {
             }
             String log = (n > 0) ? new String(bytes, 0, n) : "(log vacío)";
             logFile.delete(); // solo se muestra una vez
-
             new AlertDialog.Builder(this)
                     .setTitle("La app se cerró inesperadamente")
                     .setMessage(log)
@@ -145,6 +145,42 @@ public class MainActivity extends BridgeActivity {
         }
     }
     // =========================================================
+
+    // ================= ANTI-REPACKAGING =================
+    private boolean apkIsOriginal() {
+        try {
+            PackageManager pm = getPackageManager();
+            byte[] certBytes;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                PackageInfo info = pm.getPackageInfo(getPackageName(), PackageManager.GET_SIGNING_CERTIFICATES);
+                if (info.signingInfo == null) return false;
+                Signature[] sigs = info.signingInfo.getApkContentsSigners();
+                if (sigs == null || sigs.length == 0) return false;
+                certBytes = sigs[0].toByteArray();
+            } else {
+                PackageInfo info = pm.getPackageInfo(getPackageName(), PackageManager.GET_SIGNATURES);
+                certBytes = info.signatures[0].toByteArray();
+            }
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            StringBuilder sb = new StringBuilder();
+            for (byte b : md.digest(certBytes)) sb.append(String.format("%02x", b));
+            return EXPECTED_SIG.equalsIgnoreCase(sb.toString());
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private void verifyApkIntegrity() {
+        if (!apkIsOriginal()) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Aplicación modificada")
+                    .setMessage("Esta instalación no es la original del desarrollador y no puede iniciarse.")
+                    .setCancelable(false)
+                    .setPositiveButton("Cerrar", (d, w) -> finishAffinity())
+                    .show();
+        }
+    }
+    // =====================================================
 
     private void requestCameraPermissionIfNeeded() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return;
