@@ -18,12 +18,6 @@ import androidx.appcompat.app.AlertDialog
 import com.gestion.ventas.updates.model.UpdateInfo
 import java.util.Locale
 
-/**
- * Gestor de diálogos de actualización.
- * - Aviso de nueva versión: tarjeta compacta abajo a la derecha (modal ligera).
- * - Descarga: MISMA tarjeta compacta abajo a la derecha pero NO bloqueante
- *   (se puede seguir usando la app mientras descarga).
- */
 class UpdateDialogHelper(private val activity: Activity) {
 
     private var currentDialog: Dialog? = null
@@ -33,7 +27,52 @@ class UpdateDialogHelper(private val activity: Activity) {
     private var tvProgressBytes: TextView? = null
     private var tvProgressStatus: TextView? = null
 
-    /** Tarjeta pequeña de "nueva versión": logo + texto + Sí / No. */
+    private fun makeCard(context: Context, small: Boolean): LinearLayout {
+        val dp = context.resources.displayMetrics.density
+        return LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding((14 * dp).toInt(), (12 * dp).toInt(), (14 * dp).toInt(), (12 * dp).toInt())
+            background = GradientDrawable().apply {
+                cornerRadius = 18f * dp
+                setColor(Color.parseColor("#FFFFFF"))
+                setStroke((2 * dp).toInt(), Color.parseColor("#2563EB"))
+            }
+        }
+    }
+
+    private fun appIcon(context: Context, sizeDp: Int): ImageView {
+        val dp = context.resources.displayMetrics.density
+        return ImageView(context).apply {
+            val drawable = try {
+                context.packageManager.getApplicationIcon(context.packageName)
+            } catch (e: Exception) { null }
+            if (drawable != null) setImageDrawable(drawable)
+            layoutParams = LinearLayout.LayoutParams((sizeDp * dp).toInt(), (sizeDp * dp).toInt()).apply {
+                marginEnd = (12 * dp).toInt()
+            }
+        }
+    }
+
+    private fun anchorBottomEnd(dialog: Dialog, context: Context, widthDp: Int, noDim: Boolean) {
+        val dp = context.resources.displayMetrics.density
+        dialog.window?.apply {
+            setBackgroundDrawableResource(android.R.color.transparent)
+            setGravity(Gravity.BOTTOM or Gravity.END)
+            if (noDim) {
+                clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+                addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL)
+                addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
+            }
+            val metrics = android.util.DisplayMetrics()
+            @Suppress("DEPRECATION")
+            (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager)
+                .defaultDisplay.getMetrics(metrics)
+            setLayout(minOf((widthDp * dp).toInt(), metrics.widthPixels - (24 * dp).toInt()),
+                ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+    }
+
     fun showUpdateAvailableDialog(
         info: UpdateInfo,
         onUpdateClicked: () -> Unit,
@@ -43,72 +82,45 @@ class UpdateDialogHelper(private val activity: Activity) {
         if (activity.isFinishing || activity.isDestroyed) return
         val context = activity
         val dp = context.resources.displayMetrics.density
-
         var dialogRef: Dialog? = null
 
-        val card = LinearLayout(context).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding((14 * dp).toInt(), (12 * dp).toInt(), (14 * dp).toInt(), (12 * dp).toInt())
-            background = GradientDrawable().apply {
-                cornerRadius = 18f * dp
-                setColor(Color.parseColor("#FAFAFA"))
-                setStroke((1 * dp).toInt(), Color.parseColor("#D1D5DB"))
-            }
-        }
-
-        val iconView = ImageView(context).apply {
-            val drawable = try {
-                context.packageManager.getApplicationIcon(context.packageName)
-            } catch (e: Exception) {
-                null
-            }
-            if (drawable != null) setImageDrawable(drawable)
-            layoutParams = LinearLayout.LayoutParams((40 * dp).toInt(), (40 * dp).toInt()).apply {
-                marginEnd = (12 * dp).toInt()
-            }
-        }
-        card.addView(iconView)
+        val card = makeCard(context, true)
+        card.addView(appIcon(context, 40))
 
         val textCol = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
-        val tvTitle = TextView(context).apply {
+        textCol.addView(TextView(context).apply {
             text = "Nueva versión disponible"
             textSize = 14f
             setTypeface(null, Typeface.BOLD)
             setTextColor(Color.parseColor("#111827"))
-        }
-        val tvSub = TextView(context).apply {
+        })
+        textCol.addView(TextView(context).apply {
             text = "v${info.versionName} — ¿Deseas descargarla?"
             textSize = 12f
             setTextColor(Color.parseColor("#4B5563"))
-        }
-        textCol.addView(tvTitle)
-        textCol.addView(tvSub)
+        })
         card.addView(textCol)
 
-        fun miniButton(label: String, bgColor: String, fgColor: String, onClick: () -> Unit): TextView {
+        fun miniButton(label: String, bg: String, fg: String, onClick: () -> Unit): TextView {
             return TextView(context).apply {
                 text = label
                 textSize = 13f
                 setTypeface(null, Typeface.BOLD)
-                setTextColor(Color.parseColor(fgColor))
+                setTextColor(Color.parseColor(fg))
                 gravity = Gravity.CENTER
                 setPadding((14 * dp).toInt(), (8 * dp).toInt(), (14 * dp).toInt(), (8 * dp).toInt())
                 background = GradientDrawable().apply {
                     cornerRadius = 12f * dp
-                    setColor(Color.parseColor(bgColor))
+                    setColor(Color.parseColor(bg))
                 }
                 layoutParams = LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT
                 ).apply { marginStart = (8 * dp).toInt() }
-                setOnClickListener {
-                    dialogRef?.dismiss()
-                    onClick()
-                }
+                setOnClickListener { dialogRef?.dismiss(); onClick() }
             }
         }
 
@@ -122,33 +134,17 @@ class UpdateDialogHelper(private val activity: Activity) {
         }
         root.addView(card)
 
-        val dialog = Dialog(context)
+        val dialog = Dialog(context, R.style.UpdateCardDialog)
         dialogRef = dialog
         dialog.setContentView(root)
         dialog.setCancelable(!info.mandatory)
         dialog.setCanceledOnTouchOutside(!info.mandatory)
-        if (!info.mandatory) {
-            dialog.setOnCancelListener { onPostponeClicked() }
-        }
-        dialog.window?.apply {
-            setBackgroundDrawableResource(android.R.color.transparent)
-            setGravity(Gravity.BOTTOM or Gravity.END)
-            val metrics = android.util.DisplayMetrics()
-            @Suppress("DEPRECATION")
-            (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager)
-                .defaultDisplay.getMetrics(metrics)
-            val widthPx = minOf((340 * dp).toInt(), metrics.widthPixels - (24 * dp).toInt())
-            setLayout(widthPx, ViewGroup.LayoutParams.WRAP_CONTENT)
-        }
+        if (!info.mandatory) dialog.setOnCancelListener { onPostponeClicked() }
+        anchorBottomEnd(dialog, context, 340, noDim = false)
         currentDialog = dialog
         dialog.show()
     }
 
-    /**
-     * Tarjeta compacta de progreso, NO bloqueante: los toques fuera de la tarjeta
-     * llegan a la app normal (se puede seguir trabajando mientras descarga).
-     * Es idempotente: si ya está visible, no la vuelve a crear.
-     */
     fun showDownloadingDialog() {
         if (progressDialog != null && progressDialog!!.isShowing) return
         dismissCurrent()
@@ -156,29 +152,8 @@ class UpdateDialogHelper(private val activity: Activity) {
         val context = activity
         val dp = context.resources.displayMetrics.density
 
-        val card = LinearLayout(context).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding((14 * dp).toInt(), (12 * dp).toInt(), (14 * dp).toInt(), (12 * dp).toInt())
-            background = GradientDrawable().apply {
-                cornerRadius = 18f * dp
-                setColor(Color.parseColor("#FAFAFA"))
-                setStroke((1 * dp).toInt(), Color.parseColor("#D1D5DB"))
-            }
-        }
-
-        val iconView = ImageView(context).apply {
-            val drawable = try {
-                context.packageManager.getApplicationIcon(context.packageName)
-            } catch (e: Exception) {
-                null
-            }
-            if (drawable != null) setImageDrawable(drawable)
-            layoutParams = LinearLayout.LayoutParams((36 * dp).toInt(), (36 * dp).toInt()).apply {
-                marginEnd = (12 * dp).toInt()
-            }
-        }
-        card.addView(iconView)
+        val card = makeCard(context, true)
+        card.addView(appIcon(context, 36))
 
         val col = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -194,15 +169,13 @@ class UpdateDialogHelper(private val activity: Activity) {
             isIndeterminate = true
             max = 100
             layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                (10 * dp).toInt()
+                ViewGroup.LayoutParams.MATCH_PARENT, (10 * dp).toInt()
             ).apply { topMargin = (6 * dp).toInt() }
         }
         val infoRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply { topMargin = (4 * dp).toInt() }
         }
         tvProgressPercent = TextView(context).apply {
@@ -216,11 +189,7 @@ class UpdateDialogHelper(private val activity: Activity) {
             textSize = 11f
             setTextColor(Color.parseColor("#6B7280"))
             gravity = Gravity.END
-            layoutParams = LinearLayout.LayoutParams(
-                0,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                1f
-            )
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
         infoRow.addView(tvProgressPercent)
         infoRow.addView(tvProgressBytes)
@@ -234,30 +203,16 @@ class UpdateDialogHelper(private val activity: Activity) {
         }
         root.addView(card)
 
-        val dialog = Dialog(context)
+        val dialog = Dialog(context, R.style.UpdateCardDialog)
         dialog.setContentView(root)
         dialog.setCancelable(false)
         dialog.setCanceledOnTouchOutside(false)
-        dialog.window?.apply {
-            setBackgroundDrawableResource(android.R.color.transparent)
-            setGravity(Gravity.BOTTOM or Gravity.END)
-            // Clave: los toques FUERA de la tarjeta pasan a la app (no bloquea)
-            addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL)
-            addFlags(WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH)
-            addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
-            val metrics = android.util.DisplayMetrics()
-            @Suppress("DEPRECATION")
-            (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager)
-                .defaultDisplay.getMetrics(metrics)
-            val widthPx = minOf((320 * dp).toInt(), metrics.widthPixels - (24 * dp).toInt())
-            setLayout(widthPx, ViewGroup.LayoutParams.WRAP_CONTENT)
-        }
+        anchorBottomEnd(dialog, context, 320, noDim = true)
         progressDialog = dialog
         currentDialog = dialog
         dialog.show()
     }
 
-    /** Actualiza el progreso en la tarjeta compacta. */
     fun updateDownloadProgress(progress: Int, currentBytes: Long, totalBytes: Long) {
         activity.runOnUiThread {
             if (progress >= 0) {
@@ -269,22 +224,18 @@ class UpdateDialogHelper(private val activity: Activity) {
                 tvProgressPercent?.text = "…"
             }
             val currentMb = currentBytes / (1024.0 * 1024.0)
-            if (totalBytes > 0) {
-                val totalMb = totalBytes / (1024.0 * 1024.0)
-                tvProgressBytes?.text = String.format(Locale.getDefault(), "%.1f / %.1f MB", currentMb, totalMb)
+            tvProgressBytes?.text = if (totalBytes > 0) {
+                String.format(Locale.getDefault(), "%.1f / %.1f MB", currentMb, totalBytes / (1024.0 * 1024.0))
             } else {
-                tvProgressBytes?.text = String.format(Locale.getDefault(), "%.1f MB", currentMb)
+                String.format(Locale.getDefault(), "%.1f MB", currentMb)
             }
         }
     }
 
-    /** Estado de verificación de integridad sobre la misma tarjeta. */
     fun showVerifyingStatus() {
         activity.runOnUiThread {
             progressBar?.isIndeterminate = true
             tvProgressStatus?.text = "Verificando integridad…"
-            tvProgressPercent?.text = "✓"
-            tvProgressBytes?.text = "Preparando instalación"
         }
     }
 
@@ -292,7 +243,7 @@ class UpdateDialogHelper(private val activity: Activity) {
         dismissCurrent()
         AlertDialog.Builder(activity)
             .setTitle("Permiso de instalación requerido")
-            .setMessage("Para completar la actualización, debe permitir que esta aplicación instale aplicaciones desconocidas en los ajustes del sistema.")
+            .setMessage("Para completar la actualización, permita que esta aplicación instale aplicaciones desconocidas en los ajustes del sistema.")
             .setPositiveButton("Ir a Ajustes") { _, _ -> onAuthorize() }
             .setNegativeButton("Cancelar") { _, _ -> onCancel() }
             .setCancelable(false)
@@ -305,11 +256,7 @@ class UpdateDialogHelper(private val activity: Activity) {
         builder.setTitle("Aviso de actualización")
         builder.setMessage(message)
         builder.setPositiveButton("Aceptar", null)
-        if (onRetry != null) {
-            builder.setNeutralButton("Reintentar") { _, _ ->
-                onRetry()
-            }
-        }
+        if (onRetry != null) builder.setNeutralButton("Reintentar") { _, _ -> onRetry() }
         builder.show()
     }
 
