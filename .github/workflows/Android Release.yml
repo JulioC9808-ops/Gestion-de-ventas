@@ -186,35 +186,7 @@ jobs:
             --repo JulioC9808-ops/Sistema-Updates \
             --clobber
 
-      # 17. Notificar a Telegram (mensaje de texto)
-      - name: Notify Telegram channel
-        if: success()
-        shell: bash
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-        run: |
-          VERSION="${{ steps.app_version.outputs.version_name }}"
-          VERSION_CODE="${{ steps.app_version.outputs.version_code }}"
-          APK_HASH="${apk_sha256:0:16}"
-
-          MESSAGE="📱 <b>Nueva versión Android disponible</b>
-
-          📦 <b>Gestión de Ventas</b> — Android
-          🏷️ Versión: <code>v${VERSION}</code> (code ${VERSION_CODE})
-          🔐 SHA-256: <code>${APK_HASH}...</code>
-
-          ⬇️ Descarga: <a href=\"https://github.com/JulioC9808-ops/Sistema-Updates/releases/tag/android\">APK firmado</a>
-
-          <i>El APK también está adjunto en el siguiente mensaje.</i>"
-
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            -d chat_id="@Gestion_Ventas" \
-            -d parse_mode="HTML" \
-            -d disable_web_page_preview="false" \
-            --data-urlencode "text=${MESSAGE}"
-
-      # 18. Subir APK a Telegram con comprobación de tamaño
-      - name: Upload APK to Telegram
+            - name: Upload APK to Telegram
         if: success()
         shell: bash
         env:
@@ -224,30 +196,25 @@ jobs:
           APK="android/app/build/outputs/apk/release/app-release-signed.apk"
           SIZE_MB=$(du -m "$APK" | cut -f1)
 
-          echo "Tamaño del APK: ${SIZE_MB} MB"
+          echo "Subiendo APK (${SIZE_MB} MB) a Telegram..."
 
-          if [ "$SIZE_MB" -gt 50 ]; then
-            echo "⚠️ El APK supera los 50 MB de la API estándar de Telegram."
-            echo "Se omite la subida del archivo. El usuario puede descargarlo desde GitHub."
-            curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-              -d chat_id="@Gestion_Ventas" \
-              -d parse_mode="HTML" \
-              --data-urlencode "text=⚠️ El APK pesa ${SIZE_MB} MB y supera el límite de 50 MB de Telegram. Descárgalo desde <a href=\"https://github.com/JulioC9808-ops/Sistema-Updates/releases/tag/android\">GitHub</a>."
-            exit 0
-          fi
+          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST \
+            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
+            --form-string "chat_id=@Gestion_Ventas" \
+            -F "document=@${APK}" \
+            --form-string "caption=📱 <b>Gestión de Ventas v${VERSION}</b> — APK Android firmado (${SIZE_MB} MB)" \
+            --form-string "parse_mode=HTML")
 
-          RESPONSE=$(curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
-            -F chat_id="@Gestion_Ventas" \
-            -F document=@"${APK}" \
-            -F caption="📱 <b>Gestión de Ventas v${VERSION}</b> — APK Android firmado" \
-            -F parse_mode="HTML")
+          HTTP_STATUS=$(echo "$RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
 
-          echo "$RESPONSE"
+          echo "HTTP Status: $HTTP_STATUS"
+          echo "Respuesta de Telegram:"
+          echo "$BODY"
 
-          if echo "$RESPONSE" | grep -q '"ok":true'; then
+          if echo "$BODY" | grep -q '"ok":true'; then
             echo "✅ APK subido a Telegram correctamente."
           else
-            echo "❌ Error al subir el APK a Telegram."
-            echo "$RESPONSE"
+            echo "❌ Error al subir el APK. Revisa la respuesta de arriba."
             exit 1
           fi
