@@ -15,6 +15,7 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
+import com.gestion.ventas.R
 import com.gestion.ventas.updates.model.UpdateInfo
 import java.util.Locale
 
@@ -68,8 +69,10 @@ class UpdateDialogHelper(private val activity: Activity) {
             @Suppress("DEPRECATION")
             (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager)
                 .defaultDisplay.getMetrics(metrics)
-            setLayout(minOf((widthDp * dp).toInt(), metrics.widthPixels - (24 * dp).toInt()),
-                ViewGroup.LayoutParams.WRAP_CONTENT)
+            setLayout(
+                minOf((widthDp * dp).toInt(), metrics.widthPixels - (24 * dp).toInt()),
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
         }
     }
 
