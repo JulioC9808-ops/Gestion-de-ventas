@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import android.os.Build
 import androidx.core.content.pm.PackageInfoCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
@@ -19,9 +18,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.io.File
 
-/**
- * Tipos de errores que pueden presentarse durante el ciclo de actualización.
- */
 enum class UpdateErrorType {
     NO_CONNECTION,
     NETWORK_ERROR,
@@ -32,9 +28,6 @@ enum class UpdateErrorType {
     INSTALLATION_FAILED
 }
 
-/**
- * Estados observables de la interfaz de usuario para el proceso de actualización.
- */
 sealed class UpdateUiState {
     object Idle : UpdateUiState()
     object Checking : UpdateUiState()
@@ -43,26 +36,21 @@ sealed class UpdateUiState {
         val currentVersionCode: Long,
         val currentVersionName: String
     ) : UpdateUiState()
-
     data class Downloading(
         val progress: Int,
         val currentBytes: Long,
         val totalBytes: Long
     ) : UpdateUiState()
-
     object VerifyingHash : UpdateUiState()
-
     data class ReadyToInstall(
         val apkFile: File,
         val updateInfo: UpdateInfo
     ) : UpdateUiState()
-
     data class UpToDate(
         val currentVersionCode: Long,
         val currentVersionName: String,
         val isManual: Boolean
     ) : UpdateUiState()
-
     data class Error(
         val message: String,
         val errorType: UpdateErrorType,
@@ -70,18 +58,13 @@ sealed class UpdateUiState {
     ) : UpdateUiState()
 }
 
-/**
- * ViewModel que orquesta la verificación, descarga y validación de integridad del APK.
- */
 class UpdateViewModel(
     application: Application,
     private val apiService: UpdateApiService = UpdateApiService()
 ) : AndroidViewModel(application) {
 
-    constructor(application: Application) : this(application, UpdateApiService())
-
     class Factory(private val application: Application) : ViewModelProvider.Factory {
-        override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
             @Suppress("UNCHECKED_CAST")
             return UpdateViewModel(application) as T
         }
@@ -92,9 +75,6 @@ class UpdateViewModel(
 
     private var activeDownloadedApk: File? = null
 
-    /**
-     * Obtiene el código y nombre de versión de la aplicación instalada.
-     */
     fun getCurrentVersion(): Pair<Long, String> {
         return try {
             val context = getApplication<Application>()
@@ -107,9 +87,6 @@ class UpdateViewModel(
         }
     }
 
-    /**
-     * Verifica si el dispositivo cuenta con conexión activa a internet.
-     */
     private fun isNetworkAvailable(): Boolean {
         val connectivityManager =
             getApplication<Application>().getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
@@ -119,9 +96,16 @@ class UpdateViewModel(
         return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 
-    /**
-     * Consulta el endpoint remoto para verificar si hay una nueva versión disponible.
-     */
+    private fun updatesDir(): File {
+        val context = getApplication<Application>()
+        val dir = File(context.cacheDir, "updates")
+        if (!dir.exists()) dir.mkdirs()
+        return dir
+    }
+
+    private fun partialFileFor(versionCode: Long): File =
+        File(updatesDir(), "update-v$versionCode.apk.tmp")
+
     fun checkForUpdates(endpointUrl: String, isManual: Boolean = false) {
         viewModelScope.launch {
             if (!isNetworkAvailable()) {
@@ -135,19 +119,26 @@ class UpdateViewModel(
             }
 
             _uiState.value = UpdateUiState.Checking
-
             val result = apiService.fetchUpdateInfo(endpointUrl)
+
             result.onSuccess { info ->
                 val (currentCode, currentName) = getCurrentVersion()
                 val isNewCode = info.versionCode > currentCode
                 val isNewName = isVersionNameGreater(info.versionName, currentName)
-                
+
                 if (isNewCode || isNewName) {
                     _uiState.value = UpdateUiState.UpdateAvailable(
                         updateInfo = info,
                         currentVersionCode = currentCode,
                         currentVersionName = currentName
                     )
+                    // REANUDACIÓN AUTOMÁTICA: si existe una descarga parcial de ESTA
+                    // versión (el usuario ya dijo "Sí" antes y se cortó o cerró la app),
+                    // continúa directamente sin volver a preguntar.
+                    val partial = partialFileFor(info.versionCode)
+                    if (partial.exists() && partial.length() > 0) {
+                        startDownload(info)
+                    }
                 } else {
                     _uiState.value = UpdateUiState.UpToDate(
                         currentVersionCode = currentCode,
@@ -168,33 +159,28 @@ class UpdateViewModel(
         }
     }
 
-    /**
-     * Descarga el APK en el directorio de cache interno y verifica su integridad SHA-256.
-     */
     fun startDownload(info: UpdateInfo) {
         viewModelScope.launch {
             if (!isNetworkAvailable()) {
                 _uiState.value = UpdateUiState.Error(
-                    message = "Se perdió la conexión a internet. No se pudo iniciar la descarga.",
+                    message = "Se perdió la conexión a internet. La descarga se reanudará cuando haya conexión.",
                     errorType = UpdateErrorType.NO_CONNECTION,
                     retryableInfo = info
                 )
                 return@launch
             }
 
-            val context = getApplication<Application>()
-            // Guardar en cacheDir/updates/
-            val updatesDir = File(context.cacheDir, "updates")
-            if (!updatesDir.exists()) {
-                updatesDir.mkdirs()
+            val destinationFile = File(updatesDir(), "update-v${info.versionCode}.apk")
+            val resumeFrom = partialFileFor(info.versionCode).let {
+                if (it.exists() && it.length() > 0) it.length() else 0L
             }
-            val destinationFile = File(updatesDir, "update-v${info.versionCode}.apk")
 
             _uiState.value = UpdateUiState.Downloading(progress = 0, currentBytes = 0L, totalBytes = 0L)
 
             val downloadResult = apiService.downloadApk(
                 apkUrl = info.apkUrl,
-                destinationFile = destinationFile
+                destinationFile = destinationFile,
+                resumeFromBytes = resumeFrom
             ) { progress, currentBytes, totalBytes ->
                 _uiState.value = UpdateUiState.Downloading(
                     progress = progress,
@@ -205,21 +191,21 @@ class UpdateViewModel(
 
             downloadResult.onSuccess { downloadedFile ->
                 _uiState.value = UpdateUiState.VerifyingHash
-
                 val isHashValid = HashVerifier.verify(downloadedFile, info.sha256)
+
                 if (isHashValid) {
                     activeDownloadedApk = downloadedFile
                     _uiState.value = UpdateUiState.ReadyToInstall(downloadedFile, info)
                 } else {
                     downloadedFile.delete()
                     _uiState.value = UpdateUiState.Error(
-                        message = "La integridad del archivo descargado no coincide con el hash SHA-256 proporcionado. La descarga fue descartada por seguridad.",
+                        message = "La integridad del archivo descargado no coincide. La descarga fue descartada por seguridad.",
                         errorType = UpdateErrorType.HASH_MISMATCH,
                         retryableInfo = info
                     )
                 }
             }.onFailure { error ->
-                destinationFile.delete()
+                // NO se borra el parcial: el próximo intento reanuda desde donde quedó.
                 _uiState.value = UpdateUiState.Error(
                     message = "Falló la descarga de la actualización: ${error.localizedMessage ?: "Error de red"}",
                     errorType = UpdateErrorType.DOWNLOAD_FAILED,
@@ -248,7 +234,7 @@ class UpdateViewModel(
                 if (r < c) return false
             }
         } catch (e: Exception) {
-            // Ignored, fallback to false
+            // Ignored
         }
         return false
     }
