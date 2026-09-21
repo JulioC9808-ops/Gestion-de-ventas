@@ -19,23 +19,21 @@ import com.gestion.ventas.updates.model.UpdateInfo
 import java.util.Locale
 
 /**
- * Gestor de diálogos de actualización (Changelog, Progreso, Verificación y Errores).
- * El aviso de nueva versión es una TARJETA COMPACTA (estilo notificación) anclada
- * abajo a la derecha, con el logo de la app y botones Sí / No siempre visibles.
+ * Gestor de diálogos de actualización.
+ * - Aviso de nueva versión: tarjeta compacta abajo a la derecha (modal ligera).
+ * - Descarga: MISMA tarjeta compacta abajo a la derecha pero NO bloqueante
+ *   (se puede seguir usando la app mientras descarga).
  */
 class UpdateDialogHelper(private val activity: Activity) {
 
     private var currentDialog: Dialog? = null
-    private var progressDialog: AlertDialog? = null
+    private var progressDialog: Dialog? = null
     private var progressBar: ProgressBar? = null
     private var tvProgressPercent: TextView? = null
     private var tvProgressBytes: TextView? = null
     private var tvProgressStatus: TextView? = null
 
-    /**
-     * Tarjeta pequeña de actualización: logo + texto + Sí / No.
-     * Tocar fuera = "No" (se quita y vuelve a preguntar en la próxima apertura).
-     */
+    /** Tarjeta pequeña de "nueva versión": logo + texto + Sí / No. */
     fun showUpdateAvailableDialog(
         info: UpdateInfo,
         onUpdateClicked: () -> Unit,
@@ -48,7 +46,6 @@ class UpdateDialogHelper(private val activity: Activity) {
 
         var dialogRef: Dialog? = null
 
-        // --- Tarjeta ---
         val card = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -60,7 +57,6 @@ class UpdateDialogHelper(private val activity: Activity) {
             }
         }
 
-        // --- Logo de la app ---
         val iconView = ImageView(context).apply {
             val drawable = try {
                 context.packageManager.getApplicationIcon(context.packageName)
@@ -74,7 +70,6 @@ class UpdateDialogHelper(private val activity: Activity) {
         }
         card.addView(iconView)
 
-        // --- Textos ---
         val textCol = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
@@ -94,7 +89,6 @@ class UpdateDialogHelper(private val activity: Activity) {
         textCol.addView(tvSub)
         card.addView(textCol)
 
-        // --- Botones compactos ---
         fun miniButton(label: String, bgColor: String, fgColor: String, onClick: () -> Unit): TextView {
             return TextView(context).apply {
                 text = label
@@ -123,13 +117,11 @@ class UpdateDialogHelper(private val activity: Activity) {
         }
         card.addView(miniButton("Sí", "#2563EB", "#FFFFFF") { onUpdateClicked() })
 
-        // --- Contenedor con margen respecto a los bordes de la pantalla ---
         val root = FrameLayout(context).apply {
             setPadding((12 * dp).toInt(), 0, (12 * dp).toInt(), (16 * dp).toInt())
         }
         root.addView(card)
 
-        // --- Dialog anclado abajo a la derecha ---
         val dialog = Dialog(context)
         dialogRef = dialog
         dialog.setContentView(root)
@@ -153,51 +145,75 @@ class UpdateDialogHelper(private val activity: Activity) {
     }
 
     /**
-     * Muestra el diálogo con la barra de progreso de descarga en tiempo real.
+     * Tarjeta compacta de progreso, NO bloqueante: los toques fuera de la tarjeta
+     * llegan a la app normal (se puede seguir trabajando mientras descarga).
+     * Es idempotente: si ya está visible, no la vuelve a crear.
      */
-    fun showDownloadingDialog(isMandatory: Boolean) {
+    fun showDownloadingDialog() {
+        if (progressDialog != null && progressDialog!!.isShowing) return
         dismissCurrent()
+        if (activity.isFinishing || activity.isDestroyed) return
         val context = activity
         val dp = context.resources.displayMetrics.density
-        val container = LinearLayout(context).apply {
+
+        val card = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding((14 * dp).toInt(), (12 * dp).toInt(), (14 * dp).toInt(), (12 * dp).toInt())
+            background = GradientDrawable().apply {
+                cornerRadius = 18f * dp
+                setColor(Color.parseColor("#FAFAFA"))
+                setStroke((1 * dp).toInt(), Color.parseColor("#D1D5DB"))
+            }
+        }
+
+        val iconView = ImageView(context).apply {
+            val drawable = try {
+                context.packageManager.getApplicationIcon(context.packageName)
+            } catch (e: Exception) {
+                null
+            }
+            if (drawable != null) setImageDrawable(drawable)
+            layoutParams = LinearLayout.LayoutParams((36 * dp).toInt(), (36 * dp).toInt()).apply {
+                marginEnd = (12 * dp).toInt()
+            }
+        }
+        card.addView(iconView)
+
+        val col = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding((24 * dp).toInt(), (20 * dp).toInt(), (24 * dp).toInt(), (20 * dp).toInt())
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
         tvProgressStatus = TextView(context).apply {
-            text = "Iniciando descarga de la actualización..."
-            textSize = 14f
-            setTextColor(Color.parseColor("#374151"))
-            setPadding(0, 0, 0, (12 * dp).toInt())
+            text = "Descargando actualización…"
+            textSize = 13f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(Color.parseColor("#111827"))
         }
-        container.addView(tvProgressStatus)
         progressBar = ProgressBar(context, null, android.R.attr.progressBarStyleHorizontal).apply {
             isIndeterminate = true
             max = 100
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
-                (16 * dp).toInt()
-            )
+                (10 * dp).toInt()
+            ).apply { topMargin = (6 * dp).toInt() }
         }
-        container.addView(progressBar)
         val infoRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
-                topMargin = (10 * dp).toInt()
-            }
+            ).apply { topMargin = (4 * dp).toInt() }
         }
         tvProgressPercent = TextView(context).apply {
             text = "0%"
             textSize = 12f
             setTypeface(null, Typeface.BOLD)
-            setTextColor(Color.parseColor("#1F2937"))
+            setTextColor(Color.parseColor("#2563EB"))
         }
-        infoRow.addView(tvProgressPercent)
         tvProgressBytes = TextView(context).apply {
-            text = "Calculando tamaño..."
-            textSize = 12f
+            text = "Preparando…"
+            textSize = 11f
             setTextColor(Color.parseColor("#6B7280"))
             gravity = Gravity.END
             layoutParams = LinearLayout.LayoutParams(
@@ -206,22 +222,42 @@ class UpdateDialogHelper(private val activity: Activity) {
                 1f
             )
         }
+        infoRow.addView(tvProgressPercent)
         infoRow.addView(tvProgressBytes)
-        container.addView(infoRow)
-        val dialog = AlertDialog.Builder(context)
-            .setTitle("Descargando actualización")
-            .setView(container)
-            .setCancelable(false)
-            .create()
+        col.addView(tvProgressStatus)
+        col.addView(progressBar)
+        col.addView(infoRow)
+        card.addView(col)
+
+        val root = FrameLayout(context).apply {
+            setPadding((12 * dp).toInt(), 0, (12 * dp).toInt(), (16 * dp).toInt())
+        }
+        root.addView(card)
+
+        val dialog = Dialog(context)
+        dialog.setContentView(root)
+        dialog.setCancelable(false)
         dialog.setCanceledOnTouchOutside(false)
+        dialog.window?.apply {
+            setBackgroundDrawableResource(android.R.color.transparent)
+            setGravity(Gravity.BOTTOM or Gravity.END)
+            // Clave: los toques FUERA de la tarjeta pasan a la app (no bloquea)
+            addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL)
+            addFlags(WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH)
+            addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
+            val metrics = android.util.DisplayMetrics()
+            @Suppress("DEPRECATION")
+            (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager)
+                .defaultDisplay.getMetrics(metrics)
+            val widthPx = minOf((320 * dp).toInt(), metrics.widthPixels - (24 * dp).toInt())
+            setLayout(widthPx, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
         progressDialog = dialog
         currentDialog = dialog
         dialog.show()
     }
 
-    /**
-     * Actualiza el progreso visual de la descarga.
-     */
+    /** Actualiza el progreso en la tarjeta compacta. */
     fun updateDownloadProgress(progress: Int, currentBytes: Long, totalBytes: Long) {
         activity.runOnUiThread {
             if (progress >= 0) {
@@ -230,7 +266,7 @@ class UpdateDialogHelper(private val activity: Activity) {
                 tvProgressPercent?.text = "$progress%"
             } else {
                 progressBar?.isIndeterminate = true
-                tvProgressPercent?.text = "Descargando..."
+                tvProgressPercent?.text = "…"
             }
             val currentMb = currentBytes / (1024.0 * 1024.0)
             if (totalBytes > 0) {
@@ -239,25 +275,19 @@ class UpdateDialogHelper(private val activity: Activity) {
             } else {
                 tvProgressBytes?.text = String.format(Locale.getDefault(), "%.1f MB", currentMb)
             }
-            tvProgressStatus?.text = "Descargando paquete de instalación..."
         }
     }
 
-    /**
-     * Muestra el estado de comprobación de integridad SHA-256.
-     */
+    /** Estado de verificación de integridad sobre la misma tarjeta. */
     fun showVerifyingStatus() {
         activity.runOnUiThread {
             progressBar?.isIndeterminate = true
-            tvProgressStatus?.text = "Verificando integridad SHA-256 del APK..."
-            tvProgressPercent?.text = "Validando..."
-            tvProgressBytes?.text = "Seguridad"
+            tvProgressStatus?.text = "Verificando integridad…"
+            tvProgressPercent?.text = "✓"
+            tvProgressBytes?.text = "Preparando instalación"
         }
     }
 
-    /**
-     * Diálogo para solicitar permiso de instalación de aplicaciones desconocidas.
-     */
     fun showUnknownSourcesPermissionDialog(onAuthorize: () -> Unit, onCancel: () -> Unit) {
         dismissCurrent()
         AlertDialog.Builder(activity)
@@ -269,9 +299,6 @@ class UpdateDialogHelper(private val activity: Activity) {
             .show()
     }
 
-    /**
-     * Muestra diálogo de error con opción de reintentar si aplica.
-     */
     fun showErrorDialog(message: String, onRetry: (() -> Unit)? = null) {
         dismissCurrent()
         val builder = AlertDialog.Builder(activity)
@@ -286,9 +313,6 @@ class UpdateDialogHelper(private val activity: Activity) {
         builder.show()
     }
 
-    /**
-     * Cierra cualquier diálogo activo.
-     */
     fun dismissCurrent() {
         progressDialog?.dismiss()
         progressDialog = null
