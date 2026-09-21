@@ -31,6 +31,7 @@
       "owner": "JulioC9808-ops",
       "repo": "Sistema-Updates"
       "afterPack": "scripts/afterPack.cjs",
+      "build:protected": "vite build && node scripts/obfuscate.cjs",
     },
     "directories": {
       "output": "dist-installer",
