@@ -17,50 +17,35 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 18
           cache: 'npm'
 
       - name: Clean install
         shell: cmd
         run: |
           if exist node_modules rd /s /q node_modules
-          if exist package-lock.json del /q package-lock.json
-          npm install --include=optional --no-audit
+          npm install --force
 
       - name: Fix Rollup native dependency
-        run: npm install @rollup/rollup-win32-x64-msvc --save-dev --include=optional
-
-      - name: Fix SWC native dependency
-        run: npm install @swc/core-win32-x64-msvc --save-optional --include=optional
-
-      - name: Rebuild native modules
-        run: npm rebuild
+        run: npm install @rollup/rollup-win32-x64-msvc --save-dev
 
       - name: Prepare NSIS license encoding
         shell: powershell
         run: |
           $path = "resources/license.txt"
-
-          $content = [System.IO.File]::ReadAllText(
-            $path,
-            [System.Text.Encoding]::UTF8
-          )
-
-          [System.IO.File]::WriteAllText(
-            $path,
-            $content,
-            [System.Text.Encoding]::GetEncoding(1252)
-          )
-
+          $content = [System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8)
+          [System.IO.File]::WriteAllText($path, $content, [System.Text.Encoding]::GetEncoding(1252))
           Write-Host "License converted to Windows-1252 successfully."
 
       - name: Build app
+        shell: cmd
         run: npm run build
 
-      - name: Package Electron app
+      - name: Package Electron app (PROTEGIDO)
+        shell: cmd
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: npm run electron:build
+        run: npm run electron:installer
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
