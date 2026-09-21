@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
@@ -18,6 +17,9 @@
         <item name="colorAccent">@color/colorAccent</item>
         <item name="colorSurface">#FFFFFF</item>
         <item name="colorOnSurface">#1F2937</item>
+        <!-- Android 15 (targetSdk 35) fuerza edge-to-edge: esto lo desactiva y
+             devuelve el contenido por debajo de la barra de estado/hora -->
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
     </style>
 
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
