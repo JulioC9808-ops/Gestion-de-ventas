@@ -1,10 +1,13 @@
 name: Release Windows
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
-  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -18,7 +21,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          # cache: 'npm'  # Deshabilitado intencionalmente para forzar una instalación limpia
 
       - name: Clean install
         shell: cmd
@@ -64,34 +66,50 @@ jobs:
           name: windows-installer
           path: dist-installer/*.exe
           retention-days: 3
-          
-      # ---- A partir de aquí: publicar en Releases ----
+
       - name: Get latest release tag
         id: get_release
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          latest=$(gh api repos/${{ github.repository }}/releases/latest --jq .tag_name 2>/dev/null || echo "1.0.0")
+          latest=$(gh api repos/${{ github.repository }}/releases/latest --jq .tag_name 2>/dev/null || echo "")
+          if [ -z "$latest" ] || [ "$latest" = "null" ]; then
+            latest="1.0.0"
+          fi
+          latest="${latest#v}"
           IFS='.' read -r major minor patch <<< "$latest"
+          major=${major:-1}
+          minor=${minor:-0}
+          patch=${patch:-0}
           new_patch=$((patch + 1))
           new_tag="${major}.${minor}.${new_patch}"
           echo "new_tag=$new_tag" >> "$GITHUB_OUTPUT"
+          echo "Nuevo tag: $new_tag"
 
       - name: Find installer file
         id: find_exe
         shell: bash
         run: |
-          exe_path=$(ls dist-installer/*.exe | head -n 1)
+          shopt -s nullglob
+          files=(dist-installer/*.exe)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No se encontró ningún .exe en dist-installer/" >&2
+            exit 1
+          fi
+          exe_path="${files[0]}"
           echo "exe_path=$exe_path" >> "$GITHUB_OUTPUT"
           echo "exe_name=$(basename "$exe_path")" >> "$GITHUB_OUTPUT"
+          echo "Encontrado: $exe_path"
 
-      - name: Create new private release
-        uses: softprops/action-gh-release@v1
+      - name: Create new release
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.get_release.outputs.new_tag }}
           name: "Gestion de Ventas v${{ steps.get_release.outputs.new_tag }} (Windows)"
           files: ${{ steps.find_exe.outputs.exe_path }}
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -104,7 +122,7 @@ jobs:
           else
             exe_file="${{ steps.find_exe.outputs.exe_path }}"
             exe_name="${{ steps.find_exe.outputs.exe_name }}"
-            sha512_b64=$(sha512sum "$exe_file" | awk '{print $1}' | xxd -r -p | base64)
+            sha512_b64=$(sha512sum "$exe_file" | awk '{print $1}' | xxd -r -p | base64 | tr -d '\n')
             size_bytes=$(stat -c%s "$exe_file" 2>/dev/null || wc -c < "$exe_file")
             {
               echo "version: ${{ steps.get_release.outputs.new_tag }}"
@@ -134,13 +152,9 @@ jobs:
           if gh release view "$TAG" -R JulioC9808-ops/Sistema-Updates > /dev/null 2>&1; then
             gh release upload "$TAG" "$EXE" latest.yml $EXTRA_ARGS -R JulioC9808-ops/Sistema-Updates --clobber
           else
-            gh release create "$TAG" "$EXE" latest.yml $EXTRA_ARGS \
-              -R JulioC9808-ops/Sistema-Updates \
-              -t "Version $TAG (Windows)" \
-              -n "Actualización automática de Windows - Gestión de Ventas v$TAG"
+            gh release create "$TAG" "$EXE" latest.yml $EXTRA_ARGS -R JulioC9808-ops/Sistema-Updates -t "Version $TAG (Windows)" -n "Actualizacion automatica de Windows - Gestion de Ventas v$TAG"
           fi
 
-      # ---- Notificar a Telegram (mensaje con enlaces directos) ----
       - name: Notify Telegram channel
         if: success()
         shell: bash
@@ -148,27 +162,14 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         run: |
           TAG="${{ steps.get_release.outputs.new_tag }}"
-          EXE_NAME="${{ steps.find_exe.outputs.exe_name }}"
           URL="https://github.com/JulioC9808-ops/Sistema-Updates/releases/tag/${TAG}"
-          DIRECT_DOWNLOAD="https://github.com/JulioC9808-ops/Sistema-Updates/releases/download/${TAG}/${EXE_NAME}"
-
-          MESSAGE="🚀 <b>Nueva versión disponible</b>
-
-📦 <b>Gestión de Ventas</b> — Windows
-🏷️ Versión: <code>v${TAG}</code>
-
-⬇️ <a href=\"${URL}\">Ver lanzamiento en GitHub</a>
-📥 <a href=\"${DIRECT_DOWNLOAD}\">Descargar Instalador (${EXE_NAME})</a>
-
-<i>El instalador también se adjunta a continuación.</i>"
-
+          MESSAGE=$(printf '🚀 <b>Nueva versión disponible</b>\n\n📦 <b>Gestión de Ventas</b> — Windows\n🏷️ Versión: <code>v%s</code>\n\n⬇️ <a href="%s">Descargar actualización</a>\n\n<i>El instalador también está adjunto en el siguiente mensaje.</i>' "$TAG" "$URL")
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            -d chat_id="@Gestion_Ventas" \
+            --data-urlencode "chat_id=@Gestion_Ventas" \
             -d parse_mode="HTML" \
             -d disable_web_page_preview="false" \
             --data-urlencode "text=${MESSAGE}"
 
-      # ---- Subir el .exe a Telegram ----
       - name: Upload installer to Telegram
         if: success()
         shell: bash
@@ -179,20 +180,22 @@ jobs:
           EXE="${{ steps.find_exe.outputs.exe_path }}"
           EXE_NAME="${{ steps.find_exe.outputs.exe_name }}"
           SIZE_MB=$(du -m "$EXE" | cut -f1)
-
           echo "Subiendo ${EXE_NAME} (${SIZE_MB} MB) a Telegram..."
-
-          RESPONSE=$(curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
-            -F chat_id="@Gestion_Ventas" \
-            -F document=@"${EXE}" \
-            -F caption="💾 <b>Gestión de Ventas v${TAG}</b> — Instalador Windows (${EXE_NAME})" \
-            -F parse_mode="HTML")
-
-          echo "$RESPONSE"
-
-          # Verificar que Telegram aceptó el archivo
-          if echo "$RESPONSE" | grep -q '"ok":true'; then
-            echo "✅ Instalador subido a Telegram correctamente."
+          CAPTION=$(printf '💾 <b>Gestión de Ventas v%s</b> — Instalador Windows (%s MB)' "$TAG" "$SIZE_MB")
+          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST \
+            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
+            --form-string "chat_id=@Gestion_Ventas" \
+            -F "document=@${EXE}" \
+            --form-string "caption=${CAPTION}" \
+            --form-string "parse_mode=HTML")
+          HTTP_STATUS=$(echo "$RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
+          echo "HTTP Status: $HTTP_STATUS"
+          echo "Respuesta:"
+          echo "$BODY"
+          if echo "$BODY" | grep -q '"ok":true'; then
+            echo "Instalador subido a Telegram correctamente."
           else
-            echo "⚠️ Aviso: Telegram no aceptó el archivo adjunto (revisa si supera 50MB o permisos del bot)."
+            echo "Error al subir el instalador."
+            exit 1
           fi
