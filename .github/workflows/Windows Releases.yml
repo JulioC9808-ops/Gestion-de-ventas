@@ -82,6 +82,8 @@ jobs:
       - name: Get latest release tag
         id: get_release
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           LATEST=$(gh api repos/${{ github.repository }}/releases/latest --jq .tag_name 2>/dev/null || echo "")
           if [ -z "$LATEST" ] || [ "$LATEST" = "null" ]; then
@@ -96,8 +98,6 @@ jobs:
           NEW_TAG="${MAJOR}.${MINOR}.${NEW_PATCH}"
           echo "new_tag=$NEW_TAG" >> "$GITHUB_OUTPUT"
           echo "Nuevo tag: $NEW_TAG"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Find installer file
         id: find_exe
@@ -187,20 +187,7 @@ jobs:
           MESSAGE="Nueva version disponible. Gestion de Ventas Windows. Version v${TAG}. Descargar: ${URL}"
           curl -s --http1.1 --retry 3 --retry-delay 5 --connect-timeout 30 --max-time 120 -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" --data-urlencode "chat_id=@Gestion_Ventas" -d parse_mode="HTML" -d disable_web_page_preview="false" --data-urlencode "text=${MESSAGE}"
 
-      - name: Test Telegram connectivity
-        if: success()
-        shell: pwsh
-        run: |
-          Write-Host "=== Verificando conectividad a api.telegram.org ==="
-          try {
-            $r = Invoke-WebRequest -Uri "https://api.telegram.org" -Method Head -TimeoutSec 15 -UseBasicParsing
-            Write-Host "Conexion OK. Status: $($r.StatusCode)"
-          } catch {
-            Write-Host "Error de conexion: $($_.Exception.Message)"
-          }
-          Write-Host "=== Version de PowerShell: $($PSVersionTable.PSVersion) ==="
-
-      - name: Upload installer to Telegram (PowerShell)
+      - name: Upload installer to Telegram (HttpClient)
         if: success()
         shell: pwsh
         env:
@@ -217,55 +204,55 @@ jobs:
           $url = "https://api.telegram.org/bot$token/sendDocument"
           $caption = "Gestion de Ventas v$tag - Instalador Windows $sizeMb MB"
 
-          # Necesario para TLS 1.2 en PowerShell 5.1
           [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-          # Construir multipart form data
-          $boundary = [System.Guid]::NewGuid().ToString()
-          $LF = "`r`n"
+          Add-Type -AssemblyName System.Net.Http
 
-          $fileBytes = [System.IO.File]::ReadAllBytes($exe)
-          $fileName = [System.IO.Path]::GetFileName($exe)
+          $handler = New-Object System.Net.Http.HttpClientHandler
+          $handler.AllowAutoRedirect = $true
+          $handler.MaxRequestContentBufferSize = 1GB
 
-          $enc = [System.Text.Encoding]::GetEncoding("iso-8859-1")
+          $client = New-Object System.Net.Http.HttpClient($handler)
+          $client.Timeout = [TimeSpan]::FromMinutes(30)
 
-          $bodyStr = "--$boundary$LF"
-          $bodyStr += "Content-Disposition: form-data; name=`"chat_id`"$LF$LF"
-          $bodyStr += "@Gestion_Ventas$LF"
-          $bodyStr += "--$boundary$LF"
-          $bodyStr += "Content-Disposition: form-data; name=`"caption`"$LF$LF"
-          $bodyStr += "$caption$LF"
-          $bodyStr += "--$boundary$LF"
-          $bodyStr += "Content-Disposition: form-data; name=`"parse_mode`"$LF$LF"
-          $bodyStr += "HTML$LF"
-          $bodyStr += "--$boundary$LF"
-          $bodyStr += "Content-Disposition: form-data; name=`"document`"; filename=`"$fileName`"$LF"
-          $bodyStr += "Content-Type: application/octet-stream$LF$LF"
+          $multipart = New-Object System.Net.Http.MultipartFormDataContent
 
-          $bodyBytes = $enc.GetBytes($bodyStr)
-          $footerBytes = $enc.GetBytes("$LF--$boundary--$LF")
+          $chatContent = New-Object System.Net.Http.StringContent("@Gestion_Ventas")
+          $multipart.Add($chatContent, "chat_id")
 
-          $fullBody = New-Object byte[] ($bodyBytes.Length + $fileBytes.Length + $footerBytes.Length)
-          [Array]::Copy($bodyBytes, 0, $fullBody, 0, $bodyBytes.Length)
-          [Array]::Copy($fileBytes, 0, $fullBody, $bodyBytes.Length, $fileBytes.Length)
-          [Array]::Copy($footerBytes, 0, $fullBody, $bodyBytes.Length + $fileBytes.Length, $footerBytes.Length)
+          $captionContent = New-Object System.Net.Http.StringContent($caption)
+          $multipart.Add($captionContent, "caption")
+
+          $parseContent = New-Object System.Net.Http.StringContent("HTML")
+          $multipart.Add($parseContent, "parse_mode")
+
+          $fileStream = [System.IO.File]::OpenRead($exe)
+          $streamContent = New-Object System.Net.Http.StreamContent($fileStream)
+          $streamContent.Headers.ContentType = New-Object System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream")
+          $multipart.Add($streamContent, "document", $exeName)
 
           try {
-            $response = Invoke-WebRequest -Uri $url -Method Post -ContentType "multipart/form-data; boundary=$boundary" -Body $fullBody -TimeoutSec 900 -UseBasicParsing
+            Write-Host "Enviando peticion a Telegram..."
+            $response = $client.PostAsync($url, $multipart).GetAwaiter().GetResult()
+            $responseBody = $response.Content.ReadAsStringAsync().GetAwaiter().GetResult()
+
             Write-Host "HTTP Status: $($response.StatusCode)"
-            Write-Host "Respuesta: $($response.Content)"
-            if ($response.Content -match '"ok":true') {
+            Write-Host "Respuesta: $responseBody"
+
+            if ($responseBody -match '"ok":true') {
               Write-Host "Instalador subido a Telegram correctamente."
             } else {
               Write-Host "Error al subir el instalador."
               exit 1
             }
           } catch {
-            Write-Host "Error: $($_.Exception.Message)"
-            if ($_.Exception.Response) {
-              $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
-              $reader.BaseStream.Position = 0
-              Write-Host "Respuesta del servidor: $($reader.ReadToEnd())"
+            Write-Host "Excepcion: $($_.Exception.Message)"
+            if ($_.Exception.InnerException) {
+              Write-Host "Causa: $($_.Exception.InnerException.Message)"
             }
             exit 1
+          } finally {
+            $fileStream.Dispose()
+            $multipart.Dispose()
+            $client.Dispose()
           }
