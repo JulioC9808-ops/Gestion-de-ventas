@@ -57,6 +57,24 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: npm run electron:installer
 
+      - name: Normalize installer filename (remove spaces)
+        shell: bash
+        run: |
+          cd dist-installer
+          echo "Archivos antes de normalizar:"
+          ls -la
+          for f in *.exe; do
+            if [ -f "$f" ]; then
+              newname=$(echo "$f" | tr ' ' '_')
+              if [ "$f" != "$newname" ]; then
+                echo "Renombrando: '$f' -> '$newname'"
+                mv "$f" "$newname"
+              fi
+            fi
+          done
+          echo "Archivos después de normalizar:"
+          ls -la
+
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
@@ -91,7 +109,7 @@ jobs:
           shopt -s nullglob
           files=(dist-installer/*.exe)
           if [ ${#files[@]} -eq 0 ]; then
-            echo "No se encontró ningún .exe en dist-installer/" >&2
+            echo "No se encontro ningun .exe en dist-installer/" >&2
             exit 1
           fi
           exe_path="${files[0]}"
@@ -160,12 +178,8 @@ jobs:
         run: |
           TAG="${{ steps.get_release.outputs.new_tag }}"
           URL="https://github.com/JulioC9808-ops/Sistema-Updates/releases/tag/${TAG}"
-          MESSAGE=$(printf '🚀 <b>Nueva versión disponible</b>\n\n📦 <b>Gestión de Ventas</b> — Windows\n🏷️ Versión: <code>v%s</code>\n\n⬇️ <a href="%s">Descargar actualización</a>\n\n<i>El instalador también está adjunto en el siguiente mensaje.</i>' "$TAG" "$URL")
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            --data-urlencode "chat_id=@Gestion_Ventas" \
-            -d parse_mode="HTML" \
-            -d disable_web_page_preview="false" \
-            --data-urlencode "text=${MESSAGE}"
+          MESSAGE="Nueva version disponible. Gestion de Ventas Windows. Version v${TAG}. Descargar: ${URL}"
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" --data-urlencode "chat_id=@Gestion_Ventas" -d parse_mode="HTML" -d disable_web_page_preview="false" --data-urlencode "text=${MESSAGE}"
 
       - name: Upload installer to Telegram
         if: success()
@@ -178,13 +192,8 @@ jobs:
           EXE_NAME="${{ steps.find_exe.outputs.exe_name }}"
           SIZE_MB=$(du -m "$EXE" | cut -f1)
           echo "Subiendo ${EXE_NAME} (${SIZE_MB} MB) a Telegram..."
-          CAPTION=$(printf '💾 <b>Gestión de Ventas v%s</b> — Instalador Windows (%s MB)' "$TAG" "$SIZE_MB")
-          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST \
-            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
-            --form-string "chat_id=@Gestion_Ventas" \
-            -F "document=@${EXE}" \
-            --form-string "caption=${CAPTION}" \
-            --form-string "parse_mode=HTML")
+          CAPTION="Gestion de Ventas v${TAG} - Instalador Windows ${SIZE_MB} MB"
+          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" --form-string "chat_id=@Gestion_Ventas" -F "document=@${EXE}" --form-string "caption=${CAPTION}" --form-string "parse_mode=HTML")
           HTTP_STATUS=$(echo "$RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
           BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
           echo "HTTP Status: $HTTP_STATUS"
