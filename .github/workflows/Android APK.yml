@@ -1,4 +1,4 @@
-name: Android Releases
+name: Android APK
 
 on:
   workflow_dispatch:
@@ -125,49 +125,3 @@ jobs:
           path: android/app/build/outputs/bundle/release/app-release-signed.aab
           if-no-files-found: error
           retention-days: 3
-
-      - name: Publish APK to Sistema-Updates
-        env:
-          GH_TOKEN: ${{ secrets.UPDATES_TOKEN }}
-        run: |
-          cp android/app/build/outputs/apk/release/app-release-signed.apk ./app-release-signed.apk
-          gh release view android --repo JulioC9808-ops/Sistema-Updates > /dev/null 2>&1 || gh release create android --repo JulioC9808-ops/Sistema-Updates --title "Android ultima compilacion" --prerelease --notes "Build automatico"
-          gh release edit android --repo JulioC9808-ops/Sistema-Updates --prerelease
-          gh release upload android app-release-signed.apk --repo JulioC9808-ops/Sistema-Updates --clobber
-
-      - name: Notify Telegram channel
-        if: success()
-        shell: bash
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-        run: |
-          VERSION="${{ steps.app_version.outputs.version_name }}"
-          URL="https://github.com/JulioC9808-ops/Sistema-Updates/releases/tag/android"
-          DIRECT_DOWNLOAD="https://github.com/JulioC9808-ops/Sistema-Updates/releases/download/android/app-release-signed.apk"
-          MESSAGE="Nueva version disponible. Gestion de Ventas Android. Version v${VERSION}. Ver en GitHub: ${URL} . Descargar APK: ${DIRECT_DOWNLOAD}"
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" --data-urlencode "chat_id=@Gestion_Ventas" -d parse_mode="HTML" -d disable_web_page_preview="false" --data-urlencode "text=${MESSAGE}"
-
-      - name: Upload APK to Telegram
-        if: success()
-        shell: bash
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-        run: |
-          VERSION="${{ steps.app_version.outputs.version_name }}"
-          APK="android/app/build/outputs/apk/release/app-release-signed.apk"
-          SIZE_MB=$(du -m "$APK" | cut -f1)
-          echo "Subiendo APK (${SIZE_MB} MB) a Telegram..."
-          CAPTION="Gestion de Ventas v${VERSION} - APK Android ${SIZE_MB} MB"
-          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" --form-string "chat_id=@Gestion_Ventas" -F "document=@${APK}" --form-string "caption=${CAPTION}" --form-string "parse_mode=HTML")
-          HTTP_STATUS=$(echo "$RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
-          BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
-          echo "HTTP Status: $HTTP_STATUS"
-          echo "Respuesta de Telegram:"
-          echo "$BODY"
-          if echo "$BODY" | grep -q '"ok":true'; then
-            echo "APK subido a Telegram correctamente."
-          else
-            echo "Error al subir el APK."
-            echo "$BODY"
-            exit 1
-          fi
