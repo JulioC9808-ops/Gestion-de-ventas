@@ -176,7 +176,7 @@ jobs:
             fi
           fi
 
-      - name: Notify Telegram channel
+      - name: Notify Telegram channel (message)
         if: success()
         shell: bash
         env:
@@ -185,29 +185,87 @@ jobs:
           TAG="${{ steps.get_release.outputs.new_tag }}"
           URL="https://github.com/JulioC9808-ops/Sistema-Updates/releases/tag/${TAG}"
           MESSAGE="Nueva version disponible. Gestion de Ventas Windows. Version v${TAG}. Descargar: ${URL}"
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" --data-urlencode "chat_id=@Gestion_Ventas" -d parse_mode="HTML" -d disable_web_page_preview="false" --data-urlencode "text=${MESSAGE}"
+          curl -s --http1.1 --retry 3 --retry-delay 5 --connect-timeout 30 --max-time 120 -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" --data-urlencode "chat_id=@Gestion_Ventas" -d parse_mode="HTML" -d disable_web_page_preview="false" --data-urlencode "text=${MESSAGE}"
 
-      - name: Upload installer to Telegram
+      - name: Test Telegram connectivity
         if: success()
-        shell: bash
+        shell: pwsh
+        run: |
+          Write-Host "=== Verificando conectividad a api.telegram.org ==="
+          try {
+            $r = Invoke-WebRequest -Uri "https://api.telegram.org" -Method Head -TimeoutSec 15 -UseBasicParsing
+            Write-Host "Conexion OK. Status: $($r.StatusCode)"
+          } catch {
+            Write-Host "Error de conexion: $($_.Exception.Message)"
+          }
+          Write-Host "=== Version de PowerShell: $($PSVersionTable.PSVersion) ==="
+
+      - name: Upload installer to Telegram (PowerShell)
+        if: success()
+        shell: pwsh
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         run: |
-          TAG="${{ steps.get_release.outputs.new_tag }}"
-          EXE="${{ steps.find_exe.outputs.exe_path }}"
-          EXE_NAME="${{ steps.find_exe.outputs.exe_name }}"
-          SIZE_MB=$(du -m "$EXE" | cut -f1)
-          echo "Subiendo ${EXE_NAME} (${SIZE_MB} MB) a Telegram..."
-          CAPTION="Gestion de Ventas v${TAG} - Instalador Windows ${SIZE_MB} MB"
-          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" --form-string "chat_id=@Gestion_Ventas" -F "document=@${EXE}" --form-string "caption=${CAPTION}" --form-string "parse_mode=HTML")
-          HTTP_STATUS=$(echo "$RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
-          BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
-          echo "HTTP Status: $HTTP_STATUS"
-          echo "Respuesta:"
-          echo "$BODY"
-          if echo "$BODY" | grep -q '"ok":true'; then
-            echo "Instalador subido a Telegram correctamente."
-          else
-            echo "Error al subir el instalador."
+          $tag = "${{ steps.get_release.outputs.new_tag }}"
+          $exe = "${{ steps.find_exe.outputs.exe_path }}"
+          $exeName = "${{ steps.find_exe.outputs.exe_name }}"
+          $sizeMb = [math]::Round((Get-Item $exe).Length / 1MB, 1)
+
+          Write-Host "Subiendo $exeName ($sizeMb MB) a Telegram..."
+
+          $token = $env:TELEGRAM_BOT_TOKEN
+          $url = "https://api.telegram.org/bot$token/sendDocument"
+          $caption = "Gestion de Ventas v$tag - Instalador Windows $sizeMb MB"
+
+          # Necesario para TLS 1.2 en PowerShell 5.1
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+          # Construir multipart form data
+          $boundary = [System.Guid]::NewGuid().ToString()
+          $LF = "`r`n"
+
+          $fileBytes = [System.IO.File]::ReadAllBytes($exe)
+          $fileName = [System.IO.Path]::GetFileName($exe)
+
+          $enc = [System.Text.Encoding]::GetEncoding("iso-8859-1")
+
+          $bodyStr = "--$boundary$LF"
+          $bodyStr += "Content-Disposition: form-data; name=`"chat_id`"$LF$LF"
+          $bodyStr += "@Gestion_Ventas$LF"
+          $bodyStr += "--$boundary$LF"
+          $bodyStr += "Content-Disposition: form-data; name=`"caption`"$LF$LF"
+          $bodyStr += "$caption$LF"
+          $bodyStr += "--$boundary$LF"
+          $bodyStr += "Content-Disposition: form-data; name=`"parse_mode`"$LF$LF"
+          $bodyStr += "HTML$LF"
+          $bodyStr += "--$boundary$LF"
+          $bodyStr += "Content-Disposition: form-data; name=`"document`"; filename=`"$fileName`"$LF"
+          $bodyStr += "Content-Type: application/octet-stream$LF$LF"
+
+          $bodyBytes = $enc.GetBytes($bodyStr)
+          $footerBytes = $enc.GetBytes("$LF--$boundary--$LF")
+
+          $fullBody = New-Object byte[] ($bodyBytes.Length + $fileBytes.Length + $footerBytes.Length)
+          [Array]::Copy($bodyBytes, 0, $fullBody, 0, $bodyBytes.Length)
+          [Array]::Copy($fileBytes, 0, $fullBody, $bodyBytes.Length, $fileBytes.Length)
+          [Array]::Copy($footerBytes, 0, $fullBody, $bodyBytes.Length + $fileBytes.Length, $footerBytes.Length)
+
+          try {
+            $response = Invoke-WebRequest -Uri $url -Method Post -ContentType "multipart/form-data; boundary=$boundary" -Body $fullBody -TimeoutSec 900 -UseBasicParsing
+            Write-Host "HTTP Status: $($response.StatusCode)"
+            Write-Host "Respuesta: $($response.Content)"
+            if ($response.Content -match '"ok":true') {
+              Write-Host "Instalador subido a Telegram correctamente."
+            } else {
+              Write-Host "Error al subir el instalador."
+              exit 1
+            }
+          } catch {
+            Write-Host "Error: $($_.Exception.Message)"
+            if ($_.Exception.Response) {
+              $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
+              $reader.BaseStream.Position = 0
+              Write-Host "Respuesta del servidor: $($reader.ReadToEnd())"
+            }
             exit 1
-          fi
+          }
