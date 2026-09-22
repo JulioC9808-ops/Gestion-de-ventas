@@ -2,6 +2,9 @@ name: Release Windows
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 permissions:
   contents: write
@@ -57,23 +60,20 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: npm run electron:installer
 
-      - name: Normalize installer filename (remove spaces)
+      - name: Normalize filenames (remove spaces)
         shell: bash
         run: |
-          cd dist-installer
-          echo "Archivos antes de normalizar:"
-          ls -la
-          for f in *.exe; do
-            if [ -f "$f" ]; then
-              newname=$(echo "$f" | tr ' ' '_')
-              if [ "$f" != "$newname" ]; then
-                echo "Renombrando: '$f' -> '$newname'"
-                mv "$f" "$newname"
-              fi
-            fi
+          echo "=== Contenido ANTES de normalizar ==="
+          ls -la dist-installer/ || echo "No existe dist-installer"
+          find dist-installer -maxdepth 1 -type f -name "* *" -print0 | while IFS= read -r -d '' f; do
+            dir=$(dirname "$f")
+            base=$(basename "$f")
+            newbase="${base// /_}"
+            echo "Renombrando: '$f' -> '$dir/$newbase'"
+            mv "$f" "$dir/$newbase"
           done
-          echo "Archivos después de normalizar:"
-          ls -la
+          echo "=== Contenido DESPUES de normalizar ==="
+          ls -la dist-installer/
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
@@ -85,37 +85,37 @@ jobs:
       - name: Get latest release tag
         id: get_release
         shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          latest=$(gh api repos/${{ github.repository }}/releases/latest --jq .tag_name 2>/dev/null || echo "")
-          if [ -z "$latest" ] || [ "$latest" = "null" ]; then
-            latest="1.0.0"
+          LATEST=$(gh api repos/${{ github.repository }}/releases/latest --jq .tag_name 2>/dev/null || echo "")
+          if [ -z "$LATEST" ] || [ "$LATEST" = "null" ]; then
+            LATEST="1.0.0"
           fi
-          latest="${latest#v}"
-          IFS='.' read -r major minor patch <<< "$latest"
-          major=${major:-1}
-          minor=${minor:-0}
-          patch=${patch:-0}
-          new_patch=$((patch + 1))
-          new_tag="${major}.${minor}.${new_patch}"
-          echo "new_tag=$new_tag" >> "$GITHUB_OUTPUT"
-          echo "Nuevo tag: $new_tag"
+          LATEST="${LATEST#v}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST"
+          MAJOR=${MAJOR:-1}
+          MINOR=${MINOR:-0}
+          PATCH=${PATCH:-0}
+          NEW_PATCH=$((PATCH + 1))
+          NEW_TAG="${MAJOR}.${MINOR}.${NEW_PATCH}"
+          echo "new_tag=$NEW_TAG" >> "$GITHUB_OUTPUT"
+          echo "Nuevo tag: $NEW_TAG"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Find installer file
         id: find_exe
         shell: bash
         run: |
-          shopt -s nullglob
-          files=(dist-installer/*.exe)
-          if [ ${#files[@]} -eq 0 ]; then
+          EXE_PATH=$(find dist-installer -maxdepth 1 -type f -name "*.exe" -print -quit)
+          if [ -z "$EXE_PATH" ]; then
             echo "No se encontro ningun .exe en dist-installer/" >&2
+            ls -la dist-installer/ || true
             exit 1
           fi
-          exe_path="${files[0]}"
-          echo "exe_path=$exe_path" >> "$GITHUB_OUTPUT"
-          echo "exe_name=$(basename "$exe_path")" >> "$GITHUB_OUTPUT"
-          echo "Encontrado: $exe_path"
+          EXE_NAME=$(basename "$EXE_PATH")
+          echo "exe_path=$EXE_PATH" >> "$GITHUB_OUTPUT"
+          echo "exe_name=$EXE_NAME" >> "$GITHUB_OUTPUT"
+          echo "Encontrado: $EXE_PATH"
 
       - name: Create new release
         uses: softprops/action-gh-release@v2
@@ -131,25 +131,27 @@ jobs:
       - name: Prepare latest.yml for auto-updater
         shell: bash
         run: |
-          if [ -f "dist-installer/latest.yml" ]; then
-            cp "dist-installer/latest.yml" ./latest.yml
-            echo "Using electron-builder generated dist-installer/latest.yml"
+          LATEST_YML=$(find dist-installer -maxdepth 1 -type f -name "latest.yml" -print -quit)
+          if [ -n "$LATEST_YML" ]; then
+            cp "$LATEST_YML" ./latest.yml
+            echo "Usando $LATEST_YML"
           else
-            exe_file="${{ steps.find_exe.outputs.exe_path }}"
-            exe_name="${{ steps.find_exe.outputs.exe_name }}"
-            sha512_b64=$(sha512sum "$exe_file" | awk '{print $1}' | xxd -r -p | base64 | tr -d '\n')
-            size_bytes=$(stat -c%s "$exe_file" 2>/dev/null || wc -c < "$exe_file")
+            EXE_FILE="${{ steps.find_exe.outputs.exe_path }}"
+            EXE_NAME="${{ steps.find_exe.outputs.exe_name }}"
+            SHA512_B64=$(sha512sum "$EXE_FILE" | awk '{print $1}' | xxd -r -p | base64 | tr -d '\n')
+            SIZE_BYTES=$(stat -c%s "$EXE_FILE" 2>/dev/null || wc -c < "$EXE_FILE")
             {
               echo "version: ${{ steps.get_release.outputs.new_tag }}"
-              echo "path: $exe_name"
-              echo "sha512: $sha512_b64"
+              echo "path: $EXE_NAME"
+              echo "sha512: $SHA512_B64"
               echo "releaseDate: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
               echo "files:"
-              echo "  - url: $exe_name"
-              echo "    sha512: $sha512_b64"
-              echo "    size: $size_bytes"
+              echo "  - url: $EXE_NAME"
+              echo "    sha512: $SHA512_B64"
+              echo "    size: $SIZE_BYTES"
             } > latest.yml
           fi
+          echo "=== latest.yml ==="
           cat latest.yml
 
       - name: Upload new release to public repo
@@ -159,15 +161,22 @@ jobs:
         run: |
           TAG="${{ steps.get_release.outputs.new_tag }}"
           EXE="${{ steps.find_exe.outputs.exe_path }}"
-          BLOCKMAP_FILE=$(ls dist-installer/*.blockmap 2>/dev/null | head -n 1 || echo "")
-          EXTRA_ARGS=""
-          if [ -n "$BLOCKMAP_FILE" ] && [ -f "$BLOCKMAP_FILE" ]; then
-            EXTRA_ARGS="$BLOCKMAP_FILE"
-          fi
+          BLOCKMAP_FILE=$(find dist-installer -maxdepth 1 -type f -name "*.blockmap" -print -quit)
+          echo "Tag: $TAG"
+          echo "Exe: $EXE"
+          echo "Blockmap: ${BLOCKMAP_FILE:-(ninguno)}"
           if gh release view "$TAG" -R JulioC9808-ops/Sistema-Updates > /dev/null 2>&1; then
-            gh release upload "$TAG" "$EXE" latest.yml $EXTRA_ARGS -R JulioC9808-ops/Sistema-Updates --clobber
+            if [ -n "$BLOCKMAP_FILE" ]; then
+              gh release upload "$TAG" "$EXE" latest.yml "$BLOCKMAP_FILE" -R JulioC9808-ops/Sistema-Updates --clobber
+            else
+              gh release upload "$TAG" "$EXE" latest.yml -R JulioC9808-ops/Sistema-Updates --clobber
+            fi
           else
-            gh release create "$TAG" "$EXE" latest.yml $EXTRA_ARGS -R JulioC9808-ops/Sistema-Updates -t "Version $TAG (Windows)" -n "Actualizacion automatica de Windows - Gestion de Ventas v$TAG"
+            if [ -n "$BLOCKMAP_FILE" ]; then
+              gh release create "$TAG" "$EXE" latest.yml "$BLOCKMAP_FILE" -R JulioC9808-ops/Sistema-Updates -t "Version $TAG (Windows)" -n "Actualizacion automatica - v$TAG"
+            else
+              gh release create "$TAG" "$EXE" latest.yml -R JulioC9808-ops/Sistema-Updates -t "Version $TAG (Windows)" -n "Actualizacion automatica - v$TAG"
+            fi
           fi
 
       - name: Notify Telegram channel
