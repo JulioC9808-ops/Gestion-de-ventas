@@ -1,16 +1,19 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
-import { Settings, Key, RotateCcw, Image, Send, UserCog, Megaphone, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Settings, Key, RotateCcw, Image, Send, UserCog, Megaphone, CheckCircle2, RefreshCw, ShieldCheck, Sparkles, Clock, Infinity as InfinityIcon, Eye, EyeOff } from 'lucide-react';
 import { useData, GITHUB_UPDATES_URL, DEFAULT_ANNOUNCEMENT_URL } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { fetchAnnouncement } from '@/lib/announcements';
+import { getLicenseInfo, activateLifetimeLicense, activateTimedLicenseDays } from '@/pages/LicenseGate';
+import { fileToCompressedDataUrl } from '@/lib/imageUtils';
 
 const NAV = [
   { label: 'Configuración', icon: Settings, key: 'config', tip: 'Cambia el nombre del negocio y otras configuraciones generales.' },
   { label: 'Logo', icon: Image, key: 'logo', tip: 'Sube o cambia el logo que aparece en el login y la navegación.' },
+  { label: 'Licencia', icon: ShieldCheck, key: 'license', tip: 'Gestiona el estado de activación y habilita la licencia permanente.' },
   { label: 'Actualizaciones', icon: Send, key: 'updates', tip: 'Configura el canal de Telegram y el repositorio público de actualizaciones.' },
   { label: 'Contraseña', icon: Key, key: 'password', tip: 'Cambia tu contraseña de desarrollador.' },
   { label: 'Restablecer Admin', icon: UserCog, key: 'admin', tip: 'Devuelve el administrador principal a Usuario: admin y Contraseña: admin123.' },
@@ -28,8 +31,15 @@ export default function DevPanel() {
   const [testingAnnouncement, setTestingAnnouncement] = useState(false);
   const [currentPwd, setCurrentPwd] = useState('');
   const [newPwd, setNewPwd] = useState('');
+  const [showCurrentPwd, setShowCurrentPwd] = useState(false);
+  const [showNewPwd, setShowNewPwd] = useState(false);
+  const [licenseState, setLicenseState] = useState(() => getLicenseInfo());
   const logoInputRef = useRef<HTMLInputElement>(null);
   const bgInputRef = useRef<HTMLInputElement>(null);
+
+  const refreshLicense = () => {
+    setLicenseState(getLicenseInfo());
+  };
 
   const handleSaveName = () => {
     updateSettings({ businessName });
@@ -49,6 +59,28 @@ export default function DevPanel() {
     toast.success('Contraseña actualizada');
   };
 
+  const handleActivateLifetime = () => {
+    const success = activateLifetimeLicense();
+    if (success) {
+      refreshLicense();
+      toast.success('¡Licencia Permanente activada con éxito!', {
+        description: 'La aplicación ahora cuenta con acceso ilimitado de por vida sin vencimiento.',
+      });
+    } else {
+      toast.error('No se pudo activar la licencia');
+    }
+  };
+
+  const handleActivateTimed = () => {
+    const success = activateTimedLicenseDays(37);
+    if (success) {
+      refreshLicense();
+      toast.success('Licencia periódica activada (+37 días)');
+    } else {
+      toast.error('Error al activar licencia');
+    }
+  };
+
   const handleReset = () => {
     if (confirm('¿Restaurar toda la configuración a valores por defecto?')) {
       localStorage.clear();
@@ -63,17 +95,18 @@ export default function DevPanel() {
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'background') => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'background') => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
+    try {
+      // Máxima calidad y nitidez
+      const dataUrl = await fileToCompressedDataUrl(file, 3840);
       if (type === 'logo') updateSettings({ logoUrl: dataUrl });
       else if (type === 'background') updateSettings({ backgroundUrl: dataUrl });
-      toast.success(`${type === 'logo' ? 'Logo' : 'Fondo'} actualizado`);
-    };
-    reader.readAsDataURL(file);
+      toast.success(`${type === 'logo' ? 'Logo' : 'Fondo'} actualizado con máxima calidad`);
+    } catch {
+      toast.error('Error al procesar la imagen');
+    }
   };
 
   return (
@@ -138,6 +171,76 @@ export default function DevPanel() {
               </div>
               <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleFileUpload(e, 'logo')} />
               <p className="text-sm text-muted-foreground text-center">El logo aparecerá en la pantalla de login y en la barra de navegación.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {active === 'license' && (
+        <div>
+          <div className="page-header">
+            <h1 className="page-title">Administración de Licencia</h1>
+            <p className="text-sm text-muted-foreground mt-1">Control de activación directa y cambio de plan de suscripción a permanente.</p>
+          </div>
+          <div className="glass-card p-6 max-w-xl space-y-6">
+            <div className="p-4 rounded-xl border border-border bg-secondary/30 flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-foreground">Estado Actual:</h3>
+                  {licenseState.type === 'lifetime' && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                      <InfinityIcon className="w-3.5 h-3.5" /> Permanente (Ilimitada)
+                    </span>
+                  )}
+                  {licenseState.type === 'timed' && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                      <Clock className="w-3.5 h-3.5" /> Periódica ({licenseState.daysLeft} días restantes)
+                    </span>
+                  )}
+                  {licenseState.type === 'none' && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-destructive/10 text-destructive border border-destructive/20">
+                      Sin Licencia Activa
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+                  {licenseState.type === 'lifetime'
+                    ? 'Este equipo ya posee la licencia permanente oficial. No requiere renovaciones ni comprobaciones periódicas.'
+                    : 'Si el cliente estaba utilizando una suscripción mensual/periódica y deseas convertirlo a permanente, pulsa el botón de abajo para activar la licencia definitiva sin tener que reingresar la clave.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-2">
+              <Button
+                onClick={handleActivateLifetime}
+                className="w-full h-12 text-base font-semibold shadow-md bg-gradient-to-r from-primary to-primary/90 hover:opacity-95 transition-all"
+              >
+                <Sparkles className="w-5 h-5 mr-2 text-yellow-300" />
+                Instalar / Activar Licencia Permanente
+              </Button>
+
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <Button
+                  variant="outline"
+                  onClick={handleActivateTimed}
+                  className="h-10 text-xs sm:text-sm"
+                >
+                  <Clock className="w-4 h-4 mr-1.5 text-primary" />
+                  Activar Periódica (+37 d)
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={refreshLicense}
+                  className="h-10 text-xs sm:text-sm"
+                >
+                  <RefreshCw className="w-4 h-4 mr-1.5" />
+                  Comprobar Estado
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -282,11 +385,47 @@ export default function DevPanel() {
           <div className="glass-card p-6 max-w-md space-y-4">
             <div>
               <label className="text-sm font-medium">Contraseña Actual</label>
-              <Input type="password" value={currentPwd} onChange={e => setCurrentPwd(e.target.value)} />
+              <div className="relative mt-1">
+                <Input
+                  type="text"
+                  value={currentPwd}
+                  onChange={e => setCurrentPwd(e.target.value)}
+                  className={`pr-10 ${
+                    !showCurrentPwd && currentPwd ? 'threads-obfuscated' : 'threads-revealed'
+                  }`}
+                />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  aria-label={showCurrentPwd ? 'Ocultar contraseña' : 'Ver contraseña'}
+                  onClick={() => setShowCurrentPwd(prev => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors p-1"
+                >
+                  {showCurrentPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
             <div>
               <label className="text-sm font-medium">Nueva Contraseña</label>
-              <Input type="password" value={newPwd} onChange={e => setNewPwd(e.target.value)} />
+              <div className="relative mt-1">
+                <Input
+                  type="text"
+                  value={newPwd}
+                  onChange={e => setNewPwd(e.target.value)}
+                  className={`pr-10 ${
+                    !showNewPwd && newPwd ? 'threads-obfuscated' : 'threads-revealed'
+                  }`}
+                />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  aria-label={showNewPwd ? 'Ocultar contraseña' : 'Ver contraseña'}
+                  onClick={() => setShowNewPwd(prev => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors p-1"
+                >
+                  {showNewPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
             <Button onClick={handleChangePassword} className="w-full">Cambiar Contraseña</Button>
           </div>

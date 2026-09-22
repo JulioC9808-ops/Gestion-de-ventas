@@ -80,6 +80,17 @@
     background-color: hsl(var(--input) / 0.4);
   }
 
+  /* Ocultar el botón nativo de revelar contraseña del navegador para evitar iconos duplicados */
+  input::-ms-reveal,
+  input::-ms-clear,
+  input::-webkit-credentials-auto-fill-button {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
   body {
     @apply text-foreground;
     font-family: var(--font-body);
@@ -224,6 +235,71 @@
   .denomination-btn.has-value {
     @apply border-primary bg-primary/10;
   }
+
+  .gold-signature-shimmer {
+    display: inline-block;
+    background: linear-gradient(
+      115deg,
+      #c59424 0%,
+      #ffd700 20%,
+      #fffdf0 28%,
+      #ffffff 32%,
+      #ffe57f 38%,
+      #d4af37 50%,
+      #c59424 62%,
+      #ffd700 76%,
+      #fffdf0 82%,
+      #ffffff 86%,
+      #ffe57f 90%,
+      #c59424 100%
+    );
+    background-size: 250% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: #ffd700;
+    animation: goldShimmer 3.5s linear infinite, goldPulseGlow 3s ease-in-out infinite;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    user-select: none;
+  }
+
+  /* Threads / Spoiler frosted glass text obfuscation (niebla / desenfoque empañado profesional) */
+  .threads-obfuscated {
+    filter: blur(6.5px) !important;
+    letter-spacing: 0.08em;
+    user-select: none !important;
+    text-shadow: 0 0 12px currentColor !important;
+    opacity: 0.58 !important;
+    transition: filter 0.28s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.28s ease, text-shadow 0.28s ease !important;
+  }
+
+  .threads-revealed {
+    filter: blur(0px) !important;
+    letter-spacing: normal;
+    user-select: auto !important;
+    text-shadow: none !important;
+    opacity: 1 !important;
+    transition: filter 0.28s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.28s ease, text-shadow 0.28s ease !important;
+  }
+}
+
+@keyframes goldShimmer {
+  0% {
+    background-position: 250% 0;
+  }
+  100% {
+    background-position: -250% 0;
+  }
+}
+
+@keyframes goldPulseGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 1px rgba(255, 215, 0, 0.4)) drop-shadow(0 0 5px rgba(212, 175, 55, 0.25));
+  }
+  50% {
+    filter: drop-shadow(0 0 4px rgba(255, 235, 59, 0.85)) drop-shadow(0 0 12px rgba(255, 215, 0, 0.55));
+  }
 }
 
 @keyframes fadeInUp {
@@ -246,6 +322,28 @@
     opacity: 1;
     transform: translateX(0);
   }
+}
+
+@keyframes trashLidBounce {
+  0% {
+    transform: rotate(0deg) translateY(0);
+  }
+  30% {
+    transform: rotate(-32deg) translateY(-2px);
+  }
+  60% {
+    transform: rotate(-18deg) translateY(-1px);
+  }
+  85% {
+    transform: rotate(-4deg);
+  }
+  100% {
+    transform: rotate(0deg) translateY(0);
+  }
+}
+
+.animate-trash-lid-bounce {
+  animation: trashLidBounce 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .animate-fade-in-up {

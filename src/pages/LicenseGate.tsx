@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Shield, Key, MessageCircle, Clock, Infinity as InfinityIcon, QrCode, ScanLine } from 'lucide-react';
+import { Shield, Key, MessageCircle, Clock, Infinity as InfinityIcon, QrCode, ScanLine, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -53,26 +53,27 @@ type LicenseState =
 
 const LICENSE_KEY = 'license_state';
 
-function normalize(state: any): LicenseState {
+function normalize(state: unknown): LicenseState {
   if (!state || typeof state !== 'object') return { type: 'none' };
-  if (state.type === 'lifetime') {
+  const s = state as Record<string, unknown>;
+  if (s.type === 'lifetime') {
     return {
       type: 'lifetime',
-      deviceId: state.deviceId ?? state.machineId ?? null,
-      hw: state.hw,
-      rebound: state.rebound,
-      lastSeenAt: state.lastSeenAt,
+      deviceId: (typeof s.deviceId === 'string' ? s.deviceId : (typeof s.machineId === 'string' ? s.machineId : null)),
+      hw: (s.hw as HardwareComponents | undefined),
+      rebound: typeof s.rebound === 'number' ? s.rebound : undefined,
+      lastSeenAt: typeof s.lastSeenAt === 'number' ? s.lastSeenAt : undefined,
     };
   }
-  if (state.type === 'timed' && typeof state.activatedAt === 'number') {
+  if (s.type === 'timed' && typeof s.activatedAt === 'number') {
     return {
       type: 'timed',
-      activatedAt: state.activatedAt,
-      expiresAt: typeof state.expiresAt === 'number' ? state.expiresAt : state.activatedAt + TIMED_DURATION_MS,
-      deviceId: state.deviceId ?? state.machineId ?? null,
-      hw: state.hw,
-      rebound: state.rebound,
-      lastSeenAt: state.lastSeenAt,
+      activatedAt: s.activatedAt,
+      expiresAt: typeof s.expiresAt === 'number' ? s.expiresAt : s.activatedAt + TIMED_DURATION_MS,
+      deviceId: (typeof s.deviceId === 'string' ? s.deviceId : (typeof s.machineId === 'string' ? s.machineId : null)),
+      hw: (s.hw as HardwareComponents | undefined),
+      rebound: typeof s.rebound === 'number' ? s.rebound : undefined,
+      lastSeenAt: typeof s.lastSeenAt === 'number' ? s.lastSeenAt : undefined,
     };
   }
   return { type: 'none' };
@@ -94,10 +95,10 @@ function readLicense(): LicenseState {
   return { type: 'none' };
 }
 
-function persistLicense(state: LicenseState) {
-  const withSeen: any = { ...state, lastSeenAt: Date.now() };
+function persistLicense(state: LicenseState): LicenseState {
+  const withSeen: LicenseState = { ...state, lastSeenAt: Date.now() };
   localStorage.setItem(LICENSE_KEY, JSON.stringify(withSeen));
-  return withSeen as LicenseState;
+  return withSeen;
 }
 
 /** Anti-reloj: la expiración se compara contra max(ahora, último arranque visto). */
@@ -120,8 +121,8 @@ function isTimedActive(state: Extract<LicenseState, { type: 'timed' }>): boolean
  */
 function checkMachine(state: LicenseState, device: DeviceInfo): 'ok' | 'rebind' | 'fail' {
   if (state.type === 'none') return 'ok';
-  if (!state.deviceId) return 'rebind'; // licencia vieja sin vínculo: adoptar
-  if (!device.id) return 'ok'; // sin ID disponible (web/dev): no invalidar
+  if (!device.id) return 'ok'; // sin ID disponible (web/dev): no invalidar ni re-vincular
+  if (!state.deviceId) return 'rebind'; // licencia vieja sin vínculo: adoptar si hay ID de dispositivo
   if (state.deviceId === device.id) return 'ok';
   // Tolerancia por hardware en PC: 3 de 4 componentes válidos coinciden.
   if (isDesktop() && state.hw && device.hw) {
@@ -141,13 +142,14 @@ function checkMachine(state: LicenseState, device: DeviceInfo): 'ok' | 'rebind' 
 }
 
 function rebind(state: LicenseState, device: DeviceInfo): LicenseState {
-  const base: any = { ...state, rebound: 1 };
-  if (device.id) {
-    base.deviceId = device.id;
-    if (device.hw) base.hw = device.hw;
-  }
-  delete base.machineId;
-  return base as LicenseState;
+  if (state.type === 'none') return state;
+  const base: LicenseState = {
+    ...state,
+    rebound: 1,
+    deviceId: device.id || state.deviceId || null,
+    hw: device.hw || state.hw,
+  };
+  return base;
 }
 
 function daysLeftOf(state: LicenseState): number {
@@ -162,6 +164,7 @@ export default function LicenseGate({ children }: LicenseGateProps) {
   const [license, setLicense] = useState<LicenseState>(() => readLicense());
   const [device, setDevice] = useState<DeviceInfo | 'pending'>('pending');
   const [key, setKey] = useState('');
+  const [showKey, setShowKey] = useState(false);
   const [error, setError] = useState('');
   const [showQr, setShowQr] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
@@ -321,14 +324,22 @@ export default function LicenseGate({ children }: LicenseGateProps) {
     <Dialog open={showWelcome} onOpenChange={(o) => { if (!o) closeWelcome(); }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-display">¡Hola!</DialogTitle>
+          <DialogTitle className="font-display text-xl text-center">¡Te damos la bienvenida al Sistema!</DialogTitle>
         </DialogHeader>
-        <div className="space-y-3 text-sm leading-relaxed">
-          <p>Este programa es justo lo que necesitas. Aquí podrás gestionar desde tus productos en almacén hasta los precios y ventas de cada uno, y mantenerte al tanto del flujo de dichos productos.</p>
-          <p>Para usar esta aplicación me puedes contactar mediante el código QR que te dejé preparado.</p>
-          <p className="text-muted-foreground">Y esto es Todo.</p>
+        <div className="space-y-3.5 text-sm leading-relaxed text-muted-foreground pt-2">
+          <p className="text-foreground font-medium">
+            Una plataforma completa diseñada para optimizar la gestión comercial de tu negocio:
+          </p>
+          <ul className="space-y-2 list-disc list-inside text-xs sm:text-sm pl-1">
+            <li>Control de existencias tanto en almacén como en punto de venta.</li>
+            <li>Registro ágil de pedidos, cierres de turno y conciliación de caja.</li>
+            <li>Historial de movimientos, reportes financieros y liquidación de salarios.</li>
+          </ul>
+          <p className="text-xs pt-1 border-t border-border/50">
+            Para soporte técnico, consultas o asistencia con tu licencia, puedes comunicarte en cualquier momento a través de los canales de atención directa.
+          </p>
         </div>
-        <Button onClick={closeWelcome} className="w-full">Continuar</Button>
+        <Button onClick={closeWelcome} className="w-full mt-2 font-semibold">Comenzar</Button>
       </DialogContent>
     </Dialog>
   );
@@ -339,90 +350,112 @@ export default function LicenseGate({ children }: LicenseGateProps) {
   const expiredDays = license.type === 'timed' ? daysLeftOf(license) : 0;
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, hsl(0 0% 6%), hsl(0 0% 14%), hsl(0 0% 22%))' }}>
-      <div className="w-full max-w-md mx-4 animate-fade-in-up">
-        <div className="glass-card p-8 sm:p-10">
-          <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mb-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, hsl(0 0% 8%), hsl(0 0% 14%), hsl(0 0% 20%))' }}>
+      <div className="w-full max-w-md mx-auto animate-fade-in-up">
+        <div className="glass-card p-8 sm:p-10 border border-border/70 shadow-2xl">
+          <div className="flex flex-col items-center mb-7">
+            <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mb-4 shadow-md ring-2 ring-primary/20">
               <Shield className="w-8 h-8 text-primary-foreground" />
             </div>
-            <h1 className="text-2xl font-bold text-gradient font-display">Activación de Licencia</h1>
-            <p className="text-muted-foreground text-sm mt-1 text-center">
-              {expired ? `Tu licencia temporal expiró. Ingresa tu clave para renovar 37 días más (${expiredDays} días de margen).` : 'Ingresa tu clave de producto para continuar'}
+            <h1 className="text-2xl font-bold text-gradient font-display text-center">Activación de Licencia</h1>
+            <p className="text-muted-foreground text-sm mt-1.5 text-center leading-relaxed">
+              {expired ? `Tu período de licencia ha concluido. Ingresa tu clave para renovar la suscripción (${expiredDays} días de tolerancia restantes).` : 'Ingresa tu clave de producto autorizada para habilitar el sistema.'}
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3 mb-6 text-xs">
-            <div className="glass-card p-3 flex items-start gap-2">
-              <InfinityIcon className="w-4 h-4 text-primary mt-0.5" />
+            <div className="glass-card p-3.5 flex items-start gap-2.5 border border-border/60">
+              <InfinityIcon className="w-4 h-4 text-primary mt-0.5 shrink-0" />
               <div>
-                <div className="font-semibold">Permanente</div>
-                <div className="text-muted-foreground">Sin vencimiento</div>
+                <div className="font-semibold text-foreground">Permanente</div>
+                <div className="text-muted-foreground">Acceso ilimitado</div>
               </div>
             </div>
-            <div className="glass-card p-3 flex items-start gap-2">
-              <Clock className="w-4 h-4 text-primary mt-0.5" />
+            <div className="glass-card p-3.5 flex items-start gap-2.5 border border-border/60">
+              <Clock className="w-4 h-4 text-primary mt-0.5 shrink-0" />
               <div>
-                <div className="font-semibold">Temporal</div>
-                <div className="text-muted-foreground">37 días renovable</div>
+                <div className="font-semibold text-foreground">Periódica</div>
+                <div className="text-muted-foreground">Renovación asistida</div>
               </div>
             </div>
           </div>
-          <form onSubmit={handleActivate} className="space-y-5">
+          <form onSubmit={handleActivate} className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Clave de Producto</label>
+              <label className="text-sm font-medium text-foreground">Clave de Activación</label>
               <div className="relative">
-                <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                 <Input
                   type="text"
                   value={key}
                   onChange={e => { setKey(e.target.value); setError(''); }}
                   placeholder="Ingresa tu clave de producto"
-                  className="pl-10 h-11"
+                  className={`pl-10 pr-10 h-11 ${
+                    !showKey && key ? 'threads-obfuscated' : 'threads-revealed'
+                  }`}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   required
                 />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  aria-label={showKey ? 'Ocultar clave' : 'Ver clave'}
+                  onClick={() => setShowKey(prev => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors p-1"
+                >
+                  {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
             {error && (
-              <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg text-center border border-destructive/30">
+              <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg text-center border border-destructive/30 animate-fade-in-up">
                 {error}
               </div>
             )}
-            <Button type="submit" className="w-full h-11 font-semibold text-base">
-              Activar Licencia
+            <Button type="submit" className="w-full h-11 font-semibold text-base shadow-sm hover:shadow transition-all">
+              Validar y Activar
             </Button>
           </form>
           {mobile && (
-            <div className="mt-5 rounded-lg border border-border/60 bg-secondary/40 p-3">
-              <p className="text-xs text-muted-foreground mb-2">
-                ¿Eres empleado? Pídele a un Admin el <strong>QR de activación</strong> desde
-                Ajustes → Usuarios. Recibirás tu cuenta, todos los datos y la licencia
-                que el Admin te asigne. No necesitan internet: conecta por Wi-Fi o WiFi Direct.
+            <div className="mt-5 rounded-xl border border-border/70 bg-secondary/40 p-3.5">
+              <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+                ¿Inicias como personal de ventas? Pide al Administrador el <strong>código QR de sincronización</strong> (desde Ajustes → Usuarios) para recibir tu perfil y datos automáticamente.
               </p>
-              <Button variant="secondary" className="w-full h-11" onClick={() => setScanOpen(true)}>
-                <ScanLine className="w-4 h-4 mr-2" />
-                Escanear QR del admin <strong>Modo Empleado</strong>
+              <Button variant="secondary" className="w-full h-11 font-medium text-xs sm:text-sm" onClick={() => setScanOpen(true)}>
+                <ScanLine className="w-4 h-4 mr-2 text-primary" />
+                Escanear Código QR de Personal
               </Button>
             </div>
           )}
-          <div className="grid grid-cols-2 gap-2 mt-4">
+          <div className="grid grid-cols-2 gap-2.5 mt-5">
             <Button
               variant="outline"
+              className="text-xs sm:text-sm"
               onClick={() => window.open(`https://wa.me/${DEV_WHATSAPP.replace(/[^0-9]/g, '')}`, '_blank')}
             >
-              <MessageCircle className="w-4 h-4 mr-2" />
+              <MessageCircle className="w-4 h-4 mr-1.5 text-primary" />
               WhatsApp
             </Button>
             <Button
               variant="outline"
+              className="text-xs sm:text-sm"
               onClick={() => setShowQr(true)}
             >
-              <QrCode className="w-4 h-4 mr-2" />
-              QR Teléfono
+              <QrCode className="w-4 h-4 mr-1.5 text-primary" />
+              QR de Soporte
             </Button>
           </div>
-          <p className="text-center text-xs text-muted-foreground mt-6">
-            Contacta al desarrollador para obtener tu clave de producto.
-          </p>
+          
+          <div className="mt-6 text-center space-y-1.5 pt-4 border-t border-border/40">
+            <p className="text-xs text-muted-foreground">
+              © 2026 Gestión de Ventas. Todos los derechos reservados.
+            </p>
+            <div>
+              <span className="gold-signature-shimmer text-xs tracking-wider">
+                ( Desarrollado por Julio_GE )
+              </span>
+            </div>
+          </div>
         </div>
       </div>
       <QrScannerModal
@@ -430,20 +463,20 @@ export default function LicenseGate({ children }: LicenseGateProps) {
         onClose={() => setScanOpen(false)}
         onScan={handleEmployeeScan}
         keepOpen
-        title="Activación de empleado"
-        hint={receiving ? 'Recibiendo datos del jefe…' : 'Apunta al QR que te muestra el Admin (Ajustes → Usuarios).'}
+        title="Activación de Dispositivo de Personal"
+        hint={receiving ? 'Recibiendo información del Administrador…' : 'Apunta la cámara al código QR proporcionado por el Administrador.'}
       />
       <Dialog open={showQr} onOpenChange={setShowQr}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="font-display text-center">Llamar al Desarrollador</DialogTitle>
+            <DialogTitle className="font-display text-center">Atención y Soporte Técnico</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col items-center gap-4 py-4">
-            <div className="bg-white p-3 rounded-lg">
+            <div className="bg-white p-3 rounded-xl shadow-sm border border-border/60">
               <QrDisplay data={DEV_PHONE_TEL} size={240} />
             </div>
-            <p className="text-sm text-muted-foreground text-center">
-              Escanea este QR con tu celular y se abrirá el teclado del teléfono con el número listo para llamar.
+            <p className="text-sm text-muted-foreground text-center leading-relaxed">
+              Escanea este código con la cámara de tu teléfono para iniciar llamada directa con la línea de asistencia.
             </p>
             <p className="font-mono text-base font-semibold">{DEV_WHATSAPP}</p>
           </div>
@@ -460,6 +493,35 @@ export function getLicenseInfo() {
   if (state.type === 'lifetime') return { type: 'lifetime' as const };
   if (state.type === 'timed') return { type: 'timed' as const, daysLeft: daysLeftOf(state) };
   return { type: 'none' as const };
+}
+
+/** Activa de forma directa la Licencia Permanente desde el panel de desarrollador. */
+export function activateLifetimeLicense(): boolean {
+  try {
+    const state: LicenseState = { type: 'lifetime', lastSeenAt: Date.now() };
+    localStorage.setItem(LICENSE_KEY, JSON.stringify(state));
+    localStorage.setItem('license_key', LIFETIME_LICENSE);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Activa o renueva licencia periódica por N días. */
+export function activateTimedLicenseDays(days = 37): boolean {
+  try {
+    const now = Date.now();
+    const state: LicenseState = {
+      type: 'timed',
+      activatedAt: now,
+      expiresAt: now + days * 24 * 60 * 60 * 1000,
+      lastSeenAt: now,
+    };
+    localStorage.setItem(LICENSE_KEY, JSON.stringify(state));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** Expiración del admin para propagarla en el QR de empleados. null = permanente. */

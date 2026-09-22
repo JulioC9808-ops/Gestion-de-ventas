@@ -3,7 +3,9 @@ import HelpTip from '@/components/HelpTip';
 import { useData } from '@/contexts/DataContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+import AnimatedTrash from '@/components/ui/animated-trash';
+import { playTrashSound } from '@/lib/soundUtils';
 import { toast } from 'sonner';
 
 export default function Reports() {
@@ -257,14 +259,16 @@ export default function Reports() {
             <Button
               variant="destructive"
               size="sm"
+              className="group"
               onClick={() => {
                 if (!confirm('¿Seguro que quieres BORRAR TODO el historial de ventas? Esta acción es irreversible.')) return;
                 if (!confirm('Confirmación final: se eliminarán todos los cierres. ¿Continuar?')) return;
+                playTrashSound();
                 clearReports();
                 toast.success('Historial de ventas eliminado');
               }}
             >
-              <Trash2 className="w-4 h-4 mr-2" />
+              <AnimatedTrash className="w-4 h-4 mr-2" />
               Borrar todo el historial
             </Button>
           </div>

@@ -3,9 +3,11 @@ import HelpTip from '@/components/HelpTip';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Pencil, Trash2, Search } from 'lucide-react';
+import { Plus, Pencil, Search } from 'lucide-react';
+import AnimatedTrash from '@/components/ui/animated-trash';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CATEGORY_OPTIONS, UNIT_OPTIONS, getCategoryEmoji } from '@/lib/catalog';
+import { playTrashSound, playStockEntrySound } from '@/lib/soundUtils';
 import type { Product } from '@/types';
 
 export default function ProductManagement() {
@@ -55,6 +57,7 @@ export default function ProductManagement() {
     };
     if (editing) updateProduct({ ...editing, ...data });
     else addProduct(data);
+    playStockEntrySound();
     setDialogOpen(false);
   };
 
@@ -132,11 +135,20 @@ export default function ProductManagement() {
                       </span>
                     </td>
                     <td className="text-right">
-                      <Button variant="ghost" size="sm" onClick={() => openEdit(p)}>
+                      <Button variant="ghost" size="sm" onClick={() => openEdit(p)} title="Editar producto">
                         <Pencil className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => deleteProduct(p.id)} className="text-destructive">
-                        <Trash2 className="w-4 h-4" />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          playTrashSound();
+                          deleteProduct(p.id);
+                        }}
+                        className="group text-destructive hover:text-destructive hover:bg-destructive/10"
+                        title="Eliminar producto"
+                      >
+                        <AnimatedTrash className="w-4 h-4 text-destructive" />
                       </Button>
                     </td>
                   </tr>

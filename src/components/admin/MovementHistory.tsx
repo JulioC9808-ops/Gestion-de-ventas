@@ -1,8 +1,9 @@
 import React from 'react';
 import HelpTip from '@/components/HelpTip';
 import { useData } from '@/contexts/DataContext';
-import { Trash2 } from 'lucide-react';
+import AnimatedTrash from '@/components/ui/animated-trash';
 import { Button } from '@/components/ui/button';
+import { playTrashSound } from '@/lib/soundUtils';
 
 export default function MovementHistory() {
   const { movements, deleteMovement, users } = useData();
@@ -37,8 +38,17 @@ export default function MovementHistory() {
                   <td className="font-semibold">+{m.quantity}</td>
                   <td className="text-muted-foreground">{getUserName(m.movedBy)}</td>
                   <td className="text-right">
-                    <Button variant="ghost" size="sm" onClick={() => deleteMovement(m.id)} className="text-destructive">
-                      <Trash2 className="w-4 h-4" />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        playTrashSound();
+                        deleteMovement(m.id);
+                      }}
+                      className="group text-destructive hover:text-destructive hover:bg-destructive/10"
+                      title="Eliminar movimiento"
+                    >
+                      <AnimatedTrash className="w-4 h-4 text-destructive" />
                     </Button>
                   </td>
                 </tr>

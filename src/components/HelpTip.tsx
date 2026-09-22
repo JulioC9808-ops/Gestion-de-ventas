@@ -17,8 +17,9 @@ export default function HelpTip({ children, className }: HelpTipProps) {
       <PopoverTrigger asChild>
         <button
           type="button"
+          tabIndex={-1}
           aria-label="Ayuda"
-          className={`inline-flex items-center justify-center text-muted-foreground hover:text-primary transition-colors ${className || ''}`}
+          className={`inline-flex items-center justify-center text-muted-foreground hover:text-primary transition-colors focus:outline-none ${className || ''}`}
           onClick={e => e.stopPropagation()}
         >
           <HelpCircle className="w-5 h-5" />

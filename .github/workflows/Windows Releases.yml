@@ -139,7 +139,8 @@ jobs:
               -t "Version $TAG (Windows)" \
               -n "Actualización automática de Windows - Gestión de Ventas v$TAG"
           fi
-                # ---- Notificar a Telegram (mensaje) ----
+
+      # ---- Notificar a Telegram (mensaje con enlaces directos) ----
       - name: Notify Telegram channel
         if: success()
         shell: bash
@@ -147,16 +148,19 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         run: |
           TAG="${{ steps.get_release.outputs.new_tag }}"
+          EXE_NAME="${{ steps.find_exe.outputs.exe_name }}"
           URL="https://github.com/JulioC9808-ops/Sistema-Updates/releases/tag/${TAG}"
+          DIRECT_DOWNLOAD="https://github.com/JulioC9808-ops/Sistema-Updates/releases/download/${TAG}/${EXE_NAME}"
 
           MESSAGE="🚀 <b>Nueva versión disponible</b>
 
-          📦 <b>Gestión de Ventas</b> — Windows
-          🏷️ Versión: <code>v${TAG}</code>
+📦 <b>Gestión de Ventas</b> — Windows
+🏷️ Versión: <code>v${TAG}</code>
 
-          ⬇️ <a href=\"${URL}\">Descargar actualización</a>
+⬇️ <a href=\"${URL}\">Ver lanzamiento en GitHub</a>
+📥 <a href=\"${DIRECT_DOWNLOAD}\">Descargar Instalador (${EXE_NAME})</a>
 
-          <i>El instalador también está adjunto en el siguiente mensaje.</i>"
+<i>El instalador también se adjunta a continuación.</i>"
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d chat_id="@Gestion_Ventas" \
@@ -181,7 +185,7 @@ jobs:
           RESPONSE=$(curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
             -F chat_id="@Gestion_Ventas" \
             -F document=@"${EXE}" \
-            -F caption="💾 <b>Gestión de Ventas v${TAG}</b> — Instalador Windows (<code>${EXE_NAME}</code>)" \
+            -F caption="💾 <b>Gestión de Ventas v${TAG}</b> — Instalador Windows (${EXE_NAME})" \
             -F parse_mode="HTML")
 
           echo "$RESPONSE"
@@ -190,7 +194,5 @@ jobs:
           if echo "$RESPONSE" | grep -q '"ok":true'; then
             echo "✅ Instalador subido a Telegram correctamente."
           else
-            echo "❌ Error al subir el instalador a Telegram."
-            echo "$RESPONSE"
-            exit 1
+            echo "⚠️ Aviso: Telegram no aceptó el archivo adjunto (revisa si supera 50MB o permisos del bot)."
           fi

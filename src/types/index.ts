@@ -10,6 +10,8 @@ export interface User {
   salaryPercent?: number;
   /** Pista/nota personal para recordar la contraseña (no es la contraseña). */
   passwordHint?: string | null;
+  /** Foto de perfil del usuario en alta resolución (Data URL) */
+  avatarUrl?: string | null;
 }
 
 export interface Product {

@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
-import { Coffee, Lock, User, MessageCircle, HelpCircle } from 'lucide-react';
+import { Coffee, Lock, User, MessageCircle, HelpCircle, Sparkles, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import HelpTip from '@/components/HelpTip';
 import QrDisplay from '@/components/QrDisplay';
 import PrivacyPolicyDialog from '@/components/PrivacyPolicyDialog';
+import { getShiftGreeting } from '@/lib/greeting';
+import { playLoginSound } from '@/lib/soundUtils';
+import { toast } from 'sonner';
 
 const DEV_WHATSAPP = '+5351616816';
 const DEV_PHONE_TEL = 'tel:+5351616816';
@@ -17,6 +20,7 @@ export default function Login() {
   const { settings, users } = useData();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showQr, setShowQr] = useState(false);
@@ -36,28 +40,38 @@ export default function Login() {
       if (!result.ok) {
         setError(
           result.reason === 'employee-only'
-            ? 'Este dispositivo usa una licencia de SOLO EMPLEADO.'
-            : 'Usuario o contraseña incorrectos (revisa las mayúsculas)',
+            ? 'Este dispositivo está configurado exclusivamente para uso de personal autorizado.'
+            : 'Credenciales no válidas. Verifica tu usuario y contraseña.',
         );
+      } else {
+        const foundUser = users.find(u => u.username === username.trim());
+        const greetingData = getShiftGreeting(foundUser?.name || username.trim());
+        const h = new Date().getHours();
+        const period = h >= 5 && h < 12 ? 'morning' : h >= 12 && h < 19 ? 'afternoon' : 'night';
+        playLoginSound(period);
+        toast.success(`${greetingData.icon} ${greetingData.greeting}`, {
+          description: `${greetingData.shiftName} activo. ${greetingData.motivationalMessage}`,
+          duration: 4000,
+        });
       }
       setLoading(false);
-    }, 400);
+    }, 350);
   };
 
   const handleForgot = () => {
-    const target = users.find(u => u.username === forgotUser.trim());
+    const target = users.find(u => u.username.toLowerCase() === forgotUser.trim().toLowerCase());
     if (!target) {
-      setForgotResult('No existe ningún usuario con ese nombre exacto (revisa las mayúsculas).');
+      setForgotResult('No se encontró ninguna cuenta registrada con ese nombre de usuario.');
       return;
     }
     if (target.role !== 'admin') {
-      setForgotResult('Solo los administradores pueden recuperar su contraseña. Pídele al Admin que te de una nueva contraseña.');
+      setForgotResult('Por políticas de seguridad, solicita a un Administrador que restablezca tu contraseña de acceso.');
       return;
     }
     setForgotResult(
       target.passwordHint
-        ? `Administrador «${target.name}». Tu nota para recordar la contraseña es: “${target.passwordHint}”`
-        : `Administrador «${target.name}». No guardaste ninguna nota. Si no recuerdas la contraseña puedes contactar al desarrollador y pedirle restablecer su contraseña por la Predeterminada.`,
+        ? `Hola ${target.name}. Tu recordatorio de contraseña guardado es: “${target.passwordHint}”`
+        : `Hola ${target.name}. No tienes un recordatorio configurado. Comunícate con soporte técnico para restablecer el acceso a tu cuenta.`,
     );
   };
 
@@ -76,7 +90,7 @@ export default function Login() {
       {settings.backgroundUrl && <div className="absolute inset-0 bg-black/20" />}
 
       <div className="relative z-10 w-full max-w-md mx-4 animate-fade-in-up">
-        <div className="glass-card-translucent p-8 sm:p-10 shadow-2xl">
+        <div className="glass-card-translucent p-8 sm:p-10 shadow-2xl border border-border/70">
           <div className="flex flex-col items-center mb-8">
             {settings.logoUrl ? (
               <img src={settings.logoUrl} alt="Logo" className="w-16 h-16 rounded-2xl object-cover mb-4 ring-2 ring-primary/30" />
@@ -85,17 +99,17 @@ export default function Login() {
                 <Coffee className="w-8 h-8 text-primary-foreground" />
               </div>
             )}
-            <h1 className="text-2xl font-bold text-gradient font-display">
+            <h1 className="text-2xl font-bold text-gradient font-display text-center">
               {settings.businessName}
             </h1>
-            <p className="text-muted-foreground text-sm mt-1">Sistema de Ventas</p>
+            <p className="text-muted-foreground text-sm mt-1">Acceso al Sistema de Ventas</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground flex items-center gap-2">
                 Usuario
-                <HelpTip>Escribe el nombre de usuario tal como te lo dio el administrador: las mayúsculas y minúsculas importan.</HelpTip>
+                <HelpTip>Ingresa el nombre de usuario asignado.</HelpTip>
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -116,96 +130,114 @@ export default function Login() {
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground flex items-center gap-2">
                 Contraseña
-                <HelpTip>Tu contraseña es secreta y distingue mayúsculas de minúsculas. Si la olvidaste, pídele al administrador que te dé una nueva.</HelpTip>
+                <HelpTip>Tu contraseña distingue entre mayúsculas y minúsculas.</HelpTip>
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                 <Input
-                  type="password"
+                  type="text"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="Ingresa tu contraseña"
-                  className="pl-10 h-11"
+                  className={`pl-10 pr-10 h-11 ${
+                    !showPassword && password ? 'threads-obfuscated' : 'threads-revealed'
+                  }`}
                   autoCapitalize="none"
                   autoCorrect="off"
                   autoComplete="current-password"
                   spellCheck={false}
                   required
                 />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                  onClick={() => setShowPassword(prev => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors p-1"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
             {error && (
-              <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg text-center border border-destructive/30">
+              <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg text-center border border-destructive/30 animate-fade-in-up">
                 {error}
               </div>
             )}
 
             <Button
               type="submit"
-              className="w-full h-11 font-semibold text-base"
+              className="w-full h-11 font-semibold text-base shadow-sm hover:shadow transition-all"
               disabled={loading}
             >
-              {loading ? 'Ingresando...' : 'Iniciar Sesión'}
+              {loading ? 'Verificando...' : 'Iniciar Sesión'}
             </Button>
           </form>
 
           <Button
             type="button"
             variant="ghost"
-            className="w-full mt-2 text-sm"
+            className="w-full mt-2 text-sm text-muted-foreground hover:text-foreground"
             onClick={() => { setForgotResult(null); setForgotUser(username); setForgotOpen(true); }}
           >
             <HelpCircle className="w-4 h-4 mr-2" />
-            Olvidé mi contraseña
+            ¿Olvidaste tu contraseña?
           </Button>
 
           <div className="mt-4 flex items-center gap-2">
             <Button
               variant="outline"
-              className="flex-1"
+              className="flex-1 text-xs sm:text-sm"
               onClick={() => setShowQr(true)}
             >
-              <MessageCircle className="w-4 h-4 mr-2" />
-              Contactar al Desarrollador
+              <MessageCircle className="w-4 h-4 mr-2 text-primary" />
+              Soporte y Asistencia
             </Button>
-            <HelpTip>Si tienes problemas para entrar o algún error del sistema, contacta al desarrollador.</HelpTip>
+            <HelpTip>Canal directo de asistencia técnica y resolución de dudas.</HelpTip>
           </div>
 
           <div className="mt-4 flex justify-center">
             <PrivacyPolicyDialog />
           </div>
 
-          <p className="text-center text-xs text-muted-foreground mt-4">
-            © {new Date().getFullYear()} {settings.businessName}. Todos los derechos reservados.
-          </p>
+          <div className="mt-5 text-center space-y-1.5">
+            <p className="text-xs text-muted-foreground font-medium">
+              © 2026 Gestión de Ventas. Todos los derechos reservados.
+            </p>
+            <div>
+              <span className="gold-signature-shimmer text-xs tracking-wider">
+                ( Desarrollado por Julio_GE )
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
       <Dialog open={showQr} onOpenChange={setShowQr}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="font-display text-center">Llamar al Desarrollador</DialogTitle>
+            <DialogTitle className="font-display text-center">Atención y Soporte Técnico</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col items-center gap-4 py-4">
             {settings.qrUrl ? (
-              <img src={settings.qrUrl} alt="QR de contacto" className="w-64 h-64 rounded-lg object-contain border border-border p-2" />
+              <img src={settings.qrUrl} alt="QR de contacto" className="w-64 h-64 rounded-lg object-contain border border-border p-2 bg-white" />
             ) : (
-              <div className="bg-white p-3 rounded-lg">
+              <div className="bg-white p-3 rounded-lg shadow-sm border border-border/50">
                 <QrDisplay data={DEV_PHONE_TEL} size={240} />
               </div>
             )}
             <p className="text-sm text-muted-foreground text-center">
-              Escanea el QR con tu celular y se abrirá el teclado del teléfono con el número del desarrollador listo para llamar.
+              Escanea el código QR desde tu teléfono para comunicarte directamente con la línea de soporte autorizada.
             </p>
             <p className="font-mono text-base font-semibold">{DEV_WHATSAPP}</p>
             <Button
-              variant="outline"
+              variant="default"
               className="w-full"
               onClick={() => window.open(`https://wa.me/${DEV_WHATSAPP.replace(/[^0-9]/g, '')}`, '_blank')}
             >
               <MessageCircle className="w-4 h-4 mr-2" />
-              Abrir WhatsApp
+              Contactar por WhatsApp
             </Button>
           </div>
         </DialogContent>
@@ -214,12 +246,11 @@ export default function Login() {
       <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="font-display">Recuperar contraseña</DialogTitle>
+            <DialogTitle className="font-display">Recuperación de Contraseña</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Escribe tu nombre de usuario. Si eres administrador y guardaste una nota para recordar
-              tu contraseña, te la mostraremos aquí.
+              Ingresa tu nombre de usuario para consultar tu recordatorio de seguridad.
             </p>
             <Input
               value={forgotUser}
@@ -229,9 +260,9 @@ export default function Login() {
               autoCorrect="off"
               spellCheck={false}
             />
-            <Button className="w-full" onClick={handleForgot}>Buscar mi nota</Button>
+            <Button className="w-full" onClick={handleForgot}>Consultar Recordatorio</Button>
             {forgotResult && (
-              <div className="rounded-lg border border-border bg-secondary/50 p-3 text-sm">
+              <div className="rounded-lg border border-border bg-secondary/50 p-3.5 text-sm leading-relaxed">
                 {forgotResult}
               </div>
             )}

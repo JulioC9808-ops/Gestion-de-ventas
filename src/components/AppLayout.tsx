@@ -105,11 +105,19 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
             </nav>
 
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-full bg-sidebar-accent flex items-center justify-center text-xs font-bold text-sidebar-foreground">
-                  {currentUser?.name?.charAt(0) || 'U'}
-                </div>
-                <span className="text-sm text-sidebar-foreground hidden md:inline">{currentUser?.name}</span>
+              <div className="flex items-center gap-2.5">
+                {currentUser?.avatarUrl ? (
+                  <img
+                    src={currentUser.avatarUrl}
+                    alt={currentUser.name}
+                    className="w-8 h-8 rounded-full object-cover border border-sidebar-border shadow-sm ring-1 ring-sidebar-accent/50"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center text-xs font-bold text-sidebar-foreground border border-sidebar-border">
+                    {currentUser?.name?.charAt(0) || 'U'}
+                  </div>
+                )}
+                <span className="text-sm font-medium text-sidebar-foreground hidden md:inline">{currentUser?.name}</span>
               </div>
               <Button
                 variant="ghost"
@@ -219,11 +227,33 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
         </nav>
 
         <div className={`border-t border-sidebar-border ${collapsed ? 'p-1.5' : 'p-3'}`}>
-          {!collapsed && (
-            <div className="flex items-center gap-3 px-4 py-2 mb-2">
-              <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center text-xs font-bold text-sidebar-foreground">
-                {currentUser?.name?.charAt(0) || 'U'}
-              </div>
+          {collapsed ? (
+            <div className="flex justify-center my-2" title={currentUser?.name}>
+              {currentUser?.avatarUrl ? (
+                <img
+                  src={currentUser.avatarUrl}
+                  alt={currentUser.name}
+                  className="w-8 h-8 rounded-full object-cover border border-sidebar-border shadow-sm ring-1 ring-sidebar-accent/50"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center text-xs font-bold text-sidebar-foreground border border-sidebar-border">
+                  {currentUser?.name?.charAt(0) || 'U'}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 px-3 py-2 mb-2 rounded-xl bg-sidebar-accent/20 border border-sidebar-border/40">
+              {currentUser?.avatarUrl ? (
+                <img
+                  src={currentUser.avatarUrl}
+                  alt={currentUser.name}
+                  className="w-9 h-9 rounded-full object-cover border border-sidebar-border shadow-sm shrink-0 ring-1 ring-sidebar-accent/50"
+                />
+              ) : (
+                <div className="w-9 h-9 rounded-full bg-sidebar-accent flex items-center justify-center text-xs font-bold text-sidebar-foreground border border-sidebar-border shrink-0">
+                  {currentUser?.name?.charAt(0) || 'U'}
+                </div>
+              )}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-sidebar-foreground truncate">{currentUser?.name}</p>
                 <div className="flex items-center justify-between text-xs text-sidebar-foreground/50">

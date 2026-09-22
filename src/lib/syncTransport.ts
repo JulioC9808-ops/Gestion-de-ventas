@@ -49,7 +49,9 @@ function isAndroidNative(): boolean {
 function randomToken(): string {
   try {
     if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
-  } catch {}
+  } catch {
+    // fallback
+  }
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
@@ -110,12 +112,20 @@ export async function startEmployeeShare(data: EmployeeSyncPackage): Promise<str
 }
 
 export async function stopEmployeeShare(): Promise<void> {
-  try { await WiFiDirect.stopShare(); } catch {}
+  try {
+    await WiFiDirect.stopShare();
+  } catch {
+    // ignore
+  }
   if (window.desktopBridge?.stopSyncServer) {
     await window.desktopBridge.stopSyncServer();
     return;
   }
-  try { await window.Capacitor?.Plugins?.LocalSync?.stop(); } catch {}
+  try {
+    await window.Capacitor?.Plugins?.LocalSync?.stop();
+  } catch {
+    // ignore
+  }
 }
 
 export async function receiveEmployeeShare(raw: string): Promise<EmployeeSyncPackage | null> {
@@ -172,7 +182,11 @@ export async function stopShiftShare(): Promise<void> {
     await window.desktopBridge.stopSyncServer();
     return;
   }
-  try { await window.Capacitor?.Plugins?.LocalSync?.stop(); } catch {}
+  try {
+    await window.Capacitor?.Plugins?.LocalSync?.stop();
+  } catch {
+    // ignore
+  }
 }
 
 export async function receiveShiftShare(raw: string): Promise<ShiftReport | null> {

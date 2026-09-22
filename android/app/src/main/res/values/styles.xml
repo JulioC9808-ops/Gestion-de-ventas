@@ -28,11 +28,16 @@
     </style>
 
     <!-- Ventana transparente para las tarjetas de actualización:
-         SOLO se ve la tarjeta bordeada, sin recuadro blanco detrás -->
+         SOLO se ve la tarjeta flotante, sin recuadro blanco detrás ni bordes de ventana -->
     <style name="UpdateCardDialog" parent="Theme.AppCompat.Light.Dialog">
         <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:colorBackground">@android:color/transparent</item>
         <item name="android:windowIsFloating">true</item>
         <item name="android:windowNoTitle">true</item>
-        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowElevation">0dp</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowFrame">@null</item>
     </style>
 </resources>

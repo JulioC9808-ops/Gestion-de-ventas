@@ -1,22 +1,22 @@
 import React from 'react';
-import { ShieldAlert } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import { readEmployeeLicense, isEmployeeLicenseActive, employeeHoursRemaining } from '@/lib/employeeLicense';
 
 /**
- * Aviso permanente para los dispositivos activados con el QR del jefe:
- * licencia de SOLO EMPLEADO, válida 24 horas.
+ * Aviso informativo para los terminales activados con el QR de personal:
+ * sesión de ventas activa y tiempo restante de sincronización.
  */
 export default function EmployeeLicenseBanner() {
   const lic = readEmployeeLicense();
   if (!lic || !isEmployeeLicenseActive(lic)) return null;
 
+  const hours = employeeHoursRemaining(lic);
+
   return (
-    <div className="mb-4 flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs text-warning">
-      <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
-      <p>
-        <strong>Usted está usando una licencia de SOLO EMPLEADO.</strong> No tiene acceso al panel de
-        Administración. Caduca en {employeeHoursRemaining(lic)} h; después deberá volver a escanear el
-        QR del jefe para mantener los datos sincronizados.
+    <div className="mb-4 flex items-center gap-2.5 rounded-xl border border-primary/20 bg-primary/5 px-3.5 py-2.5 text-xs text-foreground/80 shadow-sm">
+      <ShieldCheck className="h-4 w-4 shrink-0 text-primary" />
+      <p className="leading-snug">
+        <span className="font-semibold text-foreground">Sesión de Punto de Venta activa:</span> Esta terminal cuenta con acceso operativo de personal ({hours} h restantes). Recuerda sincronizar tu cierre con el Administrador al terminar la jornada.
       </p>
     </div>
   );

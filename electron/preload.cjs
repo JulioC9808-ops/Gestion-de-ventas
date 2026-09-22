@@ -15,7 +15,7 @@ $disk = (Get-CimInstance Win32_DiskDrive | Select-Object -First 1).SerialNumber
 $bios = (Get-CimInstance Win32_BIOS).SerialNumber
 $cpu = (Get-CimInstance Win32_Processor | Select-Object -First 1).ProcessorId
 $ram = ((Get-CimInstance Win32_PhysicalMemory | ForEach-Object { $_.SerialNumber }) | Sort-Object) -join '|'
-"$disk`n$bios`n$cpu`n$ram"
+"$disk\`n$bios\`n$cpu\`n$ram"
 `;
     const out = execSync(
       `powershell -NoProfile -ExecutionPolicy Bypass -Command "${script.replace(/"/g, '\\"')}"`,

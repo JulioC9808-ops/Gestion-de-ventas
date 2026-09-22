@@ -40,20 +40,35 @@ export default function IntroPlayer() {
     return () => clearTimeout(t);
   }, [show, mobile]);
 
+  // Permitir cerrar el video con la tecla Escape
+  useEffect(() => {
+    if (!show) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' || e.key === ' ' || e.key === 'Enter') {
+        hideBootSplash();
+        setShow(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [show]);
+
   if (!show) return null;
 
   const base = import.meta.env.BASE_URL;
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center ${
-        mobile ? 'bg-white' : 'bg-background'
-      }`}
-      onClick={() => setShow(false)}
+      id="app-intro-overlay"
+      className="fixed inset-0 z-[9999] w-screen h-screen overflow-hidden bg-black flex items-center justify-center select-none cursor-pointer transition-opacity duration-300"
+      onClick={() => {
+        hideBootSplash();
+        setShow(false);
+      }}
+      title="Haz clic o presiona Esc para continuar"
     >
-
       {mobile ? (
-        <div className="relative flex h-full w-full flex-col items-center justify-center px-8">
+        <div className="relative flex h-full w-full flex-col items-center justify-center px-8 bg-white">
           {/* Resplandor suave detrás de la taza */}
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,hsl(var(--primary)/0.18),transparent_65%)]" />
           <img
@@ -68,17 +83,22 @@ export default function IntroPlayer() {
           />
         </div>
       ) : (
-        <video
-          src={`${base}intro.mp4`}
-          autoPlay
-          muted
-          playsInline
-          className="w-full h-full object-contain"
-          onCanPlay={hideBootSplash}
-          onPlaying={hideBootSplash}
-          onEnded={() => { hideBootSplash(); setShow(false); }}
-          onError={() => { hideBootSplash(); setShow(false); }}
-        />
+        <div className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden">
+          <video
+            src={`${base}intro.mp4`}
+            autoPlay
+            muted
+            playsInline
+            className="w-full h-full object-cover select-none pointer-events-none"
+            onCanPlay={hideBootSplash}
+            onPlaying={hideBootSplash}
+            onEnded={() => { hideBootSplash(); setShow(false); }}
+            onError={() => { hideBootSplash(); setShow(false); }}
+          />
+          <div className="absolute bottom-4 right-4 z-10 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-white/70 hover:text-white text-xs border border-white/10 transition-colors pointer-events-auto">
+            Saltar presentación ✕
+          </div>
+        </div>
       )}
     </div>
   );

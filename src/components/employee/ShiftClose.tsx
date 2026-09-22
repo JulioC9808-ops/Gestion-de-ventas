@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import type { SaleItem, Transfer, VipSale, ShiftReport } from '@/types';
-import { Check, Trash2, Plus, Printer, LogOut, Pencil, ArrowLeft, Package, Coffee, UtensilsCrossed, Sandwich, QrCode } from 'lucide-react';
+import { Check, Plus, Printer, LogOut, Pencil, ArrowLeft, Package, Coffee, UtensilsCrossed, Sandwich, QrCode } from 'lucide-react';
+import AnimatedTrash from '@/components/ui/animated-trash';
+import { playTrashSound, playShiftCloseSound } from '@/lib/soundUtils';
 import { isMobileDevice } from '@/lib/platform';
 import { getPendingShift, setPendingShift, clearPendingShift } from '@/lib/syncStore';
 import { startShiftShare, stopShiftShare } from '@/lib/syncTransport';
@@ -168,6 +170,10 @@ export default function ShiftClose() {
     const baseReport = finalReport ?? buildReport();
     saleItems.forEach(item => reduceStock(item.productId, item.quantitySold));
 
+    const h = new Date().getHours();
+    const period = h >= 5 && h < 12 ? 'morning' : h >= 12 && h < 19 ? 'afternoon' : 'night';
+    playShiftCloseSound(period);
+
     if (mobile) {
       // En móvil: guardar como pendiente y mostrar pantalla de sincronización
       const pendingReport: ShiftReport = { ...baseReport, synced: false };
@@ -182,7 +188,7 @@ export default function ShiftClose() {
 
     // PC / Electron: flujo original
     addReport({ ...baseReport, synced: true });
-    toast.success('Turno cerrado exitosamente. Hasta Pronto');
+    toast.success('Turno cerrado exitosamente. ¡Hasta pronto!');
     logout();
   };
 
@@ -214,6 +220,9 @@ export default function ShiftClose() {
       toast.error('La confirmación no corresponde a este turno.');
       return;
     }
+    const h = new Date().getHours();
+    const period = h >= 5 && h < 12 ? 'morning' : h >= 12 && h < 19 ? 'afternoon' : 'night';
+    playShiftCloseSound(period);
     addReport({ ...finalReport, synced: true });
     clearPendingShift();
     stopShiftShare();
@@ -513,11 +522,20 @@ export default function ShiftClose() {
                   <>
                     <span className="text-sm">${t.amount}{t.code ? ` — ID: ${t.code}` : ''}</span>
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => { setEditingTransfer(t.id); setEditTransferData({ amount: String(t.amount), code: t.code }); }}>
+                      <Button variant="ghost" size="sm" onClick={() => { setEditingTransfer(t.id); setEditTransferData({ amount: String(t.amount), code: t.code }); }} title="Editar transferencia">
                         <Pencil className="w-3 h-3" />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => setTransfers(prev => prev.filter(x => x.id !== t.id))}>
-                        <Trash2 className="w-3 h-3 text-destructive" />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          playTrashSound();
+                          setTransfers(prev => prev.filter(x => x.id !== t.id));
+                        }}
+                        className="group hover:bg-destructive/10"
+                        title="Eliminar transferencia"
+                      >
+                        <AnimatedTrash className="w-3.5 h-3.5 text-destructive" />
                       </Button>
                     </div>
                   </>
@@ -538,8 +556,17 @@ export default function ShiftClose() {
             {vipSales.map(v => (
               <div key={v.id} className="flex items-center justify-between bg-secondary/50 rounded-lg px-3 py-2 mb-1">
                 <span className="text-sm">{v.concept} — <span className="font-medium">${v.amount}</span></span>
-                <Button variant="ghost" size="sm" onClick={() => setVipSales(prev => prev.filter(x => x.id !== v.id))}>
-                  <Trash2 className="w-3 h-3 text-destructive" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    playTrashSound();
+                    setVipSales(prev => prev.filter(x => x.id !== v.id));
+                  }}
+                  className="group hover:bg-destructive/10"
+                  title="Eliminar registro VIP"
+                >
+                  <AnimatedTrash className="w-3.5 h-3.5 text-destructive" />
                 </Button>
               </div>
             ))}

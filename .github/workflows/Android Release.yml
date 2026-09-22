@@ -186,7 +186,35 @@ jobs:
             --repo JulioC9808-ops/Sistema-Updates \
             --clobber
 
-            - name: Upload APK to Telegram
+      # 17. Notificar al canal de Telegram con el enlace directo
+      - name: Notify Telegram channel
+        if: success()
+        shell: bash
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          VERSION="${{ steps.app_version.outputs.version_name }}"
+          URL="https://github.com/JulioC9808-ops/Sistema-Updates/releases/tag/android"
+          DIRECT_DOWNLOAD="https://github.com/JulioC9808-ops/Sistema-Updates/releases/download/android/app-release-signed.apk"
+
+          MESSAGE="🚀 <b>Nueva versión disponible</b>
+
+📦 <b>Gestión de Ventas</b> — Android
+🏷️ Versión: <code>v${VERSION}</code>
+
+⬇️ <a href=\"${URL}\">Ver lanzamiento en GitHub</a>
+📥 <a href=\"${DIRECT_DOWNLOAD}\">Descargar APK directamente</a>
+
+<i>El instalador APK también se adjunta a continuación.</i>"
+
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d chat_id="@Gestion_Ventas" \
+            -d parse_mode="HTML" \
+            -d disable_web_page_preview="false" \
+            --data-urlencode "text=${MESSAGE}"
+
+      # 18. Subir archivo APK a Telegram
+      - name: Upload APK to Telegram
         if: success()
         shell: bash
         env:
@@ -202,7 +230,7 @@ jobs:
             "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
             --form-string "chat_id=@Gestion_Ventas" \
             -F "document=@${APK}" \
-            --form-string "caption=📱 <b>Gestión de Ventas v${VERSION}</b> — APK Android firmado (${SIZE_MB} MB)" \
+            --form-string "caption=📱 <b>Gestión de Ventas v${VERSION}</b> — APK Android (${SIZE_MB} MB)" \
             --form-string "parse_mode=HTML")
 
           HTTP_STATUS=$(echo "$RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
@@ -215,6 +243,5 @@ jobs:
           if echo "$BODY" | grep -q '"ok":true'; then
             echo "✅ APK subido a Telegram correctamente."
           else
-            echo "❌ Error al subir el APK. Revisa la respuesta de arriba."
-            exit 1
+            echo "⚠️ Aviso: Telegram no aceptó el archivo adjunto (revisa si supera 50MB o permisos del bot)."
           fi
