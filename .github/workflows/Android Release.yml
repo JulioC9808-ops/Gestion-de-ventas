@@ -1,49 +1,45 @@
-name: Build Android APK + Publicar
+name: Android Releases
 
 on:
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # 2. Node
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           registry-url: https://registry.npmjs.org
 
-      # 2.1 Configurar caché de Electron
       - name: Configure Electron cache
         run: |
           export ELECTRON_CACHE=$HOME/.cache/electron
           export ELECTRON_SKIP_BINARY_DOWNLOAD=0
 
-      # 2.2 Instalar dependencias con reintento
       - name: Install dependencies
         run: npm ci --registry=https://registry.npmjs.org/ || npm install --no-audit --registry=https://registry.npmjs.org/
 
-      # 3. Build web
       - name: Build web assets
         run: npm run build
 
       - name: Sync Capacitor
         run: npx --no-install cap sync android
 
-      # 4. Java (usar Java 17)
       - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 5. Android SDK
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
@@ -52,23 +48,16 @@ jobs:
           log-accepted-android-sdk-licenses: true
           packages: platform-tools
 
-      # 6. Aceptar TODAS las licencias
       - name: Accept ALL Android SDK licenses
         run: yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses
 
-      # 7. Instalar SDKs necesarios (incluyendo Android 15 / API 35)
       - name: Install Android SDK packages
         run: |
-          sdkmanager "platform-tools" \
-                     "platforms;android-34" \
-                     "platforms;android-35" \
-                     "build-tools;35.0.0"
+          sdkmanager "platform-tools" "platforms;android-34" "platforms;android-35" "build-tools;35.0.0"
 
-      # 8. Permisos gradlew
       - name: Grant execute permission for gradlew
         run: chmod +x android/gradlew
 
-      # 9. Limpiar restos de Lovable y caches
       - name: Remove old Lovable package
         run: rm -rf android/app/src/main/java/app
 
@@ -76,78 +65,51 @@ jobs:
         working-directory: android
         run: ./gradlew clean
 
-      # 10. Build APK y AAB (Android App Bundle para Google Play)
       - name: Build Android APK and AAB Bundle
         working-directory: android
         run: |
           ./gradlew assembleRelease --no-daemon --stacktrace
           ./gradlew bundleRelease --no-daemon --stacktrace
 
-      # 11. Decode keystore desde secreto
       - name: Decode Keystore
         run: echo "$KEYSTORE_BASE64" | base64 --decode > my-release-key.keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
 
-      # 12. Zipalign + Firmar APK con apksigner (v1, v2, v3)
       - name: Zipalign APK
         run: |
-          $ANDROID_HOME/build-tools/35.0.0/zipalign -p -f 4 \
-            android/app/build/outputs/apk/release/app-release-unsigned.apk \
-            android/app/build/outputs/apk/release/app-release-aligned.apk
+          $ANDROID_HOME/build-tools/35.0.0/zipalign -p -f 4 android/app/build/outputs/apk/release/app-release-unsigned.apk android/app/build/outputs/apk/release/app-release-aligned.apk
 
       - name: Sign APK with apksigner
         run: |
-          $ANDROID_HOME/build-tools/35.0.0/apksigner sign \
-            --ks my-release-key.keystore \
-            --ks-key-alias gestionventas \
-            --ks-pass pass:${{ secrets.KEYSTORE_PASSWORD }} \
-            --key-pass pass:${{ secrets.KEY_PASSWORD }} \
-            --v1-signing-enabled true \
-            --v2-signing-enabled true \
-            --v3-signing-enabled true \
-            --out android/app/build/outputs/apk/release/app-release-signed.apk \
-            android/app/build/outputs/apk/release/app-release-aligned.apk
+          $ANDROID_HOME/build-tools/35.0.0/apksigner sign --ks my-release-key.keystore --ks-key-alias gestionventas --ks-pass pass:${{ secrets.KEYSTORE_PASSWORD }} --key-pass pass:${{ secrets.KEY_PASSWORD }} --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true --out android/app/build/outputs/apk/release/app-release-signed.apk android/app/build/outputs/apk/release/app-release-aligned.apk
 
-      # 13. Firmar AAB (Android App Bundle) para Google Play con jarsigner
       - name: Sign AAB for Google Play
         run: |
           cp android/app/build/outputs/bundle/release/app-release.aab android/app/build/outputs/bundle/release/app-release-signed.aab
-          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
-            -keystore my-release-key.keystore \
-            -storepass "${{ secrets.KEYSTORE_PASSWORD }}" \
-            -keypass "${{ secrets.KEY_PASSWORD }}" \
-            android/app/build/outputs/bundle/release/app-release-signed.aab \
-            gestionventas
+          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore my-release-key.keystore -storepass "${{ secrets.KEYSTORE_PASSWORD }}" -keypass "${{ secrets.KEY_PASSWORD }}" android/app/build/outputs/bundle/release/app-release-signed.aab gestionventas
 
-      # 14. Verificar firma del APK
       - name: Verify APK signature
         run: |
-          $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose \
-            android/app/build/outputs/apk/release/app-release-signed.apk
+          $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose android/app/build/outputs/apk/release/app-release-signed.apk
 
-      # 14.1 Calcular y mostrar hash SHA-256 para android-version.json
       - name: Calculate SHA-256 hash for in-app updates
         run: |
           APK_HASH=$(sha256sum android/app/build/outputs/apk/release/app-release-signed.apk | awk '{print $1}')
-          echo "================================================="
           echo "APK SHA-256 HASH: $APK_HASH"
-          echo "================================================="
           echo "apk_sha256=$APK_HASH" >> $GITHUB_ENV
 
-      # 14.2 Leer versión del build.gradle para usarla en Telegram
       - name: Read app version
         id: app_version
         run: |
-          VERSION_NAME=$(grep -m1 'versionName' android/app/build.gradle | sed -E 's/.*versionName[[:space:]]*["'\'']([^"'\'']+)["'\''].*/\1/')
-          VERSION_CODE=$(grep -m1 'versionCode' android/app/build.gradle | grep -oE '[0-9]+')
+          VERSION_NAME=$(grep -m1 versionName android/app/build.gradle | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1)
+          VERSION_CODE=$(grep -m1 versionCode android/app/build.gradle | grep -oE '[0-9]+' | head -1)
           if [ -z "$VERSION_NAME" ]; then VERSION_NAME="desconocida"; fi
           if [ -z "$VERSION_CODE" ]; then VERSION_CODE="0"; fi
           echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
           echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
-          echo "Versión detectada: $VERSION_NAME (code $VERSION_CODE)"
+          echo "Version detectada: $VERSION_NAME (code $VERSION_CODE)"
 
-      # 15. Subir APK firmado como artifact (instalación directa)
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
@@ -156,8 +118,7 @@ jobs:
           if-no-files-found: error
           retention-days: 3
 
-      # 16. Subir AAB firmado como artifact (listo para Google Play Console)
-      - name: Upload AAB artifact (Google Play Bundle)
+      - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
         with:
           name: GestionDeSistema-release-aab-playstore
@@ -165,28 +126,15 @@ jobs:
           if-no-files-found: error
           retention-days: 3
 
-      # 15. Publicar APK en Sistema-Updates (tag fijo "android", marcado
-      #     pre-release para que NO interfiera con las actualizaciones de PC)
       - name: Publish APK to Sistema-Updates
         env:
           GH_TOKEN: ${{ secrets.UPDATES_TOKEN }}
         run: |
           cp android/app/build/outputs/apk/release/app-release-signed.apk ./app-release-signed.apk
-          # Crea el release "android" si no existe; si ya existe, sigue
-          gh release view android --repo JulioC9808-ops/Sistema-Updates > /dev/null 2>&1 || \
-          gh release create android \
-            --repo JulioC9808-ops/Sistema-Updates \
-            --title "Android (última compilación)" \
-            --prerelease \
-            --notes "Build automático de $(date +%Y-%m-%d) — commit ${GITHUB_SHA::7}"
-          # Asegura que siempre quede marcado como pre-release
+          gh release view android --repo JulioC9808-ops/Sistema-Updates > /dev/null 2>&1 || gh release create android --repo JulioC9808-ops/Sistema-Updates --title "Android ultima compilacion" --prerelease --notes "Build automatico"
           gh release edit android --repo JulioC9808-ops/Sistema-Updates --prerelease
-          # Reemplaza el APK anterior (--clobber = sobrescribe)
-          gh release upload android app-release-signed.apk \
-            --repo JulioC9808-ops/Sistema-Updates \
-            --clobber
+          gh release upload android app-release-signed.apk --repo JulioC9808-ops/Sistema-Updates --clobber
 
-      # 17. Notificar al canal de Telegram con el enlace directo
       - name: Notify Telegram channel
         if: success()
         shell: bash
@@ -196,24 +144,9 @@ jobs:
           VERSION="${{ steps.app_version.outputs.version_name }}"
           URL="https://github.com/JulioC9808-ops/Sistema-Updates/releases/tag/android"
           DIRECT_DOWNLOAD="https://github.com/JulioC9808-ops/Sistema-Updates/releases/download/android/app-release-signed.apk"
+          MESSAGE="Nueva version disponible. Gestion de Ventas Android. Version v${VERSION}. Ver en GitHub: ${URL} . Descargar APK: ${DIRECT_DOWNLOAD}"
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" --data-urlencode "chat_id=@Gestion_Ventas" -d parse_mode="HTML" -d disable_web_page_preview="false" --data-urlencode "text=${MESSAGE}"
 
-          MESSAGE="🚀 <b>Nueva versión disponible</b>
-
-📦 <b>Gestión de Ventas</b> — Android
-🏷️ Versión: <code>v${VERSION}</code>
-
-⬇️ <a href=\"${URL}\">Ver lanzamiento en GitHub</a>
-📥 <a href=\"${DIRECT_DOWNLOAD}\">Descargar APK directamente</a>
-
-<i>El instalador APK también se adjunta a continuación.</i>"
-
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            -d chat_id="@Gestion_Ventas" \
-            -d parse_mode="HTML" \
-            -d disable_web_page_preview="false" \
-            --data-urlencode "text=${MESSAGE}"
-
-      # 18. Subir archivo APK a Telegram
       - name: Upload APK to Telegram
         if: success()
         shell: bash
@@ -223,25 +156,18 @@ jobs:
           VERSION="${{ steps.app_version.outputs.version_name }}"
           APK="android/app/build/outputs/apk/release/app-release-signed.apk"
           SIZE_MB=$(du -m "$APK" | cut -f1)
-
           echo "Subiendo APK (${SIZE_MB} MB) a Telegram..."
-
-          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST \
-            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
-            --form-string "chat_id=@Gestion_Ventas" \
-            -F "document=@${APK}" \
-            --form-string "caption=📱 <b>Gestión de Ventas v${VERSION}</b> — APK Android (${SIZE_MB} MB)" \
-            --form-string "parse_mode=HTML")
-
+          CAPTION="Gestion de Ventas v${VERSION} - APK Android ${SIZE_MB} MB"
+          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" --form-string "chat_id=@Gestion_Ventas" -F "document=@${APK}" --form-string "caption=${CAPTION}" --form-string "parse_mode=HTML")
           HTTP_STATUS=$(echo "$RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
           BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
-
           echo "HTTP Status: $HTTP_STATUS"
           echo "Respuesta de Telegram:"
           echo "$BODY"
-
           if echo "$BODY" | grep -q '"ok":true'; then
-            echo "✅ APK subido a Telegram correctamente."
+            echo "APK subido a Telegram correctamente."
           else
-            echo "⚠️ Aviso: Telegram no aceptó el archivo adjunto (revisa si supera 50MB o permisos del bot)."
+            echo "Error al subir el APK."
+            echo "$BODY"
+            exit 1
           fi
