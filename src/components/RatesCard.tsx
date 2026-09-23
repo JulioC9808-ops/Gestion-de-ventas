@@ -16,14 +16,14 @@ import {
   getElToqueRates,
   initElToqueWatcher,
   loadCachedRates,
-  getCurrencyCountryCode,
-  CURRENCY_EMOJI_FALLBACK,
+  getRateDelta,
   getElToqueApiKey,
   saveElToqueApiKey,
   updateManualRates,
   INITIAL_FALLBACK_RATES,
   type ElToqueSnapshot,
   type CurrencyRate,
+  type RateDelta,
 } from '@/lib/elToque';
 
 // ---- Banderas: mapa estático (así Vite solo incluye las usadas) ----
@@ -36,7 +36,7 @@ const FLAG_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   SEK: SE, NOK: NO, DKK: DK, PLN: PL,
 };
 
-/** Bandera circular/rectangular SVG de cada moneda; emoji de respaldo para cripto */
+/** Bandera SVG de la moneda; emoji de respaldo para cripto */
 function CurrencyFlag({ code, className }: { code: string; className?: string }) {
   const upper = code.toUpperCase();
   const Flag = FLAG_MAP[upper];
@@ -52,7 +52,23 @@ function CurrencyFlag({ code, className }: { code: string; className?: string })
   }
   return (
     <span className={`inline-flex shrink-0 items-center justify-center align-middle ${className || 'w-6'}`}>
-      {CURRENCY_EMOJI_FALLBACK[upper] || '💱'}
+      {upper === 'USDT' ? '💵' : upper === 'BTC' ? '₿' : upper === 'ETH' ? 'Ξ' : upper === 'TRX' ? '⚡' : '💱'}
+    </span>
+  );
+}
+
+/** Chip ▲/▼ estilo elTOQUE: rojo al subir, verde al bajar */
+function DeltaChip({ delta, big }: { delta?: RateDelta | null; big?: boolean }) {
+  if (!delta) return null;
+  const up = delta.direction === 'up';
+  const value = Math.abs(delta.diff);
+  const text = value % 1 === 0 ? String(value) : value.toFixed(2);
+  return (
+    <span
+      className={`inline-flex items-center gap-0.5 font-bold whitespace-nowrap ${big ? 'text-[11px]' : 'text-[10px]'}`}
+      style={{ color: up ? '#dc2626' : '#16a34a' }}
+    >
+      {up ? '▲' : '▼'} {up ? '+' : '-'}{text}
     </span>
   );
 }
@@ -88,8 +104,10 @@ function timeAgo(iso: string): string {
   return `hace ${days} d`;
 }
 
-/** Fila estilo elTOQUE: "1 USD 🇺🇸   720.00 CUP" */
-function RateRow({ rate, accent, big }: { rate: CurrencyRate; accent?: string; big?: boolean }) {
+/** Fila estilo elTOQUE: "1 USD [bandera] ... 720.00 CUP ▲ +3" */
+function RateRow({
+  rate, accent, big, delta,
+}: { rate: CurrencyRate; accent?: string; big?: boolean; delta?: RateDelta | null }) {
   return (
     <div className="flex items-center justify-between py-3 border-b border-border/40 last:border-b-0">
       <div className="flex items-center gap-2.5 min-w-0">
@@ -106,11 +124,15 @@ function RateRow({ rate, accent, big }: { rate: CurrencyRate; accent?: string; b
             <span className="text-[10px] text-muted-foreground mx-1">/</span>
             <span className="text-[10px] text-muted-foreground mr-1">V:</span>
             <span className="font-bold" style={{ color: accent }}>{`${rate.sell.toLocaleString()} CUP`}</span>
+            <span className="ml-1.5"><DeltaChip delta={delta} big={big} /></span>
           </div>
         ) : (
-          <span className={`font-bold ${big ? 'text-base' : 'text-sm'}`} style={{ color: accent }}>
-            {`${rate.value.toLocaleString()} CUP`}
-          </span>
+          <div className="flex items-center gap-1.5 justify-end">
+            <span className={`font-bold ${big ? 'text-base' : 'text-sm'}`} style={{ color: accent }}>
+              {`${rate.value.toLocaleString()} CUP`}
+            </span>
+            <DeltaChip delta={delta} big={big} />
+          </div>
         )}
       </div>
     </div>
@@ -160,6 +182,17 @@ export default function RatesCard() {
   }, []);
 
   const accent = withAlpha(settings.fontColor, 0.95);
+
+  // Deltas ▲/▼ del snapshot actual contra el snapshot oficial anterior
+  const deltas = useMemo(() => {
+    const map: Record<string, RateDelta | null> = {};
+    if (snapshot?.data) {
+      for (const r of snapshot.data) {
+        map[r.code] = getRateDelta(r.code, snapshot);
+      }
+    }
+    return map;
+  }, [snapshot]);
 
   const featured = useMemo(() => {
     if (!snapshot?.data) return [];
@@ -263,10 +296,9 @@ export default function RatesCard() {
           </div>
         )}
 
-        {/* Filas estilo elTOQUE: 1 USD [bandera] ... 720.00 CUP */}
         <div className="px-1">
           {featured.map((r) => (
-            <RateRow key={r.code} rate={r} accent={accent} />
+            <RateRow key={r.code} rate={r} accent={accent} delta={deltas[r.code]} />
           ))}
         </div>
 
@@ -340,10 +372,10 @@ export default function RatesCard() {
             </div>
           )}
 
-          {/* Lista de monedas con divisores, como elTOQUE */}
+          {/* Lista de monedas con divisores y deltas, como elTOQUE */}
           <div className="flex-1 overflow-y-auto px-3 pb-2 min-h-[160px] max-h-[50vh]">
             {filtered.map((r) => (
-              <RateRow key={r.code} rate={r} accent={accent} big />
+              <RateRow key={r.code} rate={r} accent={accent} big delta={deltas[r.code]} />
             ))}
             {filtered.length === 0 && (
               <div className="py-8 text-center text-xs text-muted-foreground">
