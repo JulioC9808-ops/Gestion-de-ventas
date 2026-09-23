@@ -92,15 +92,20 @@ jobs:
           if [ -z "$LATEST" ] || [ "$LATEST" = "null" ]; then
             LATEST="1.0.0"
           fi
-          LATEST="${LATEST#v}"
+          # Limpiar espacios, saltos de línea y la "v" inicial si existe
+          LATEST=$(echo "$LATEST" | tr -d '[:space:]' | sed 's/^v//')
+
           IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST"
           MAJOR=${MAJOR:-1}
           MINOR=${MINOR:-0}
           PATCH=${PATCH:-0}
           NEW_PATCH=$((PATCH + 1))
           NEW_TAG="${MAJOR}.${MINOR}.${NEW_PATCH}"
+
+          # Limpiar de nuevo por seguridad y escribir
+          NEW_TAG=$(echo "$NEW_TAG" | tr -d '[:space:]')
           echo "new_tag=$NEW_TAG" >> "$GITHUB_OUTPUT"
-          echo "Nuevo tag: $NEW_TAG"
+          echo "Nuevo tag (limpio): '$NEW_TAG'"
 
       - name: Find installer file
         id: find_exe
