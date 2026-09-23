@@ -1,7 +1,9 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import type { Product, StockItem, ShiftReport, StockMovement, User, AppSettings } from '@/types';
 import type { BackupPayload } from '@/lib/backup';
 import defaultQr from '@/assets/dev-qr.png.asset.json';
+import { executeSilentAutoBackup, STORAGE_AUTO_BACKUP_LAST_DAY } from '@/lib/backupUtils';
+import { applyIncomingRatesSnapshot } from '@/lib/elToque';
 
 export const DEFAULT_DEV_QR_URL = defaultQr.url;
 
@@ -116,6 +118,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   telegramUrl: DEFAULT_TELEGRAM_URL,
   githubUpdatesUrl: GITHUB_UPDATES_URL,
   announcementUrl: DEFAULT_ANNOUNCEMENT_URL,
+  welcomeGreetingsEnabled: true,
+  soundEffectsEnabled: true,
+  quoteLanguages: ['es'],
 };
 
 // Migración: borra SOLO los productos de demostración (y su stock/movimientos),
@@ -368,25 +373,80 @@ export function DataProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  // Aplica un respaldo recibido por QR. Se respetan las imágenes locales
-  // (logo/fondo/QR) porque no viajan en el respaldo.
+  // Aplica un respaldo. Reemplaza todos los datos existentes (productos, stock, movimientos, usuarios y reportes)
+  // con los datos del respaldo para que una app vacía o existente quede exactamente sincronizada.
+  // Respeta los estilos y temas visuales locales para evitar cualquier error de interfaz.
   const applyBackup = useCallback((payload: BackupPayload) => {
     setP(() => payload.products || []);
     setS(() => payload.stock || []);
     setM(() => payload.movements || []);
     setU(() => payload.users || []);
-    // Los cierres de turno se FUSIONAN (nunca se pierde historial de ningún dispositivo)
-    if (payload.reports?.length) {
-      setR(prev => dedupeReports([...prev, ...payload.reports!]));
-    }
+    setR(() => payload.reports || []);
+
+    // Solo restaurar datos de negocio (nombre, salarios); JAMÁS temas/colores conflictivos
     setSt(prev => ({
       ...prev,
-      ...payload.settings,
-      logoUrl: prev.logoUrl,
-      backgroundUrl: prev.backgroundUrl,
-      qrUrl: prev.qrUrl,
+      businessName: payload.settings?.businessName || prev.businessName,
+      defaultSalaryPercent: payload.settings?.defaultSalaryPercent ?? prev.defaultSalaryPercent,
+      salaryByPercentEnabled: payload.settings?.salaryByPercentEnabled ?? prev.salaryByPercentEnabled,
+      salesChartResetAt: payload.settings?.salesChartResetAt ?? prev.salesChartResetAt,
+      welcomeGreetingsEnabled: payload.settings?.welcomeGreetingsEnabled ?? prev.welcomeGreetingsEnabled,
+      soundEffectsEnabled: payload.settings?.soundEffectsEnabled ?? prev.soundEffectsEnabled,
+      quoteLanguages: payload.settings?.quoteLanguages ?? prev.quoteLanguages,
     }));
+
+    if (payload.ratesSnapshot) {
+      applyIncomingRatesSnapshot(payload.ratesSnapshot);
+    }
   }, []);
+
+  // Watcher de Copia de Seguridad Silenciosa Automática:
+  // 1. Al encender el móvil / abrir la app si no se hizo hoy
+  // 2. En la madrugada (entre 2:00 y 6:00)
+  const isAutoBackingUpRef = useRef(false);
+  useEffect(() => {
+    // Si no hay productos ni usuarios, omitir
+    if (products.length === 0 && users.length === 0) return;
+
+    const checkAndRunAutoBackup = () => {
+      if (isAutoBackingUpRef.current) return;
+      const todayKey = new Date().toISOString().slice(0, 10);
+      const lastDay = localStorage.getItem(STORAGE_AUTO_BACKUP_LAST_DAY);
+      const currentHour = new Date().getHours();
+
+      // Condición 1: Si el móvil estuvo apagado o no se ha hecho el backup de hoy
+      // Condición 2: Si estamos en la madrugada (2:00 a 6:00 AM) y no se ha hecho hoy
+      const missedToday = lastDay !== todayKey;
+      const isEarlyMorning = currentHour >= 2 && currentHour <= 6;
+
+      if (missedToday || (isEarlyMorning && lastDay !== todayKey)) {
+        isAutoBackingUpRef.current = true;
+        executeSilentAutoBackup({
+          products,
+          stock,
+          movements,
+          users,
+          reports,
+          settings,
+        }).finally(() => {
+          setTimeout(() => {
+            isAutoBackingUpRef.current = false;
+          }, 5000);
+        });
+      }
+    };
+
+    // Ejecutar comprobación al iniciar la aplicación (con un pequeño delay de 1.5s para no bloquear render)
+    const initTimer = setTimeout(checkAndRunAutoBackup, 1500);
+
+    // Comprobación periódica cada 15 minutos en segundo plano
+    const intervalTimer = setInterval(checkAndRunAutoBackup, 15 * 60 * 1000);
+
+    return () => {
+      clearTimeout(initTimer);
+      clearInterval(intervalTimer);
+    };
+  }, [products, stock, movements, users, reports, settings]);
 
   // Restablece el administrador principal a las credenciales iniciales.
   const resetAdminCredentials = useCallback(() => {

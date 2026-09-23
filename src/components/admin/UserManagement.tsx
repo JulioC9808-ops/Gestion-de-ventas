@@ -48,6 +48,7 @@ export default function UserManagement() {
 
   // Expiración de la licencia del admin (para el modo "igual que la del admin").
   const adminGrant = getAdminLicenseGrant();
+  const isAdminPermanent = adminGrant && adminGrant.expiresAt === null;
   const adminDays = adminGrant?.expiresAt ? Math.max(1, Math.ceil((adminGrant.expiresAt - Date.now()) / (24 * 60 * 60 * 1000))) : null;
 
   // Un solo QR: licencia elegida + cuenta del empleado + SUS datos (nunca los de otros).
@@ -62,9 +63,12 @@ export default function UserManagement() {
     setQrPayload(null);
     setQrError(null);
 
-    const license: EmployeeLicenseGrant = qrMode === 'h24'
+    // Si el admin no tiene licencia permanente, el empleado no puede recibir permanente
+    const effectiveMode = (!isAdminPermanent && qrMode === 'permanent') ? 'admin' : qrMode;
+
+    const license: EmployeeLicenseGrant = effectiveMode === 'h24'
       ? { mode: 'h24', issuedAt: Date.now() }
-      : qrMode === 'admin'
+      : effectiveMode === 'admin'
         ? { mode: 'admin', expiresAt: adminGrant?.expiresAt ?? null, issuedAt: Date.now() }
         : { mode: 'permanent', issuedAt: Date.now() };
 
@@ -89,7 +93,7 @@ export default function UserManagement() {
         if (!cancelled) setQrError(err instanceof Error ? err.message : 'No se pudo preparar el QR.');
       });
     return () => { cancelled = true; };
-  }, [qrUser, qrMode, products, stock, movements, users, reports, settings, adminGrant?.expiresAt]);
+  }, [qrUser, qrMode, products, stock, movements, users, reports, settings, adminGrant?.expiresAt, isAdminPermanent]);
 
   const openNew = () => {
     setEditing(null);
@@ -175,86 +179,86 @@ export default function UserManagement() {
         </Button>
       </div>
 
-      <div className="glass-card p-6">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Usuario</th>
-              <th>Rol</th>
-              {settings.salaryByPercentEnabled && <th>Salario %</th>}
-              <th>Fecha Creación</th>
-              <th className="text-right">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibleUsers.map(u => (
-              <tr key={u.id}>
-                <td className="font-medium">
-                  <div className="flex items-center gap-3">
-                    {u.avatarUrl ? (
-                      <img
-                        src={u.avatarUrl}
-                        alt={u.name}
-                        className="w-9 h-9 rounded-full object-cover border border-border shadow-sm ring-1 ring-primary/20 shrink-0"
-                      />
-                    ) : (
-                      <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0 border border-primary/20">
-                        {u.name.charAt(0) || 'U'}
-                      </div>
-                    )}
-                    <div>
-                      <div className="font-medium text-foreground">{u.name}</div>
-                      <div className="text-xs text-muted-foreground md:hidden">@{u.username}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="text-muted-foreground hidden md:table-cell">@{u.username}</td>
-                <td>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    u.role === 'admin' ? 'bg-primary/10 text-primary' : 'bg-accent/10 text-accent-foreground'
-                  }`}>
-                    {u.role === 'admin' ? 'Administrador' : 'Empleado'}
-                  </span>
-                </td>
-                {settings.salaryByPercentEnabled && (
-                  <td className="text-success font-medium">{u.salaryPercent ?? settings.defaultSalaryPercent ?? 2}%</td>
-                )}
-                <td className="text-sm text-muted-foreground">{new Date(u.createdAt).toLocaleDateString()}</td>
-                <td className="text-right">
-                  <Button variant="ghost" size="sm" onClick={() => setQrUser(u)} title="QR de activación">
-                    <QrCode className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => openEdit(u)}>
-                    <Pencil className="w-4 h-4" />
-                  </Button>
-                  {u.role !== 'admin' && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        playTrashSound();
-                        deleteUser(u.id);
-                      }}
-                      className="group text-destructive hover:text-destructive hover:bg-destructive/10"
-                      title="Eliminar usuario"
-                    >
-                      <AnimatedTrash className="w-4 h-4 text-destructive" />
-                    </Button>
-                  )}
-                </td>
+      <div className="glass-card p-4 sm:p-6">
+        <div className="overflow-x-auto -mx-2 sm:mx-0">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Nombre y Usuario</th>
+                <th>Rol</th>
+                {settings.salaryByPercentEnabled && <th>Salario %</th>}
+                <th className="hidden sm:table-cell">Fecha Creación</th>
+                <th className="text-right">Acciones</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {visibleUsers.map(u => (
+                <tr key={u.id}>
+                  <td className="font-medium">
+                    <div className="flex items-center gap-3">
+                      {u.avatarUrl ? (
+                        <img
+                          src={u.avatarUrl}
+                          alt={u.name}
+                          className="w-9 h-9 rounded-full object-cover border border-border shadow-sm ring-1 ring-primary/20 shrink-0"
+                        />
+                      ) : (
+                        <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0 border border-primary/20">
+                          {u.name.charAt(0) || 'U'}
+                        </div>
+                      )}
+                      <div>
+                        <div className="font-semibold text-foreground text-sm leading-tight">{u.name}</div>
+                        <div className="text-xs text-muted-foreground font-mono">@{u.username}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      u.role === 'admin' ? 'bg-primary/10 text-primary' : 'bg-accent/10 text-accent-foreground'
+                    }`}>
+                      {u.role === 'admin' ? 'Administrador' : 'Empleado'}
+                    </span>
+                  </td>
+                  {settings.salaryByPercentEnabled && (
+                    <td className="text-success font-semibold">{u.salaryPercent ?? settings.defaultSalaryPercent ?? 2}%</td>
+                  )}
+                  <td className="text-sm text-muted-foreground hidden sm:table-cell">{new Date(u.createdAt).toLocaleDateString()}</td>
+                  <td className="text-right">
+                    <Button variant="ghost" size="sm" onClick={() => setQrUser(u)} title="QR de activación">
+                      <QrCode className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => openEdit(u)}>
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    {u.role !== 'admin' && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          playTrashSound();
+                          deleteUser(u.id);
+                        }}
+                        className="group text-destructive hover:text-destructive hover:bg-destructive/10"
+                        title="Eliminar usuario"
+                      >
+                        <AnimatedTrash className="w-4 h-4 text-destructive" />
+                      </Button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[88vh] overflow-y-auto p-4 sm:p-6 pr-3 sm:pr-6">
           <DialogHeader>
             <DialogTitle className="font-display">{editing ? 'Editar Usuario' : 'Nuevo Usuario'}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 mt-2">
+          <div className="space-y-4 mt-2 pb-2">
             {/* Foto de perfil */}
             <div className="flex flex-col items-center gap-2 pb-2 border-b border-border/50">
               <div className="relative group">
@@ -368,16 +372,40 @@ export default function UserManagement() {
               )}
             </div>
             {settings.salaryByPercentEnabled && (
-              <div>
-                <label className="text-sm font-medium">Porcentaje de Salario (%)</label>
-                <Input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.5"
-                  value={form.salaryPercent}
-                  onChange={e => setForm({ ...form, salaryPercent: e.target.value })}
-                />
+              <div className="space-y-2 bg-primary/5 border border-primary/20 rounded-xl p-3">
+                <label className="text-sm font-medium">Porcentaje de Salario (1% al 7%)</label>
+                <div className="grid grid-cols-7 gap-1">
+                  {[1, 2, 3, 4, 5, 6, 7].map(pct => {
+                    const isSelected = Number(form.salaryPercent) === pct;
+                    return (
+                      <button
+                        key={pct}
+                        type="button"
+                        onClick={() => setForm({ ...form, salaryPercent: String(pct) })}
+                        className={`h-9 rounded-lg font-bold text-xs transition-all border ${
+                          isSelected
+                            ? 'bg-primary text-primary-foreground border-primary shadow-sm scale-105'
+                            : 'bg-card text-foreground border-border hover:border-primary/50'
+                        }`}
+                      >
+                        {pct}%
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <span className="text-xs text-muted-foreground">Valor:</span>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="7"
+                    step="0.5"
+                    value={form.salaryPercent}
+                    onChange={e => setForm({ ...form, salaryPercent: e.target.value })}
+                    className="w-20 h-8 text-center font-bold text-xs"
+                  />
+                  <span className="text-xs text-muted-foreground">%</span>
+                </div>
               </div>
             )}
             <Button onClick={handleSave} className="w-full">{editing ? 'Guardar' : 'Crear'}</Button>
@@ -407,8 +435,17 @@ export default function UserManagement() {
                         : `Igual que la mía (${adminDays} día${adminDays === 1 ? '' : 's'} restantes)`
                       : 'Igual que la mía (sin licencia activa)'}
                   </option>
-                  <option value="permanent">Permanente</option>
+                  <option value="permanent" disabled={!isAdminPermanent}>
+                    {isAdminPermanent
+                      ? 'Permanente'
+                      : 'Permanente (Bloqueado: tu cuenta tiene licencia mensual)'}
+                  </option>
                 </select>
+                {!isAdminPermanent && qrMode === 'permanent' && (
+                  <p className="text-xs text-destructive">
+                    Como tu cuenta de administrador tiene licencia mensual, solo puedes transferir licencias de 24h o mensuales.
+                  </p>
+                )}
                 {currentEmployeeDays !== null && (
                   <p className="text-xs text-muted-foreground">
                     Este empleado ya tiene licencia por ~{currentEmployeeDays} día(s). Escanear nunca la acorta.

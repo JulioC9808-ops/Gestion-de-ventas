@@ -366,10 +366,10 @@ a[href*="lovable.app"] {
 }
 
 
-/* Modern Scrollbar Styles */
+/* Modern Premium Scrollbar Styles (PC & Web) */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 7px;
+  height: 7px;
 }
 
 ::-webkit-scrollbar-track {
@@ -377,23 +377,65 @@ a[href*="lovable.app"] {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.2);
-  border-radius: 10px;
-  border: 2px solid transparent;
-  background-clip: content-box;
+  background: hsl(var(--muted-foreground) / 0.22);
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.4);
-  border-radius: 10px;
-  border: 2px solid transparent;
-  background-clip: content-box;
+  background: hsl(var(--primary) / 0.5);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: hsl(var(--primary) / 0.8);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 /* For Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: hsl(var(--muted-foreground) / 0.2) transparent;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.25) transparent;
+}
+
+/* Sonner Toaster Overrides - Prevenir fondo blanco o parpadeos */
+[data-sonner-toaster] {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+[data-sonner-toast] {
+  background: hsl(var(--card)) !important;
+  color: hsl(var(--card-foreground)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+  border-radius: 12px !important;
+}
+
+[data-sonner-toast] [data-button] {
+  border-radius: 8px !important;
+}
+
+/* Mejoras de interfaz móvil para evitar apariencia Default gris/cuadrada de Android */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: hsl(var(--primary));
+  cursor: pointer;
+}
+
+select {
+  background-color: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  border-color: hsl(var(--border));
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  outline: none;
+  font-size: 0.875rem;
 }
 
 /* Respaldo visual: si el navegador (algunos WebView de Android) no oculta

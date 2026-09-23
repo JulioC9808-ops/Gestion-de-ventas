@@ -5,12 +5,10 @@ type ToasterProps = React.ComponentProps<typeof Sonner>;
 const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
-      theme="light"
       className="toaster group"
       closeButton
       style={
         {
-          // Forzar que el toast use los mismos tokens del tema activo
           "--normal-bg": "hsl(var(--card))",
           "--normal-text": "hsl(var(--card-foreground))",
           "--normal-border": "hsl(var(--border))",
@@ -23,12 +21,12 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         classNames: {
           toast:
-            "group toast group-[.toaster]:bg-card group-[.toaster]:text-card-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",
+            "group toast group-[.toaster]:bg-card group-[.toaster]:text-card-foreground group-[.toaster]:border-border group-[.toaster]:shadow-2xl group-[.toaster]:backdrop-blur-xl",
           description: "group-[.toast]:text-muted-foreground",
-          actionButton: "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
-          cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
-          title: "group-[.toast]:text-card-foreground",
-          closeButton: "group-[.toast]:bg-muted group-[.toast]:text-foreground group-[.toast]:border-border",
+          actionButton: "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground font-medium",
+          cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground font-medium",
+          title: "group-[.toast]:text-card-foreground font-semibold",
+          closeButton: "group-[.toast]:bg-muted/80 group-[.toast]:text-foreground group-[.toast]:border-border",
         },
       }}
       {...props}

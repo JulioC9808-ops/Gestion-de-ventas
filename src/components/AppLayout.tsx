@@ -4,7 +4,7 @@ import { useData } from '@/contexts/DataContext';
 import { Coffee, LogOut, type LucideIcon, HelpCircle, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { isMobileDevice } from '@/lib/platform';
+import { isMobileDevice, getAppVersion, getPlatformLabel } from '@/lib/platform';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getPendingShift } from '@/lib/syncStore';
 import { toast } from 'sonner';
@@ -68,8 +68,8 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
               )}
               <div className="flex items-center gap-1.5">
                 <h2 className="font-display font-bold text-sm text-sidebar-foreground">{settings.businessName}</h2>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sidebar-accent/80 text-sidebar-foreground/80 border border-sidebar-border/50">
-                  v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.3.7'}
+                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-sidebar-accent/80 text-sidebar-foreground/90 border border-sidebar-border/50">
+                  v{getAppVersion()}
                 </span>
               </div>
               <span className="text-xs text-sidebar-foreground/60 capitalize ml-1">
@@ -171,8 +171,8 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-1">
                   <h2 className="font-display font-bold text-sm text-sidebar-foreground truncate">{settings.businessName}</h2>
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sidebar-accent/90 text-sidebar-foreground/80 border border-sidebar-border/40 shrink-0">
-                    v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.3.7'}
+                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-sidebar-accent/90 text-sidebar-foreground/90 border border-sidebar-border/40 shrink-0">
+                    v{getAppVersion()}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs text-sidebar-foreground/60 capitalize mt-0.5">

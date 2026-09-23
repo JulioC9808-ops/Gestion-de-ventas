@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import HelpTip from '@/components/HelpTip';
 import { useData } from '@/contexts/DataContext';
 import { Package, Users, TrendingUp, DollarSign, Crown, PieChart as PieIcon, RefreshCw, ClipboardList } from 'lucide-react';
@@ -156,68 +156,210 @@ export default function AdminOverview({ onNav }: Props) {
 }
 
 
-// ============ Pie chart en SVG puro (sin dependencias) ============
+// ============ Compact & Ultra-Modern Payment Breakdown ============
 function SalesPieChart({ data }: { data: { cash: number; transfer: number; vip: number; total: number } }) {
   const { cash, transfer, vip, total } = data;
+  const [activeKey, setActiveKey] = useState<string | null>(null);
 
-  const slices = [
-    { key: 'cash', label: '💵 Efectivo', value: cash, color: 'hsl(var(--success))' },
-    { key: 'transfer', label: '💳 Transferencia', value: transfer, color: 'hsl(var(--primary))' },
-    { key: 'vip', label: '👑 VIP', value: vip, color: 'hsl(var(--warning))' },
+  const methods = [
+    {
+      key: 'cash',
+      label: 'Efectivo',
+      icon: '💵',
+      value: cash,
+      color: '#10b981',
+      colorTo: '#059669',
+      badgeClass: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
+    },
+    {
+      key: 'transfer',
+      label: 'Transferencia',
+      icon: '💳',
+      value: transfer,
+      color: '#06b6d4',
+      colorTo: '#3b82f6',
+      badgeClass: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/30',
+    },
+    {
+      key: 'vip',
+      label: 'VIP',
+      icon: '👑',
+      value: vip,
+      color: '#f59e0b',
+      colorTo: '#ea580c',
+      badgeClass: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
+    },
   ];
 
   if (total === 0) {
     return (
-      <div className="text-center py-10 text-muted-foreground text-sm">
-        Sin ventas registradas todavía.
+      <div className="text-center py-6 text-muted-foreground text-xs flex flex-col items-center justify-center gap-1.5">
+        <div className="w-9 h-9 rounded-xl bg-muted/60 flex items-center justify-center text-base">
+          📊
+        </div>
+        <p className="font-medium">Sin ventas registradas en el período.</p>
       </div>
     );
   }
 
-  // Compute pie paths
-  const size = 220;
-  const radius = 100;
+  const size = 136;
+  const radius = 60;
+  const innerRadius = 42;
   const cx = size / 2, cy = size / 2;
-  let angleStart = -Math.PI / 2;
+  let currentAngle = -Math.PI / 2;
 
-  const paths = slices.map(s => {
-    const frac = s.value / total;
-    const angleEnd = angleStart + frac * Math.PI * 2;
-    const x1 = cx + radius * Math.cos(angleStart);
-    const y1 = cy + radius * Math.sin(angleStart);
-    const x2 = cx + radius * Math.cos(angleEnd);
-    const y2 = cy + radius * Math.sin(angleEnd);
-    const large = frac > 0.5 ? 1 : 0;
-    const d = frac >= 1
-      ? `M ${cx - radius} ${cy} A ${radius} ${radius} 0 1 1 ${cx + radius} ${cy} A ${radius} ${radius} 0 1 1 ${cx - radius} ${cy} Z`
-      : `M ${cx} ${cy} L ${x1} ${y1} A ${radius} ${radius} 0 ${large} 1 ${x2} ${y2} Z`;
-    angleStart = angleEnd;
-    return { ...s, d, frac };
+  const slices = methods.map(m => {
+    const fraction = total > 0 ? m.value / total : 0;
+    const angleSpan = fraction * Math.PI * 2;
+    const endAngle = currentAngle + angleSpan;
+    const isHovered = activeKey === m.key;
+    const rOuter = isHovered ? radius + 3 : radius;
+    const rInner = isHovered ? innerRadius - 1 : innerRadius;
+
+    const x1 = cx + rOuter * Math.cos(currentAngle);
+    const y1 = cy + rOuter * Math.sin(currentAngle);
+    const x2 = cx + rOuter * Math.cos(endAngle);
+    const y2 = cy + rOuter * Math.sin(endAngle);
+
+    const x3 = cx + rInner * Math.cos(endAngle);
+    const y3 = cy + rInner * Math.sin(endAngle);
+    const x4 = cx + rInner * Math.cos(currentAngle);
+    const y4 = cy + rInner * Math.sin(currentAngle);
+
+    const largeArc = fraction > 0.5 ? 1 : 0;
+    const pathData = fraction >= 0.9999
+      ? `M ${cx} ${cy - rOuter} A ${rOuter} ${rOuter} 0 1 1 ${cx} ${cy + rOuter} A ${rOuter} ${rOuter} 0 1 1 ${cx} ${cy - rOuter} M ${cx} ${cy - rInner} A ${rInner} ${rInner} 0 1 0 ${cx} ${cy + rInner} A ${rInner} ${rInner} 0 1 0 ${cx} ${cy - rInner} Z`
+      : `M ${x1} ${y1} A ${rOuter} ${rOuter} 0 ${largeArc} 1 ${x2} ${y2} L ${x3} ${y3} A ${rInner} ${rInner} 0 ${largeArc} 0 ${x4} ${y4} Z`;
+
+    currentAngle = endAngle;
+    return { ...m, fraction, percentage: (fraction * 100).toFixed(1), pathData, isHovered };
   });
 
+  const activeMethod = methods.find(m => m.key === activeKey);
+
   return (
-    <div className="flex flex-col md:flex-row items-center justify-center gap-8">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        {paths.map(p => p.value > 0 && (
-          <path key={p.key} d={p.d} fill={p.color} stroke="hsl(var(--background))" strokeWidth={2} />
-        ))}
-        <circle cx={cx} cy={cy} r={radius * 0.55} fill="hsl(var(--card))" />
-        <text x={cx} y={cy - 6} textAnchor="middle" className="fill-foreground" style={{ fontSize: 12 }}>Total</text>
-        <text x={cx} y={cy + 14} textAnchor="middle" className="fill-foreground font-bold" style={{ fontSize: 18 }}>${total.toLocaleString()}</text>
-      </svg>
-      <div className="space-y-2 min-w-[180px]">
-        {paths.map(p => (
-          <div key={p.key} className="flex items-center justify-between gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-sm" style={{ background: p.color }} />
-              <span>{p.label}</span>
-            </div>
-            <div className="text-right">
-              <div className="font-semibold">${p.value.toLocaleString()}</div>
-              <div className="text-xs text-muted-foreground">{(p.frac * 100).toFixed(1)}%</div>
-            </div>
+    <div className="space-y-3">
+      {/* Mini Top Distribution Bar */}
+      <div className="h-2 w-full bg-muted/60 rounded-full flex gap-0.5 overflow-hidden border border-border/40">
+        {slices.map(s => {
+          if (s.value <= 0) return null;
+          return (
+            <div
+              key={s.key}
+              onMouseEnter={() => setActiveKey(s.key)}
+              onMouseLeave={() => setActiveKey(null)}
+              className="h-full rounded-sm transition-all duration-300 cursor-pointer hover:opacity-80"
+              style={{
+                width: `${Math.max(s.fraction * 100, 2)}%`,
+                background: `linear-gradient(90deg, ${s.color}, ${s.colorTo})`,
+              }}
+              title={`${s.label}: $${s.value.toLocaleString()} (${s.percentage}%)`}
+            />
+          );
+        })}
+      </div>
+
+      {/* Compact Main Row: Donut + Horizontal Pill Cards */}
+      <div className="flex flex-col sm:flex-row items-center gap-4 justify-between">
+        {/* Compact SVG Donut */}
+        <div className="relative flex items-center justify-center shrink-0">
+          <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="overflow-visible">
+            <defs>
+              {methods.map(m => (
+                <linearGradient key={`grad-${m.key}`} id={`grad-${m.key}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor={m.color} />
+                  <stop offset="100%" stopColor={m.colorTo} />
+                </linearGradient>
+              ))}
+            </defs>
+
+            <circle
+              cx={cx}
+              cy={cy}
+              r={(radius + innerRadius) / 2}
+              stroke="hsl(var(--muted))"
+              strokeWidth={radius - innerRadius}
+              fill="none"
+              opacity={0.2}
+            />
+
+            {slices.map(s => s.value > 0 && (
+              <path
+                key={s.key}
+                d={s.pathData}
+                fill={`url(#grad-${s.key})`}
+                stroke="hsl(var(--card))"
+                strokeWidth={1.5}
+                className="transition-all duration-200 cursor-pointer"
+                onMouseEnter={() => setActiveKey(s.key)}
+                onMouseLeave={() => setActiveKey(null)}
+                style={{
+                  filter: s.isHovered ? `drop-shadow(0 2px 8px ${s.color}66)` : undefined,
+                }}
+              />
+            ))}
+
+            <circle cx={cx} cy={cy} r={innerRadius - 2} fill="hsl(var(--card))" stroke="hsl(var(--border))" strokeWidth={1} />
+          </svg>
+
+          {/* Compact Info Hub */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-1">
+            {activeMethod ? (
+              <div className="animate-in fade-in duration-150">
+                <span className="text-xs leading-none">{activeMethod.icon}</span>
+                <p className="text-[10px] font-bold text-foreground leading-tight mt-0.5">${activeMethod.value.toLocaleString()}</p>
+                <span className="text-[9px] font-bold text-primary">{((activeMethod.value / total) * 100).toFixed(0)}%</span>
+              </div>
+            ) : (
+              <div>
+                <p className="text-[9px] font-semibold text-muted-foreground uppercase">Total</p>
+                <p className="text-xs font-black text-foreground">${total.toLocaleString()}</p>
+              </div>
+            )}
           </div>
-        ))}
+        </div>
+
+        {/* Compact Method Items */}
+        <div className="grid grid-cols-1 gap-1.5 w-full flex-1">
+          {slices.map(s => {
+            const isSelected = activeKey === s.key;
+            return (
+              <div
+                key={s.key}
+                onMouseEnter={() => setActiveKey(s.key)}
+                onMouseLeave={() => setActiveKey(null)}
+                className={`px-3 py-2 rounded-lg border transition-all duration-150 flex items-center justify-between gap-2 cursor-pointer ${
+                  isSelected
+                    ? 'bg-primary/10 border-primary/40 shadow-xs'
+                    : 'bg-card/60 border-border/60 hover:bg-card hover:border-border'
+                }`}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-sm">{s.icon}</span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-foreground truncate">{s.label}</p>
+                    <div className="w-16 sm:w-24 h-1 bg-muted rounded-full overflow-hidden mt-0.5">
+                      <div
+                        className="h-full rounded-full transition-all duration-300"
+                        style={{
+                          width: `${s.fraction * 100}%`,
+                          background: `linear-gradient(90deg, ${s.color}, ${s.colorTo})`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-right shrink-0">
+                  <span className="text-xs font-extrabold text-foreground">${s.value.toLocaleString()}</span>
+                  <span className={`text-[10px] font-bold ml-1.5 px-1.5 py-0.2 rounded border ${s.badgeClass}`}>
+                    {s.percentage}%
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

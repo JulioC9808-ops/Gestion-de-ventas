@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import HelpTip from '@/components/HelpTip';
 import QrDisplay from '@/components/QrDisplay';
 import PrivacyPolicyDialog from '@/components/PrivacyPolicyDialog';
-import { getShiftGreeting } from '@/lib/greeting';
+import { getShiftGreeting, fetchOnlineQuote } from '@/lib/greeting';
 import { playLoginSound } from '@/lib/soundUtils';
 import { toast } from 'sonner';
 
@@ -20,10 +20,16 @@ export default function Login() {
   const { settings, users } = useData();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showUsername, setShowUsername] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showQr, setShowQr] = useState(false);
+
+  // Intentar descargar frase fresca de internet en segundo plano si hay conexión
+  React.useEffect(() => {
+    void fetchOnlineQuote(undefined, settings.quoteLanguages);
+  }, [settings.quoteLanguages]);
 
   // Recuperación de contraseña por pista personal
   const [forgotOpen, setForgotOpen] = useState(false);
@@ -45,14 +51,20 @@ export default function Login() {
         );
       } else {
         const foundUser = users.find(u => u.username === username.trim());
-        const greetingData = getShiftGreeting(foundUser?.name || username.trim());
+        const greetingData = getShiftGreeting(foundUser?.name || username.trim(), settings.quoteLanguages);
         const h = new Date().getHours();
         const period = h >= 5 && h < 12 ? 'morning' : h >= 12 && h < 19 ? 'afternoon' : 'night';
-        playLoginSound(period);
-        toast.success(`${greetingData.icon} ${greetingData.greeting}`, {
-          description: `${greetingData.shiftName} activo. ${greetingData.motivationalMessage}`,
-          duration: 4000,
-        });
+
+        if (settings.soundEffectsEnabled !== false) {
+          playLoginSound(period);
+        }
+
+        if (settings.welcomeGreetingsEnabled !== false) {
+          toast.success(`${greetingData.icon} ${greetingData.greeting}`, {
+            description: `${greetingData.shiftName} activo • ${greetingData.motivationalMessage}`,
+            duration: 4500,
+          });
+        }
       }
       setLoading(false);
     }, 350);
@@ -105,25 +117,44 @@ export default function Login() {
             <p className="text-muted-foreground text-sm mt-1">Acceso al Sistema de Ventas</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5" autoComplete="off">
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground flex items-center gap-2">
                 Usuario
                 <HelpTip>Ingresa el nombre de usuario asignado.</HelpTip>
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                 <Input
                   type="text"
+                  name="sys_user_field"
+                  id="sys_user_field"
                   value={username}
                   onChange={e => setUsername(e.target.value)}
                   placeholder="Ingresa tu usuario"
-                  className="pl-10 h-11"
+                  className={`pl-10 ${username.toUpperCase().startsWith('DEV') ? 'pr-10' : ''} h-11 ${
+                    !showUsername && username && username.toUpperCase().startsWith('DEV') ? 'threads-obfuscated' : 'threads-revealed'
+                  }`}
                   autoCapitalize="none"
                   autoCorrect="off"
+                  autoComplete="off"
                   spellCheck={false}
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  data-form-type="other"
                   required
                 />
+                {username.toUpperCase().startsWith('DEV') && (
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    aria-label={showUsername ? 'Ocultar usuario DEV' : 'Ver usuario DEV'}
+                    onClick={() => setShowUsername(prev => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors p-1"
+                  >
+                    {showUsername ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -136,6 +167,8 @@ export default function Login() {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                 <Input
                   type="text"
+                  name="sys_code_field"
+                  id="sys_code_field"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="Ingresa tu contraseña"
@@ -144,8 +177,11 @@ export default function Login() {
                   }`}
                   autoCapitalize="none"
                   autoCorrect="off"
-                  autoComplete="current-password"
+                  autoComplete="off"
                   spellCheck={false}
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  data-form-type="other"
                   required
                 />
                 <button

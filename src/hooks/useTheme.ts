@@ -232,11 +232,11 @@ export function useThemeApplier() {
 
   useEffect(() => {
     const themeKey = settings.theme && THEMES[settings.theme] ? settings.theme : 'white';
-    const vars = THEMES[themeKey];
+    const vars = THEMES[themeKey] || THEMES.white;
     const root = document.documentElement;
 
-    // 1) Aplicar TODAS las variables del tema (limpia residuos porque todos los temas
-    //    tienen la misma lista de claves).
+    // 1) Aplicar TODAS las variables del tema
+    root.setAttribute('data-theme', themeKey);
     Object.entries(vars).forEach(([key, value]) => {
       root.style.setProperty(key, value);
     });
@@ -245,13 +245,11 @@ export function useThemeApplier() {
     const bgLightness = parseInt(vars['--background'].split(' ')[2] || '100', 10);
     root.style.colorScheme = bgLightness < 50 ? 'dark' : 'light';
 
-    // 3) Si hay fontColor personalizado, sobrescribe TODOS los textos.
-    //    Si es null/vacío, elimina cualquier override previo para que respete el tema.
+    // 3) Si hay fontColor personalizado, sobrescribe TODOS los textos
     if (settings.fontColor) {
       const hsl = hexToHsl(settings.fontColor);
       if (hsl) TEXT_VARS.forEach(k => root.style.setProperty(k, hsl));
     }
-    // (no removemos porque el paso 1 ya reescribió los valores base del tema)
 
     // 4) Aplicar el color de fondo al <body> como fallback duro
     document.body.style.backgroundColor = `hsl(${vars['--background']})`;

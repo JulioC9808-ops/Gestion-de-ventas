@@ -1,14 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
-import { Settings, Key, RotateCcw, Image, Send, UserCog, Megaphone, CheckCircle2, RefreshCw, ShieldCheck, Sparkles, Clock, Infinity as InfinityIcon, Eye, EyeOff } from 'lucide-react';
+import { Settings, Key, RotateCcw, Image, Send, UserCog, Megaphone, CheckCircle2, RefreshCw, ShieldCheck, Sparkles, Clock, Infinity as InfinityIcon, Eye, EyeOff, AlertTriangle, Trash2 } from 'lucide-react';
 import { useData, GITHUB_UPDATES_URL, DEFAULT_ANNOUNCEMENT_URL } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { fetchAnnouncement } from '@/lib/announcements';
 import { getLicenseInfo, activateLifetimeLicense, activateTimedLicenseDays } from '@/pages/LicenseGate';
 import { fileToCompressedDataUrl } from '@/lib/imageUtils';
+import { resetAllToFactoryDefaults } from '@/lib/backupUtils';
 
 const NAV = [
   { label: 'Configuración', icon: Settings, key: 'config', tip: 'Cambia el nombre del negocio y otras configuraciones generales.' },
@@ -34,6 +36,8 @@ export default function DevPanel() {
   const [showCurrentPwd, setShowCurrentPwd] = useState(false);
   const [showNewPwd, setShowNewPwd] = useState(false);
   const [licenseState, setLicenseState] = useState(() => getLicenseInfo());
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [resetAdminDialogOpen, setResetAdminDialogOpen] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const bgInputRef = useRef<HTMLInputElement>(null);
 
@@ -81,18 +85,16 @@ export default function DevPanel() {
     }
   };
 
-  const handleReset = () => {
-    if (confirm('¿Restaurar toda la configuración a valores por defecto?')) {
-      localStorage.clear();
-      window.location.reload();
-    }
+  const handleConfirmFactoryReset = () => {
+    toast.loading('Borrando todos los datos y restaurando valores de fábrica...');
+    setResetDialogOpen(false);
+    resetAllToFactoryDefaults();
   };
 
-  const handleResetAdmin = () => {
-    if (confirm('¿Restablecer el administrador principal a Usuario: admin / Contraseña: admin123?')) {
-      resetAdminCredentials();
-      toast.success('Administrador restablecido: admin / admin123');
-    }
+  const handleConfirmResetAdmin = () => {
+    resetAdminCredentials();
+    setResetAdminDialogOpen(false);
+    toast.success('Administrador restablecido: admin / admin123');
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'background') => {
@@ -322,8 +324,8 @@ export default function DevPanel() {
               </div>
             </div>
 
-            <div className="pt-4 border-t border-border flex flex-wrap items-center justify-between gap-3">
-              <div className="flex gap-2">
+            <div className="pt-4 border-t border-border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Button onClick={() => {
                   updateSettings({
                     telegramUrl: telegramUrl.trim(),
@@ -357,7 +359,7 @@ export default function DevPanel() {
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="text-xs text-muted-foreground hover:text-foreground"
+                className="text-xs text-muted-foreground hover:text-foreground text-left sm:text-right"
                 onClick={() => {
                   setGithubUpdatesUrl(GITHUB_UPDATES_URL);
                   setAnnouncementUrl(DEFAULT_ANNOUNCEMENT_URL);
@@ -393,6 +395,12 @@ export default function DevPanel() {
                   className={`pr-10 ${
                     !showCurrentPwd && currentPwd ? 'threads-obfuscated' : 'threads-revealed'
                   }`}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  autoComplete="off"
+                  spellCheck={false}
+                  data-lpignore="true"
+                  data-form-type="other"
                 />
                 <button
                   type="button"
@@ -415,6 +423,12 @@ export default function DevPanel() {
                   className={`pr-10 ${
                     !showNewPwd && newPwd ? 'threads-obfuscated' : 'threads-revealed'
                   }`}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  autoComplete="off"
+                  spellCheck={false}
+                  data-lpignore="true"
+                  data-form-type="other"
                 />
                 <button
                   type="button"
@@ -437,13 +451,19 @@ export default function DevPanel() {
           <div className="page-header">
             <h1 className="page-title">Restablecer Administrador</h1>
           </div>
-          <div className="glass-card p-6 max-w-md space-y-3">
-            <p className="text-sm text-muted-foreground">
+          <div className="glass-card p-6 max-w-md space-y-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               Si el dueño olvidó su usuario o contraseña, esto devuelve la cuenta de administrador
-              principal a las credenciales iniciales. Los productos, ventas y demás datos NO se borran.
+              principal a las credenciales iniciales. Los productos, ventas, cierres y demás datos NO se borran.
             </p>
-            <p className="text-sm font-medium">Usuario: <strong>admin</strong> — Contraseña: <strong>admin123</strong></p>
-            <Button onClick={handleResetAdmin} className="w-full">Restablecer a admin / admin123</Button>
+            <div className="p-3 bg-muted/60 rounded-xl border border-border text-sm">
+              <p className="font-semibold text-foreground">Credenciales por defecto:</p>
+              <p className="text-muted-foreground mt-0.5">Usuario: <strong className="text-foreground">admin</strong></p>
+              <p className="text-muted-foreground">Contraseña: <strong className="text-foreground">admin123</strong></p>
+            </div>
+            <Button onClick={() => setResetAdminDialogOpen(true)} className="w-full">
+              Restablecer a admin / admin123
+            </Button>
           </div>
         </div>
       )}
@@ -451,14 +471,90 @@ export default function DevPanel() {
       {active === 'reset' && (
         <div>
           <div className="page-header">
-            <h1 className="page-title">Restaurar Valores</h1>
+            <h1 className="page-title">Restaurar Valores de Fábrica</h1>
           </div>
-          <div className="glass-card p-6 max-w-md">
-            <p className="text-muted-foreground mb-4">Esto eliminará todos los datos y restaurará la configuración por defecto.</p>
-            <Button variant="destructive" onClick={handleReset}>Restaurar Todo</Button>
+          <div className="glass-card p-6 max-w-lg space-y-4">
+            <div className="flex items-start gap-3 p-3.5 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive">
+              <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+              <div className="text-xs space-y-1">
+                <p className="font-bold text-sm">¡Advertencia de borrado irreversible!</p>
+                <p>
+                  Esta opción eliminará todos los cierres de turno, productos registrados, movimientos,
+                  usuarios, salarios, temas personalizados y configuraciones, dejando el sistema en su estado inicial limpio.
+                </p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Si deseas conservar tus datos antes de restaurar, puedes exportar una Copia de Seguridad desde los Ajustes del Administrador.
+            </p>
+            <Button variant="destructive" onClick={() => setResetDialogOpen(true)} className="w-full font-bold shadow-xs">
+              <Trash2 className="w-4 h-4 mr-2" />
+              Restaurar Todo de Fábrica
+            </Button>
           </div>
         </div>
       )}
+
+      {/* Diálogo de Confirmación para Restablecer Administrador */}
+      <Dialog open={resetAdminDialogOpen} onOpenChange={setResetAdminDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserCog className="w-5 h-5 text-primary" />
+              Restablecer Administrador Principal
+            </DialogTitle>
+            <DialogDescription className="pt-2 text-sm text-muted-foreground space-y-2">
+              <span>
+                ¿Deseas restablecer las credenciales del administrador principal a <strong>admin</strong> / <strong>admin123</strong>?
+              </span>
+              <span className="block text-xs">Tus productos, inventario, ventas y cierres de turno permanecerán intactos.</span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0 mt-4">
+            <Button variant="outline" onClick={() => setResetAdminDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleConfirmResetAdmin}>
+              Confirmar Restablecimiento
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo de Confirmación para Restauración Total de Fábrica */}
+      <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+        <DialogContent className="border-destructive/30">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-5 h-5" />
+              ¿Confirmas la Restauración Total de Fábrica?
+            </DialogTitle>
+            <DialogDescription className="pt-2 text-xs text-muted-foreground space-y-3">
+              <p>
+                Esta acción es <strong>IRREVERSIBLE</strong>. Al confirmar, el sistema borrará por completo:
+              </p>
+              <ul className="list-disc pl-5 space-y-1 text-foreground">
+                <li>Todos los cierres de turno y reportes históricos</li>
+                <li>Todos los productos del catálogo y cantidades en almacén</li>
+                <li>El stock de venta activo y movimientos registrados</li>
+                <li>Todas las cuentas de empleados y administradores</li>
+                <li>Temas visuales aplicados, logos, fondos y frases</li>
+              </ul>
+              <p className="font-semibold text-destructive">
+                El sistema se reiniciará inmediatamente en estado limpio como recién instalado.
+              </p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0 mt-4">
+            <Button variant="outline" onClick={() => setResetDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmFactoryReset} className="font-bold">
+              Sí, Borrar Todo y Restaurar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }

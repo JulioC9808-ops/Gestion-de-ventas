@@ -3,6 +3,7 @@
 
 import LZString from 'lz-string';
 import type { Product, StockItem, StockMovement, User, AppSettings, ShiftReport } from '@/types';
+import { loadCachedRates, type ElToqueSnapshot } from '@/lib/elToque';
 
 export interface BackupPayload {
   v: 1;
@@ -13,6 +14,7 @@ export interface BackupPayload {
   users: User[];
   reports?: ShiftReport[];
   settings: Partial<AppSettings>;
+  ratesSnapshot?: ElToqueSnapshot | null;
 }
 
 // Los ajustes con imágenes (dataURL) son enormes: no viajan por QR.
@@ -38,6 +40,7 @@ export function buildBackup(data: {
     users: data.users,
     reports: data.reports || [],
     settings: slimSettings(data.settings),
+    ratesSnapshot: loadCachedRates(),
   };
 }
 
@@ -61,6 +64,10 @@ export function decodeBackup(encoded: string): BackupPayload | null {
 // Cada fragmento: SYNC:<id>:<index>/<total>:<datos>
 const CHUNK_SIZE = 600;
 const PREFIX = 'SYNC';
+
+function shortId(): string {
+  return Math.random().toString(36).slice(2, 6);
+}
 
 export function chunkPayload(encoded: string, id = shortId()): string[] {
   const total = Math.max(1, Math.ceil(encoded.length / CHUNK_SIZE));
@@ -100,8 +107,4 @@ export function joinChunks(chunks: Map<number, string>, total: number): string |
     out += part;
   }
   return out;
-}
-
-function shortId() {
-  return Math.random().toString(36).slice(2, 8);
 }

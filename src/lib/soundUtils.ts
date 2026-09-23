@@ -2,8 +2,28 @@
 
 let audioCtx: AudioContext | null = null;
 
+export function areSoundsEnabled(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const val = localStorage.getItem('pos_sound_effects_enabled');
+    return val !== 'false';
+  } catch {
+    return true;
+  }
+}
+
+export function setSoundsEnabled(enabled: boolean) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem('pos_sound_effects_enabled', enabled ? 'true' : 'false');
+  } catch {
+    // Ignorar error de almacenamiento
+  }
+}
+
 function getAudioContext(): AudioContext | null {
   if (typeof window === 'undefined') return null;
+  if (!areSoundsEnabled()) return null;
   try {
     const AudioContextClass =
       window.AudioContext ||

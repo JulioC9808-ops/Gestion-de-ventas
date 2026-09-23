@@ -33,10 +33,19 @@ export interface EmployeeSyncPackage {
   backup: BackupPayload;
 }
 
+export interface AdminSyncPackage {
+  v: 1;
+  role: 'admin';
+  timestamp: string;
+  backup: BackupPayload;
+}
+
 const DIRECT_PREFIX = 'GVBACKUP:';
 const WIFI_PREFIX = 'GVSYNC:';
 const SHIFT_DIRECT_PREFIX = 'GVSHIFTBACKUP:';
 const SHIFT_WIFI_PREFIX = 'GVSHIFTSYNC:';
+const ADMIN_DIRECT_PREFIX = 'GVADMINBACKUP:';
+const ADMIN_WIFI_PREFIX = 'GVADMINSYNC:';
 
 function isAndroidNative(): boolean {
   try {
@@ -199,4 +208,85 @@ export async function receiveShiftShare(raw: string): Promise<ShiftReport | null
   const response = await fetch(url, { cache: 'no-store' });
   if (!response.ok) throw new Error('El dispositivo del jefe no respondió.');
   return decodeShiftPackage(await response.text());
+}
+
+// ===== Sincronización entre Administradores (Admin ↔ Admin) =====
+export function encodeAdminPackage(data: AdminSyncPackage): string {
+  return LZString.compressToEncodedURIComponent(JSON.stringify(data));
+}
+
+export function decodeAdminPackage(encoded: string): AdminSyncPackage | null {
+  try {
+    const json = LZString.decompressFromEncodedURIComponent(encoded);
+    if (!json) return null;
+    const parsed = JSON.parse(json) as AdminSyncPackage;
+    if (parsed?.role !== 'admin' || !parsed.backup || !Array.isArray(parsed.backup.products)) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export async function startAdminShare(data: AdminSyncPackage): Promise<string> {
+  const payload = encodeAdminPackage(data);
+
+  if (isAndroidNative()) {
+    try {
+      const token = randomToken();
+      const { port } = await WiFiDirect.startShare({ token, payload });
+      return buildWDQr(token, port);
+    } catch {
+      // Fallback
+    }
+    const localSync = window.Capacitor?.Plugins?.LocalSync;
+    if (localSync) {
+      const result = await localSync.start({ payload });
+      return `${ADMIN_WIFI_PREFIX}${result.url}`;
+    }
+    return `${ADMIN_DIRECT_PREFIX}${payload}`;
+  }
+
+  if (window.desktopBridge?.startSyncServer) {
+    return `${ADMIN_WIFI_PREFIX}${await window.desktopBridge.startSyncServer(payload)}`;
+  }
+  const localSync = window.Capacitor?.Plugins?.LocalSync;
+  if (localSync) {
+    const result = await localSync.start({ payload });
+    return `${ADMIN_WIFI_PREFIX}${result.url}`;
+  }
+  return `${ADMIN_DIRECT_PREFIX}${payload}`;
+}
+
+export async function stopAdminShare(): Promise<void> {
+  try {
+    await WiFiDirect.stopShare();
+  } catch {
+    // ignore
+  }
+  if (window.desktopBridge?.stopSyncServer) {
+    await window.desktopBridge.stopSyncServer();
+    return;
+  }
+  try {
+    await window.Capacitor?.Plugins?.LocalSync?.stop();
+  } catch {
+    // ignore
+  }
+}
+
+export async function receiveAdminShare(raw: string): Promise<AdminSyncPackage | null> {
+  if (raw.startsWith(ADMIN_DIRECT_PREFIX)) {
+    return decodeAdminPackage(raw.slice(ADMIN_DIRECT_PREFIX.length));
+  }
+  const wd = parseWDQr(raw);
+  if (wd) {
+    const { payload } = await WiFiDirect.receiveShare({ token: wd.token, port: wd.port });
+    return decodeAdminPackage(payload);
+  }
+  if (!raw.startsWith(ADMIN_WIFI_PREFIX)) return null;
+  const url = raw.slice(ADMIN_WIFI_PREFIX.length);
+  if (!/^http:\/\/[^/]+\/sync\/[a-zA-Z0-9-]+$/.test(url)) return null;
+  const response = await fetch(url, { cache: 'no-store' });
+  if (!response.ok) throw new Error('El dispositivo del otro Administrador no respondió.');
+  return decodeAdminPackage(await response.text());
 }

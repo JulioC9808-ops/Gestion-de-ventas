@@ -26,19 +26,24 @@ export default function TitleBar() {
 
   return (
     <div
-      className="flex items-center justify-between h-9 select-none 
-                 bg-sidebar/60 backdrop-blur-md 
-                 text-sidebar-foreground border-b border-sidebar-border"
-      style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+      className="flex items-center justify-between h-9 select-none transition-colors duration-300
+                 bg-sidebar/90 backdrop-blur-xl
+                 text-sidebar-foreground border-b border-sidebar-border/80 shadow-xs"
+      style={{
+        WebkitAppRegion: 'drag',
+        backgroundColor: 'hsl(var(--sidebar-background))',
+        color: 'hsl(var(--sidebar-foreground))',
+        borderColor: 'hsl(var(--sidebar-border))',
+      } as React.CSSProperties}
     >
       {/* Logo + nombre */}
-      <div className="flex items-center gap-2 px-3 text-xs font-medium overflow-hidden">
+      <div className="flex items-center gap-2 px-3 text-xs font-semibold overflow-hidden">
         {settings.logoUrl ? (
-          <img src={settings.logoUrl} alt="" className="w-4 h-4 rounded-sm object-cover" />
+          <img src={settings.logoUrl} alt="" className="w-4 h-4 rounded-sm object-cover shadow-xs" />
         ) : (
-          <Coffee className="w-4 h-4" />
+          <Coffee className="w-4 h-4 text-primary" />
         )}
-        <span className="truncate">{settings.businessName || 'GestionDeVentas'}</span>
+        <span className="truncate tracking-tight">{settings.businessName || 'Gestión de Ventas'}</span>
       </div>
 
       {/* Botones de ventana */}
@@ -49,7 +54,7 @@ export default function TitleBar() {
         <button
           onClick={() => controls.minimize()}
           className="w-11 h-full flex items-center justify-center 
-                     hover:bg-sidebar-accent/40 transition-colors"
+                     hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
           aria-label="Minimizar"
           title="Minimizar"
         >
@@ -58,7 +63,7 @@ export default function TitleBar() {
         <button
           onClick={() => controls.toggleMaximize()}
           className="w-11 h-full flex items-center justify-center 
-                     hover:bg-sidebar-accent/40 transition-colors"
+                     hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
           aria-label={isMax ? 'Restaurar' : 'Maximizar'}
           title={isMax ? 'Restaurar' : 'Maximizar'}
         >
@@ -67,7 +72,7 @@ export default function TitleBar() {
         <button
           onClick={() => controls.close()}
           className="w-11 h-full flex items-center justify-center 
-                     hover:bg-red-600/80 hover:text-white transition-colors rounded-tr-md"
+                     hover:bg-destructive hover:text-destructive-foreground transition-colors"
           aria-label="Cerrar"
           title="Cerrar"
         >
