@@ -23,7 +23,7 @@ jobs:
       - name: Clean install
         shell: cmd
         run: |
-         if exist node_modules rd /s /q node_modules
+          if exist node_modules rd /s /q node_modules
           if exist package-lock.json del /f /q package-lock.json
           npm install --include=optional --no-audit --no-fund --registry=https://registry.npmjs.org/
 
@@ -50,12 +50,15 @@ jobs:
 
       - name: Build app
         shell: cmd
+        env:
+          VITE_ELTOQUE_API_KEY: ${{ secrets.VITE_ELTOQUE_API_KEY }}
         run: npm run build
 
       - name: Package Electron app (PROTEGIDO)
         shell: cmd
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          VITE_ELTOQUE_API_KEY: ${{ secrets.VITE_ELTOQUE_API_KEY }}
         run: npm run electron:installer
 
       - name: Upload installer artifact
