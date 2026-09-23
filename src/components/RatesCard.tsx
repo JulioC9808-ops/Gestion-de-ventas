@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Search, TrendingUp, AlertCircle, Edit3, KeyRound, Check, RefreshCw, Info } from 'lucide-react';
+import { Search, TrendingUp, AlertCircle, Edit3, Check, RefreshCw, Info } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -17,8 +17,6 @@ import {
   initElToqueWatcher,
   loadCachedRates,
   getRateDelta,
-  getElToqueApiKey,
-  saveElToqueApiKey,
   updateManualRates,
   INITIAL_FALLBACK_RATES,
   type ElToqueSnapshot,
@@ -156,9 +154,7 @@ export default function RatesCard() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
   const [editRates, setEditRates] = useState<CurrencyRate[]>([]);
-  const [inputApiKey, setInputApiKey] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -219,23 +215,6 @@ export default function RatesCard() {
     setSnapshot(updated);
     setEditModalOpen(false);
     toast.success('Tasas de cambio actualizadas correctamente.');
-  };
-  const handleOpenApiKey = () => {
-    setInputApiKey(getElToqueApiKey());
-    setApiKeyModalOpen(true);
-  };
-  const handleSaveApiKey = async () => {
-    saveElToqueApiKey(inputApiKey);
-    setApiKeyModalOpen(false);
-    toast.success('Clave de API elTOQUE guardada.');
-    setRefreshing(true);
-    try {
-      const res = await getElToqueRates({ force: true });
-      if (res.snapshot) setSnapshot(res.snapshot);
-      if (res.message) setStatusMessage(res.message);
-    } finally {
-      setRefreshing(false);
-    }
   };
   const handleForceRefresh = async () => {
     setRefreshing(true);
@@ -334,14 +313,6 @@ export default function RatesCard() {
                   onClick={handleOpenEdit}
                 >
                   <Edit3 className="w-3.5 h-3.5" />
-                </Button>
-                <Button
-                  variant="ghost" size="icon"
-                  className="h-7 w-7 text-white/80 hover:text-white hover:bg-white/20"
-                  title="Configurar Token API elTOQUE"
-                  onClick={handleOpenApiKey}
-                >
-                  <KeyRound className="w-3.5 h-3.5" />
                 </Button>
               </div>
             )}
@@ -450,40 +421,6 @@ export default function RatesCard() {
             </Button>
             <Button size="sm" onClick={handleSaveEdit}>
               <Check className="w-3.5 h-3.5 mr-1" /> Guardar Cambios
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* ---- Modal API Key (admin) ---- */}
-      <Dialog open={apiKeyModalOpen} onOpenChange={setApiKeyModalOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base">
-              <KeyRound className="w-4 h-4 text-primary" /> Token de API elTOQUE
-            </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Ingresa tu token Bearer de la API de elTOQUE si cuentas con una clave privada.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2 py-2">
-            <Input
-              type="password"
-              placeholder="Bearer Token de elTOQUE"
-              value={inputApiKey}
-              onChange={(e) => setInputApiKey(e.target.value)}
-              className="text-xs font-mono"
-            />
-            <p className="text-[11px] text-muted-foreground">
-              Se guarda en tu dispositivo local para actualizar automáticamente 2 veces al día.
-            </p>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0 mt-2">
-            <Button variant="outline" size="sm" onClick={() => setApiKeyModalOpen(false)}>
-              Cancelar
-            </Button>
-            <Button size="sm" onClick={handleSaveApiKey}>
-              <Check className="w-3.5 h-3.5 mr-1" /> Guardar Token
             </Button>
           </DialogFooter>
         </DialogContent>
