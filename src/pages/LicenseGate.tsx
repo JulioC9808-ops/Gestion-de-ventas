@@ -43,7 +43,6 @@ type LicenseState =
   | {
       type: 'timed';
       activatedAt: number;
-      /** Expiración explícita (epoch ms). En estados viejos se calcula de activatedAt. */
       expiresAt: number;
       deviceId?: string | null;
       hw?: HardwareComponents;
@@ -122,9 +121,8 @@ function isTimedActive(state: Extract<LicenseState, { type: 'timed' }>): boolean
 function checkMachine(state: LicenseState, device: DeviceInfo): 'ok' | 'rebind' | 'fail' {
   if (state.type === 'none') return 'ok';
   if (!device.id) return 'ok'; // sin ID disponible (web/dev): no invalidar ni re-vincular
-  if (!state.deviceId) return 'rebind'; // licencia vieja sin vínculo: adoptar si hay ID de dispositivo
+  if (!state.deviceId) return 'rebind';
   if (state.deviceId === device.id) return 'ok';
-  // Tolerancia por hardware en PC: 3 de 4 componentes válidos coinciden.
   if (isDesktop() && state.hw && device.hw) {
     const pairs: Array<[string, string]> = [
       [state.hw.disk, device.hw.disk],
@@ -134,9 +132,8 @@ function checkMachine(state: LicenseState, device: DeviceInfo): 'ok' | 'rebind' 
     ];
     const valid = pairs.filter(([a, b]) => a && b);
     const matches = valid.filter(([a, b]) => a === b).length;
-    if (valid.length >= 3 && matches >= 3) return 'rebind'; // refresca el vínculo al hardware actual
+    if (valid.length >= 3 && matches >= 3) return 'rebind';
   }
-  // Mismatch real: una sola oportunidad de re-vinculación (migración de clientes actuales).
   if (!state.rebound) return 'rebind';
   return 'fail';
 }
@@ -161,6 +158,7 @@ function daysLeftOf(state: LicenseState): number {
 export default function LicenseGate({ children }: LicenseGateProps) {
   const { login, logout } = useAuth();
   const { users, addUser, updateUser, applyBackup } = useData();
+
   const [license, setLicense] = useState<LicenseState>(() => readLicense());
   const [device, setDevice] = useState<DeviceInfo | 'pending'>('pending');
   const [key, setKey] = useState('');
@@ -252,6 +250,7 @@ export default function LicenseGate({ children }: LicenseGateProps) {
 
   // ---- Activación de EMPLEADO con UN solo QR (respeta lo que el admin eligió) ----
   const [receiving, setReceiving] = useState(false);
+
   const handleEmployeeScan = async (text: string) => {
     if (receiving) return;
     const raw = (text || '').trim();
@@ -262,8 +261,21 @@ export default function LicenseGate({ children }: LicenseGateProps) {
         toast.error('Este no es el QR de activación que te dio el Admin.');
         return;
       }
+
+      // ===== BLINDAJE =====
+      // El QR de sincronización ENTRE ADMINISTRADORES jamás se acepta desde la
+      // pantalla de licencia. Solo el QR de personal (empleado) activa aquí,
+      // para que nadie sin licencia pueda capturar los datos del negocio.
+      const anyPacket = packet as unknown as { role?: string };
+      if (anyPacket.role === 'admin' || !('account' in packet)) {
+        toast.error('Este QR es de sincronización entre administradores: solo funciona con sesión de Administrador abierta y la app licenciada.');
+        return;
+      }
+      // ====================
+
       // 1) Todos los datos del jefe (el backup ya solo trae la cuenta del empleado).
       applyBackup(packet.backup);
+
       // 2) La cuenta del empleado en este dispositivo (rol SIEMPRE empleado).
       const { u, p, n, s: sal, h } = packet.account;
       const existing = users.find(x => x.username === u);
@@ -279,6 +291,7 @@ export default function LicenseGate({ children }: LicenseGateProps) {
           passwordHint: h ?? null,
         } as never);
       }
+
       // 3) Licencia según lo que el admin eligió al generar el QR.
       const grant = packet.license;
       let expiresAt: number | null;
@@ -296,8 +309,10 @@ export default function LicenseGate({ children }: LicenseGateProps) {
         }
         expiresAt = Date.now() + H24_MS;
       }
+
       const lic = saveLinkedLicense(u, expiresAt);
       setEmpLicense(lic);
+
       setTimeout(() => {
         if (login(u, p)) {
           setScanOpen(false);
@@ -362,6 +377,7 @@ export default function LicenseGate({ children }: LicenseGateProps) {
               {expired ? `Tu período de licencia ha concluido. Ingresa tu clave para renovar la suscripción (${expiredDays} días de tolerancia restantes).` : 'Ingresa tu clave de producto autorizada para habilitar el sistema.'}
             </p>
           </div>
+
           <div className="grid grid-cols-2 gap-3 mb-6 text-xs">
             <div className="glass-card p-3.5 flex items-start gap-2.5 border border-border/60">
               <InfinityIcon className="w-4 h-4 text-primary mt-0.5 shrink-0" />
@@ -378,6 +394,7 @@ export default function LicenseGate({ children }: LicenseGateProps) {
               </div>
             </div>
           </div>
+
           <form onSubmit={handleActivate} className="space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Clave de Activación</label>
@@ -407,15 +424,18 @@ export default function LicenseGate({ children }: LicenseGateProps) {
                 </button>
               </div>
             </div>
+
             {error && (
               <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg text-center border border-destructive/30 animate-fade-in-up">
                 {error}
               </div>
             )}
+
             <Button type="submit" className="w-full h-11 font-semibold text-base shadow-sm hover:shadow transition-all">
               Validar y Activar
             </Button>
           </form>
+
           {mobile && (
             <div className="mt-5 rounded-xl border border-border/70 bg-secondary/40 p-3.5">
               <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
@@ -427,6 +447,7 @@ export default function LicenseGate({ children }: LicenseGateProps) {
               </Button>
             </div>
           )}
+
           <div className="grid grid-cols-2 gap-2.5 mt-5">
             <Button
               variant="outline"
@@ -445,7 +466,7 @@ export default function LicenseGate({ children }: LicenseGateProps) {
               QR de Soporte
             </Button>
           </div>
-          
+
           <div className="mt-6 text-center space-y-1.5 pt-4 border-t border-border/40">
             <p className="text-xs text-muted-foreground">
               © 2026 Gestión de Ventas. Todos los derechos reservados.
@@ -458,6 +479,7 @@ export default function LicenseGate({ children }: LicenseGateProps) {
           </div>
         </div>
       </div>
+
       <QrScannerModal
         open={scanOpen}
         onClose={() => setScanOpen(false)}
@@ -466,6 +488,7 @@ export default function LicenseGate({ children }: LicenseGateProps) {
         title="Activación de Dispositivo de Personal"
         hint={receiving ? 'Recibiendo información del Administrador…' : 'Apunta la cámara al código QR proporcionado por el Administrador.'}
       />
+
       <Dialog open={showQr} onOpenChange={setShowQr}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
@@ -482,6 +505,7 @@ export default function LicenseGate({ children }: LicenseGateProps) {
           </div>
         </DialogContent>
       </Dialog>
+
       {WelcomeDialog}
     </div>
   );
