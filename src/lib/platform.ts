@@ -13,7 +13,7 @@ export const ANDROID_APP_VERSION: string =
 export function isMobileDevice(): boolean {
   if (typeof window === 'undefined') return false;
   // Capacitor nativo (Android/iOS empaquetado)
-  const cap = (window as any).Capacitor;
+  const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
   if (cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform()) {
     return true;
   }

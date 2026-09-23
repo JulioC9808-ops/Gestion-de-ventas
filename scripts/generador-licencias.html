@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Master Keygen & Acceso Dev | Julio_GE</title>
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card: #151d2f;
+      --card-inner: #0d1322;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --accent: #10b981;
+      --border: #243048;
+      --gold: #f59e0b;
+      --gold-hover: #d97706;
+      --gold-bg: rgba(245, 158, 11, 0.12);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem 0.75rem 2.5rem;
+    }
+    .container {
+      width: 100%;
+      max-width: 540px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 1.25rem;
+      padding: 1.25rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1rem;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0.75rem;
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--accent);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+    h1 { font-size: 1.25rem; font-weight: 800; color: #fff; letter-spacing: -0.02em; }
+    p.subtitle { font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem; }
+
+    .nav-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.35rem;
+      margin-bottom: 1.25rem;
+      background: var(--card-inner);
+      padding: 0.3rem;
+      border-radius: 0.75rem;
+      border: 1px solid var(--border);
+    }
+    .tab-btn {
+      padding: 0.7rem 0.5rem;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 0.85rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      transition: all 0.2s ease;
+    }
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+    .tab-btn.gold-active.active {
+      background: var(--gold);
+      color: #000;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+
+    .form-group { margin-bottom: 1.1rem; }
+    label { display: block; font-size: 0.78rem; font-weight: 700; margin-bottom: 0.4rem; color: #e2e8f0; text-transform: uppercase; letter-spacing: 0.04em; }
+    input, select {
+      width: 100%;
+      padding: 0.8rem 0.9rem;
+      background: var(--card-inner);
+      border: 1px solid var(--border);
+      border-radius: 0.65rem;
+      color: #fff;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input:focus, select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+    
+    .btn {
+      width: 100%;
+      padding: 0.85rem;
+      background: var(--primary);
+      border: none;
+      border-radius: 0.65rem;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-gold { background: var(--gold); color: #0f172a; }
+    .btn-gold:hover { background: var(--gold-hover); }
+
+    .result-box {
+      margin-top: 1.25rem;
+      padding: 1rem;
+      background: var(--card-inner);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      display: none;
+      animation: fadeIn 0.25s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .result-title { font-size: 0.72rem; color: var(--muted); font-weight: 700; text-transform: uppercase; margin-bottom: 0.5rem; }
+    .code-display {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #38bdf8;
+      word-break: break-all;
+      background: rgba(0,0,0,0.5);
+      padding: 0.85rem;
+      border-radius: 0.5rem;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      margin-bottom: 0.75rem;
+      text-align: center;
+      user-select: all;
+    }
+    .code-display.gold {
+      color: #fbbf24;
+      font-size: 1.8rem;
+      letter-spacing: 0.25em;
+      border-color: rgba(245, 158, 11, 0.3);
+    }
+    .copy-btn {
+      width: 100%;
+      padding: 0.65rem;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      color: #fff;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+    }
+    .copy-btn:hover { background: rgba(255,255,255,0.12); }
+
+    .faq-card {
+      margin-top: 1.25rem;
+      padding: 0.85rem;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border);
+      border-radius: 0.65rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .faq-title {
+      font-weight: 700;
+      color: #e2e8f0;
+      margin-bottom: 0.35rem;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .toast-popup {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #10b981;
+      color: #000;
+      font-weight: 800;
+      font-size: 0.85rem;
+      padding: 0.6rem 1.2rem;
+      border-radius: 9999px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 100;
+      pointer-events: none;
+    }
+    .toast-popup.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .footer {
+      margin-top: 1.25rem;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">
+      <div class="badge"><span class="dot"></span> 100% Offline • Sin Servidores</div>
+      <h1>Keygen & Master Dev Tool</h1>
+      <p class="subtitle">Herramienta Privada de Julio_GE para Gestión de Ventas</p>
+    </div>
+
+    <div class="nav-tabs">
+      <button id="btnTabLicense" class="tab-btn active" onclick="switchTab('license')">
+        🔑 Licencia Cliente
+      </button>
+      <button id="btnTabDev" class="tab-btn gold-active" onclick="switchTab('dev')">
+        🧑‍💻 Desafío Dev (OTP)
+      </button>
+    </div>
+
+    <!-- SECCIÓN 1: GENERADOR DE LICENCIAS -->
+    <div id="tab-license">
+      <div class="form-group">
+        <label for="deviceId">ID de Terminal del Cliente:</label>
+        <input type="text" id="deviceId" placeholder="Ej: GV-84A2-9F01 o GV-DEV-LOCAL" autocomplete="off" spellcheck="false">
+        <small style="color:var(--muted); font-size:0.7rem; margin-top:0.25rem; display:block;">
+          El cliente te dicta el ID que sale en su pantalla de activación.
+        </small>
+      </div>
+
+      <div class="form-group">
+        <label for="licType">Tipo de Activación:</label>
+        <select id="licType">
+          <option value="PERM">Permanente (De por vida / Ilimitada)</option>
+          <option value="T37">Periódica de 37 Días (Mensual estándar)</option>
+          <option value="T30">Periódica de 30 Días</option>
+          <option value="T90">Periódica de 90 Días (Trimestral)</option>
+          <option value="T365">Periódica de 365 Días (Anual)</option>
+        </select>
+      </div>
+
+      <button class="btn" onclick="generateLicense()">
+        <span>⚡ Generar Clave Criptográfica</span>
+      </button>
+
+      <div id="licenseResult" class="result-box">
+        <div class="result-title">Clave Única para este Dispositivo:</div>
+        <div id="licenseCodeOutput" class="code-display"></div>
+        <button class="copy-btn" onclick="copyFromElement('licenseCodeOutput')">
+          📋 Copiar para enviar por SMS / WhatsApp
+        </button>
+      </div>
+    </div>
+
+    <!-- SECCIÓN 2: ACCESO DEV DESAFÍO/RESPUESTA -->
+    <div id="tab-dev" style="display:none;">
+      <div class="form-group">
+        <label for="challengeInput">Código de Desafío que te dio el cliente (6 dígitos):</label>
+        <input type="number" id="challengeInput" placeholder="Ej: 482910" pattern="[0-9]*" inputmode="numeric" maxlength="6" autocomplete="off">
+        <small style="color:var(--muted); font-size:0.7rem; margin-top:0.25rem; display:block;">
+          Aparece al pulsar "( Desarrollado por Julio_GE )" en el Login.
+        </small>
+      </div>
+
+      <button class="btn btn-gold" onclick="generateDevOtp()">
+        <span>🔓 Calcular Código OTP de Desbloqueo</span>
+      </button>
+
+      <div id="devResult" class="result-box">
+        <div class="result-title">Código OTP de un solo uso:</div>
+        <div id="devOtpOutput" class="code-display gold"></div>
+        <button class="copy-btn" onclick="copyFromElement('devOtpOutput')">
+          📋 Copiar Código OTP
+        </button>
+      </div>
+    </div>
+
+    <!-- EXPLICACIÓN TÉCNICA DE SEGURIDAD -->
+    <div class="faq-card">
+      <div class="faq-title">
+        <span>🛡️</span> <strong>¿Qué pasa si alguien intenta recrear este archivo?</strong>
+      </div>
+      <p>
+        La seguridad no depende de la interfaz visual sino del <strong>Secreto Criptográfico Privado</strong> (HMAC-SHA256). Aunque un tercero copie el diseño HTML, <strong>no podrá generar licencias válidas</strong> porque cualquier código generado con otra clave será rechazado matemáticamente por la app.
+      </p>
+    </div>
+  </div>
+
+  <div class="footer">
+    Gestión de Ventas © 2026 • Desarrollado por <strong>Julio_GE</strong>
+  </div>
+
+  <div id="toastPopup" class="toast-popup">¡Copiado con éxito!</div>
+
+  <script>
+    const MASTER_CRYPTO_SALT = 'GV-JULIO-GE-2026-SECURE-KEY-ENGINE-8F92';
+
+    // Algoritmo SHA-256 portable puro
+    function sha256(ascii) {
+      function rightRotate(value, amount) { return (value >>> amount) | (value << (32 - amount)); }
+      const mathPow = Math.pow;
+      const maxWord = mathPow(2, 32);
+      const lengthProperty = 'length';
+      let i = 0, j = 0;
+      let result = '';
+      const words = [];
+      const asciiBitLength = ascii[lengthProperty] * 8;
+      let hash = [];
+      const k = [];
+      let primeCounter = 0;
+      const isComposite = {};
+      for (let candidate = 2; primeCounter < 64; candidate++) {
+        if (!isComposite[candidate]) {
+          for (i = 0; i < 313; i += candidate) isComposite[i] = true;
+          hash[primeCounter] = (mathPow(candidate, 0.5) * maxWord) | 0;
+          k[primeCounter++] = (mathPow(candidate, 1 / 3) * maxWord) | 0;
+        }
+      }
+      ascii += '\x80';
+      while ((ascii[lengthProperty] % 64) - 56) ascii += '\x00';
+      for (i = 0; i < ascii[lengthProperty]; i++) {
+        j = ascii.charCodeAt(i);
+        if (j >> 8) return '';
+        words[i >> 2] |= j << (((3 - i) % 4) * 8);
+      }
+      words[words[lengthProperty]] = (asciiBitLength / maxWord) | 0;
+      words[words[lengthProperty]] = asciiBitLength;
+      for (j = 0; j < words[lengthProperty];) {
+        const w = words.slice(j, (j += 16));
+        const oldHash = hash;
+        hash = hash.slice(0, 8);
+        for (i = 0; i < 64; i++) {
+          const w15 = w[i - 15], w2 = w[i - 2];
+          const s0 = rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3);
+          const s1 = rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10);
+          const temp1 = (w[i] = (i < 16) ? w[i] : (w[i - 16] + s0 + w[i - 7] + s1) | 0);
+          const s0Hash = rightRotate(hash[0], 2) ^ rightRotate(hash[0], 13) ^ rightRotate(hash[0], 22);
+          const maj = (hash[0] & hash[1]) ^ (hash[0] & hash[2]) ^ (hash[1] & hash[2]);
+          const t2 = (s0Hash + maj) | 0;
+          const s1Hash = rightRotate(hash[4], 6) ^ rightRotate(hash[4], 11) ^ rightRotate(hash[4], 25);
+          const ch = (hash[4] & hash[5]) ^ (~hash[4] & hash[6]);
+          const t1 = (hash[7] + s1Hash + ch + k[i] + temp1) | 0;
+          hash = [(t1 + t2) | 0].concat(hash);
+          hash[4] = (hash[4] + t1) | 0;
+        }
+        for (i = 0; i < 8; i++) hash[i] = (hash[i] + oldHash[i]) | 0;
+      }
+      for (i = 0; i < 8; i++) {
+        for (j = 3; j >= 0; j--) {
+          const b = (hash[i] >> (8 * j)) & 255;
+          result += (b < 16 ? '0' : '') + b.toString(16);
+        }
+      }
+      return result;
+    }
+
+    function hmacSha256(key, message) {
+      const blockSize = 64;
+      if (key.length > blockSize) key = sha256(key);
+      while (key.length < blockSize) key += '\x00';
+      let oKeyPad = '', iKeyPad = '';
+      for (let i = 0; i < blockSize; i++) {
+        oKeyPad += String.fromCharCode(key.charCodeAt(i) ^ 0x5c);
+        iKeyPad += String.fromCharCode(key.charCodeAt(i) ^ 0x36);
+      }
+      return sha256(oKeyPad + sha256(iKeyPad + message));
+    }
+
+    function switchTab(tab) {
+      const btnLicense = document.getElementById('btnTabLicense');
+      const btnDev = document.getElementById('btnTabDev');
+      const tabLicense = document.getElementById('tab-license');
+      const tabDev = document.getElementById('tab-dev');
+
+      if (tab === 'license') {
+        btnLicense.classList.add('active');
+        btnDev.classList.remove('active');
+        tabLicense.style.display = 'block';
+        tabDev.style.display = 'none';
+      } else {
+        btnDev.classList.add('active');
+        btnLicense.classList.remove('active');
+        tabLicense.style.display = 'none';
+        tabDev.style.display = 'block';
+        document.getElementById('challengeInput').focus();
+      }
+    }
+
+    function generateLicense() {
+      const rawId = document.getElementById('deviceId').value.trim();
+      const licType = document.getElementById('licType').value;
+      if (!rawId) {
+        showToast('⚠️ Ingresa el ID del terminal del cliente');
+        return;
+      }
+      const cleanDevice = rawId.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+      const ts = Math.floor(Date.now() / 1000);
+      const payload = `GVLIC:V1:${cleanDevice}:${licType}:${ts}`;
+      const sig = hmacSha256(MASTER_CRYPTO_SALT, payload).substring(0, 12).toUpperCase();
+
+      const fullCode = `GVLIC-V1-${cleanDevice}-${licType}-${ts}-${sig}`;
+      document.getElementById('licenseCodeOutput').innerText = fullCode;
+      document.getElementById('licenseResult').style.display = 'block';
+      showToast('✅ Clave de licencia generada');
+    }
+
+    function generateDevOtp() {
+      const challenge = document.getElementById('challengeInput').value.trim();
+      if (!challenge || challenge.length < 4) {
+        showToast('⚠️ Ingresa el código de 6 dígitos');
+        return;
+      }
+      const hash = hmacSha256(MASTER_CRYPTO_SALT, `DEV-CHALLENGE:${challenge}`);
+      const subInt = parseInt(hash.substring(0, 8), 16);
+      const otp = String(subInt % 1000000).padStart(6, '0');
+
+      document.getElementById('devOtpOutput').innerText = otp;
+      document.getElementById('devResult').style.display = 'block';
+      showToast('✅ Código OTP calculado');
+    }
+
+    function copyFromElement(id) {
+      const text = document.getElementById(id).innerText;
+      if (!text) return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => showToast('📋 Copiado al portapapeles'));
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast('📋 Copiado al portapapeles');
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toastPopup');
+      toast.innerText = msg;
+      toast.classList.add('show');
+      if (navigator.vibrate) navigator.vibrate(40);
+      setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+  </script>
+</body>
+</html>

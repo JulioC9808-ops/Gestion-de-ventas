@@ -1,16 +1,19 @@
 import React, { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import type { User, UserRole } from '@/types';
 import { readEmployeeLicense, isEmployeeLicenseActive } from '@/lib/employeeLicense';
+import { verifyDevChallengeResponse } from '@/lib/cryptoLicense';
 
-interface LoginResult {
+export interface LoginResult {
   ok: boolean;
-  reason?: 'invalid' | 'employee-only';
+  reason?: 'invalid' | 'employee-only' | 'requires-dev-otp';
+  devUser?: User;
 }
 
 interface AuthContextType {
   currentUser: User | null;
   login: (username: string, password: string) => boolean;
   loginDetailed: (username: string, password: string) => LoginResult;
+  loginWithDevOtp: (challenge: string, otp: string, devUser?: User) => boolean;
   logout: () => void;
   isRole: (role: UserRole) => boolean;
 }
@@ -47,10 +50,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { ok: false, reason: 'employee-only' };
     }
 
+    // Doble factor de autenticación para Desarrollador (Challenge-Response 100% Offline)
+    if (user.role === 'dev') {
+      return { ok: false, reason: 'requires-dev-otp', devUser: user };
+    }
+
     setCurrentUser(user);
     localStorage.setItem('currentUser', JSON.stringify(user));
     return { ok: true };
   }, [getUsers]);
+
+  const loginWithDevOtp = useCallback((challenge: string, otp: string, devUser?: User): boolean => {
+    if (isEmployeeLicenseActive(readEmployeeLicense())) {
+      return false;
+    }
+    const isValid = verifyDevChallengeResponse(challenge, otp);
+    if (isValid) {
+      const activeDevUser: User = devUser || {
+        id: 'dev-otp-session',
+        username: 'DEVJ260208C',
+        name: 'Julio_GE (Dev Autorizado)',
+        role: 'dev',
+        createdAt: new Date().toISOString(),
+      };
+      setCurrentUser(activeDevUser);
+      localStorage.setItem('currentUser', JSON.stringify(activeDevUser));
+      return true;
+    }
+    return false;
+  }, []);
 
   const login = useCallback((username: string, password: string): boolean => {
     return loginDetailed(username, password).ok;
@@ -64,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isRole = useCallback((role: UserRole) => currentUser?.role === role, [currentUser]);
 
   return (
-    <AuthContext.Provider value={{ currentUser, login, loginDetailed, logout, isRole }}>
+    <AuthContext.Provider value={{ currentUser, login, loginDetailed, loginWithDevOtp, logout, isRole }}>
       {children}
     </AuthContext.Provider>
   );

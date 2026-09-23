@@ -13,8 +13,7 @@ import { fileToCompressedDataUrl } from '@/lib/imageUtils';
 import { resetAllToFactoryDefaults } from '@/lib/backupUtils';
 
 const NAV = [
-  { label: 'Configuración', icon: Settings, key: 'config', tip: 'Cambia el nombre del negocio y otras configuraciones generales.' },
-  { label: 'Logo', icon: Image, key: 'logo', tip: 'Sube o cambia el logo que aparece en el login y la navegación.' },
+  { label: 'Configuración', icon: Settings, key: 'config', tip: 'Cambia el nombre del negocio, logo y fondo del sistema.' },
   { label: 'Licencia', icon: ShieldCheck, key: 'license', tip: 'Gestiona el estado de activación y habilita la licencia permanente.' },
   { label: 'Actualizaciones', icon: Send, key: 'updates', tip: 'Configura el canal de Telegram y el repositorio público de actualizaciones.' },
   { label: 'Contraseña', icon: Key, key: 'password', tip: 'Cambia tu contraseña de desarrollador.' },
@@ -116,63 +115,87 @@ export default function DevPanel() {
       {active === 'config' && (
         <div>
           <div className="page-header">
-            <h1 className="page-title">Configuración del Sistema</h1>
+            <h1 className="page-title">Configuración e Identidad del Sistema</h1>
+            <p className="text-sm text-muted-foreground mt-1">Personaliza el nombre del establecimiento, logo comercial y fondo visual.</p>
           </div>
-          <div className="glass-card p-6 max-w-lg space-y-6">
+          <div className="glass-card p-6 max-w-xl space-y-6">
+            {/* Nombre del Negocio */}
             <div>
-              <label className="text-sm font-medium">Nombre del Negocio</label>
-              <div className="flex gap-2 mt-1">
-                <Input value={businessName} onChange={e => setBusinessName(e.target.value)} />
-                <Button onClick={handleSaveName}>Guardar</Button>
-              </div>
-            </div>
-            <div>
-              <label className="text-sm font-medium">Fondo del Login</label>
-              <div className="flex gap-2 mt-1">
-                <Button variant="outline" onClick={() => bgInputRef.current?.click()}>
-                  {settings.backgroundUrl ? 'Cambiar Fondo' : 'Subir Fondo'}
-                </Button>
-                {settings.backgroundUrl && (
-                  <Button variant="destructive" size="sm" onClick={() => updateSettings({ backgroundUrl: null })}>
-                    Quitar
-                  </Button>
-                )}
-                <input ref={bgInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleFileUpload(e, 'background')} />
-              </div>
-              {settings.backgroundUrl && (
-                <img src={settings.backgroundUrl} alt="Fondo" className="w-32 h-20 object-cover rounded-lg mt-2 border border-border" />
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {active === 'logo' && (
-        <div>
-          <div className="page-header">
-            <h1 className="page-title">Logo del Negocio</h1>
-          </div>
-          <div className="glass-card p-6 max-w-lg space-y-6">
-            <div className="flex flex-col items-center gap-4">
-              {settings.logoUrl ? (
-                <img src={settings.logoUrl} alt="Logo" className="w-32 h-32 object-cover rounded-2xl border-2 border-border" />
-              ) : (
-                <div className="w-32 h-32 rounded-2xl bg-muted flex items-center justify-center text-muted-foreground">
-                  <Image className="w-12 h-12" />
-                </div>
-              )}
+              <label className="text-sm font-semibold text-foreground">Nombre del Negocio</label>
+              <p className="text-xs text-muted-foreground mb-2">Se mostrará en los tickets, comprobantes y encabezados del sistema.</p>
               <div className="flex gap-2">
-                <Button onClick={() => logoInputRef.current?.click()}>
-                  {settings.logoUrl ? 'Cambiar Logo' : 'Subir Logo'}
-                </Button>
-                {settings.logoUrl && (
-                  <Button variant="destructive" onClick={() => updateSettings({ logoUrl: null })}>
-                    Quitar Logo
-                  </Button>
-                )}
+                <Input
+                  value={businessName}
+                  onChange={e => setBusinessName(e.target.value)}
+                  placeholder="Ej: Cafetería Central"
+                  className="font-medium"
+                />
+                <Button onClick={handleSaveName}>Guardar Nombre</Button>
               </div>
-              <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleFileUpload(e, 'logo')} />
-              <p className="text-sm text-muted-foreground text-center">El logo aparecerá en la pantalla de login y en la barra de navegación.</p>
+            </div>
+
+            <div className="border-t border-border/60 pt-5">
+              <label className="text-sm font-semibold text-foreground block mb-1">Logo Oficial del Negocio</label>
+              <p className="text-xs text-muted-foreground mb-3">Aparece en la pantalla de inicio de sesión, barra superior y reportes impresos.</p>
+              
+              <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-xl bg-muted/40 border border-border">
+                {settings.logoUrl ? (
+                  <img src={settings.logoUrl} alt="Logo" className="w-24 h-24 object-cover rounded-xl border border-border shadow-sm shrink-0" />
+                ) : (
+                  <div className="w-24 h-24 rounded-xl bg-background border border-dashed border-border flex flex-col items-center justify-center text-muted-foreground shrink-0">
+                    <Image className="w-8 h-8 opacity-60 mb-1" />
+                    <span className="text-[10px] font-medium">Sin logo</span>
+                  </div>
+                )}
+
+                <div className="space-y-2 flex-1 text-center sm:text-left">
+                  <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+                    <Button variant="default" size="sm" onClick={() => logoInputRef.current?.click()}>
+                      {settings.logoUrl ? 'Cambiar Logo' : 'Subir Logo'}
+                    </Button>
+                    {settings.logoUrl && (
+                      <Button variant="outline" size="sm" className="text-destructive hover:bg-destructive/10" onClick={() => updateSettings({ logoUrl: null })}>
+                        <Trash2 className="w-3.5 h-3.5 mr-1" />
+                        Quitar Logo
+                      </Button>
+                    )}
+                  </div>
+                  <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleFileUpload(e, 'logo')} />
+                  <p className="text-[11px] text-muted-foreground">Formato recomendado: PNG transparente o JPG cuadrado en alta resolución.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-border/60 pt-5">
+              <label className="text-sm font-semibold text-foreground block mb-1">Fondo de Pantalla de Inicio (Login)</label>
+              <p className="text-xs text-muted-foreground mb-3">Imagen de ambiente que se proyecta detrás del formulario de inicio de sesión.</p>
+              
+              <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-xl bg-muted/40 border border-border">
+                {settings.backgroundUrl ? (
+                  <img src={settings.backgroundUrl} alt="Fondo" className="w-32 h-20 object-cover rounded-xl border border-border shadow-sm shrink-0" />
+                ) : (
+                  <div className="w-32 h-20 rounded-xl bg-background border border-dashed border-border flex flex-col items-center justify-center text-muted-foreground shrink-0">
+                    <Image className="w-6 h-6 opacity-60 mb-1" />
+                    <span className="text-[10px] font-medium">Fondo estándar</span>
+                  </div>
+                )}
+
+                <div className="space-y-2 flex-1 text-center sm:text-left">
+                  <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+                    <Button variant="outline" size="sm" onClick={() => bgInputRef.current?.click()}>
+                      {settings.backgroundUrl ? 'Cambiar Fondo' : 'Subir Fondo'}
+                    </Button>
+                    {settings.backgroundUrl && (
+                      <Button variant="outline" size="sm" className="text-destructive hover:bg-destructive/10" onClick={() => updateSettings({ backgroundUrl: null })}>
+                        <Trash2 className="w-3.5 h-3.5 mr-1" />
+                        Quitar Fondo
+                      </Button>
+                    )}
+                  </div>
+                  <input ref={bgInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleFileUpload(e, 'background')} />
+                  <p className="text-[11px] text-muted-foreground">Se adapta a cualquier resolución de monitor o dispositivo móvil.</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -503,11 +526,13 @@ export default function DevPanel() {
               <UserCog className="w-5 h-5 text-primary" />
               Restablecer Administrador Principal
             </DialogTitle>
-            <DialogDescription className="pt-2 text-sm text-muted-foreground space-y-2">
-              <span>
-                ¿Deseas restablecer las credenciales del administrador principal a <strong>admin</strong> / <strong>admin123</strong>?
-              </span>
-              <span className="block text-xs">Tus productos, inventario, ventas y cierres de turno permanecerán intactos.</span>
+            <DialogDescription asChild className="pt-2 text-sm text-muted-foreground space-y-2">
+              <div>
+                <span>
+                  ¿Deseas restablecer las credenciales del administrador principal a <strong>admin</strong> / <strong>admin123</strong>?
+                </span>
+                <span className="block text-xs mt-1">Tus productos, inventario, ventas y cierres de turno permanecerán intactos.</span>
+              </div>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0 mt-4">
@@ -529,20 +554,22 @@ export default function DevPanel() {
               <AlertTriangle className="w-5 h-5" />
               ¿Confirmas la Restauración Total de Fábrica?
             </DialogTitle>
-            <DialogDescription className="pt-2 text-xs text-muted-foreground space-y-3">
-              <p>
-                Esta acción es <strong>IRREVERSIBLE</strong>. Al confirmar, el sistema borrará por completo:
-              </p>
-              <ul className="list-disc pl-5 space-y-1 text-foreground">
-                <li>Todos los cierres de turno y reportes históricos</li>
-                <li>Todos los productos del catálogo y cantidades en almacén</li>
-                <li>El stock de venta activo y movimientos registrados</li>
-                <li>Todas las cuentas de empleados y administradores</li>
-                <li>Temas visuales aplicados, logos, fondos y frases</li>
-              </ul>
-              <p className="font-semibold text-destructive">
-                El sistema se reiniciará inmediatamente en estado limpio como recién instalado.
-              </p>
+            <DialogDescription asChild className="pt-2 text-xs text-muted-foreground space-y-3">
+              <div>
+                <p>
+                  Esta acción es <strong>IRREVERSIBLE</strong>. Al confirmar, el sistema borrará por completo:
+                </p>
+                <ul className="list-disc pl-5 space-y-1 text-foreground my-2">
+                  <li>Todos los cierres de turno y reportes históricos</li>
+                  <li>Todos los productos del catálogo y cantidades en almacén</li>
+                  <li>El stock de venta activo y movimientos registrados</li>
+                  <li>Todas las cuentas de empleados y administradores</li>
+                  <li>Temas visuales aplicados, logos, fondos y frases</li>
+                </ul>
+                <p className="font-semibold text-destructive">
+                  El sistema se reiniciará inmediatamente en estado limpio como recién instalado.
+                </p>
+              </div>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0 mt-4">

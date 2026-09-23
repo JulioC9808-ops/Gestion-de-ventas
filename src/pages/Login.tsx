@@ -1,22 +1,24 @@
 import React, { useState } from 'react';
+import type { User as UserType } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
-import { Coffee, Lock, User, MessageCircle, HelpCircle, Sparkles, Eye, EyeOff } from 'lucide-react';
+import { Coffee, Lock, User, MessageCircle, HelpCircle, Sparkles, Eye, EyeOff, Wrench, ShieldAlert, KeyRound, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import HelpTip from '@/components/HelpTip';
 import QrDisplay from '@/components/QrDisplay';
 import PrivacyPolicyDialog from '@/components/PrivacyPolicyDialog';
 import { getShiftGreeting, fetchOnlineQuote } from '@/lib/greeting';
 import { playLoginSound } from '@/lib/soundUtils';
+import { generateDevChallenge } from '@/lib/cryptoLicense';
 import { toast } from 'sonner';
 
 const DEV_WHATSAPP = '+5351616816';
 const DEV_PHONE_TEL = 'tel:+5351616816';
 
 export default function Login() {
-  const { loginDetailed } = useAuth();
+  const { loginDetailed, loginWithDevOtp } = useAuth();
   const { settings, users } = useData();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -25,6 +27,34 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showQr, setShowQr] = useState(false);
+
+  // Acceso Técnico / Dev Challenge-Response 2FA (100% Offline)
+  const [devOtpOpen, setDevOtpOpen] = useState(false);
+  const [challengeCode, setChallengeCode] = useState('');
+  const [enteredOtp, setEnteredOtp] = useState('');
+  const [devOtpError, setDevOtpError] = useState('');
+  const [challengeCopied, setChallengeCopied] = useState(false);
+  const [pendingDevUser, setPendingDevUser] = useState<UserType | null>(null);
+
+  const handleCopyChallenge = () => {
+    navigator.clipboard.writeText(challengeCode).then(() => {
+      setChallengeCopied(true);
+      toast.success('Código de desafío copiado');
+      setTimeout(() => setChallengeCopied(false), 2000);
+    });
+  };
+
+  const handleDevOtpSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setDevOtpError('');
+    const ok = loginWithDevOtp(challengeCode, enteredOtp, pendingDevUser || undefined);
+    if (ok) {
+      toast.success('Acceso de Desarrollador Autorizado Offline concedido');
+      setDevOtpOpen(false);
+    } else {
+      setDevOtpError('Código OTP inválido o no correspondiente al desafío generado.');
+    }
+  };
 
   // Intentar descargar frase fresca de internet en segundo plano si hay conexión
   React.useEffect(() => {
@@ -43,6 +73,19 @@ export default function Login() {
 
     setTimeout(() => {
       const result = loginDetailed(username, password);
+
+      if (result.reason === 'requires-dev-otp') {
+        setPendingDevUser(result.devUser || null);
+        const freshChallenge = generateDevChallenge();
+        setChallengeCode(freshChallenge);
+        setEnteredOtp('');
+        setDevOtpError('');
+        setDevOtpOpen(true);
+        toast.info('Verificación requerida: Generando desafío de segundo paso');
+        setLoading(false);
+        return;
+      }
+
       if (!result.ok) {
         setError(
           result.reason === 'employee-only'
@@ -249,6 +292,78 @@ export default function Login() {
           </div>
         </div>
       </div>
+
+      {/* Modal Acceso Desarrollador 2FA (Challenge-Response OTP 100% Offline) */}
+      <Dialog open={devOtpOpen} onOpenChange={setDevOtpOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display text-base flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-amber-500" />
+              Verificación de Segundo Paso (Dev)
+            </DialogTitle>
+            <DialogDescription asChild>
+              <div className="text-xs text-muted-foreground pt-1">
+                Autenticación criptográfica de dos factores requerida para el perfil de Desarrollador.
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-1">
+            <div className="p-3 rounded-lg bg-muted/60 border border-border text-center space-y-1.5">
+              <div className="text-[11px] font-semibold uppercase text-muted-foreground">
+                Código de Desafío de Sesión:
+              </div>
+              <div className="font-mono text-2xl font-bold tracking-widest text-primary flex items-center justify-center gap-2">
+                <span>{challengeCode}</span>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                  onClick={handleCopyChallenge}
+                  title="Copiar código de desafío"
+                >
+                  {challengeCopied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground leading-tight">
+                Introduce este número en tu generador móvil offline para obtener el OTP de 6 dígitos.
+              </p>
+            </div>
+
+            <form onSubmit={handleDevOtpSubmit} className="space-y-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground">
+                  Código OTP de Autorización:
+                </label>
+                <Input
+                  type="text"
+                  maxLength={6}
+                  value={enteredOtp}
+                  onChange={e => {
+                    setEnteredOtp(e.target.value.replace(/\D/g, ''));
+                    setDevOtpError('');
+                  }}
+                  placeholder="000000"
+                  className="text-center font-mono text-lg font-bold tracking-widest h-10"
+                  autoFocus
+                  required
+                />
+              </div>
+
+              {devOtpError && (
+                <div className="text-destructive text-xs p-2 rounded bg-destructive/10 border border-destructive/20 text-center">
+                  {devOtpError}
+                </div>
+              )}
+
+              <Button type="submit" className="w-full h-10 font-semibold text-xs sm:text-sm">
+                Confirmar y Desbloquear Sesión Dev
+              </Button>
+            </form>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showQr} onOpenChange={setShowQr}>
         <DialogContent className="max-w-sm">

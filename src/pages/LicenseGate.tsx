@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Shield, Key, MessageCircle, Clock, Infinity as InfinityIcon, QrCode, ScanLine, Eye, EyeOff } from 'lucide-react';
+import { Shield, Key, MessageCircle, Clock, Infinity as InfinityIcon, QrCode, ScanLine, Eye, EyeOff, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -14,6 +14,7 @@ import {
   daysRemaining, hoursRemaining, clearEmployeeLicense, H24_MS,
 } from '@/lib/employeeLicense';
 import { receiveEmployeeShare } from '@/lib/syncTransport';
+import { verifyCryptographicLicense, formatFriendlyDeviceId } from '@/lib/cryptoLicense';
 import { toast } from 'sonner';
 
 const LIFETIME_LICENSE = '08022664107';
@@ -230,12 +231,24 @@ export default function LicenseGate({ children }: LicenseGateProps) {
     (license.type === 'timed' && isTimedActive(license))
   );
 
+  const [copiedId, setCopiedId] = useState(false);
+  const friendlyTerminalId = formatFriendlyDeviceId(device.id);
+
+  const copyTerminalId = () => {
+    navigator.clipboard.writeText(friendlyTerminalId).then(() => {
+      setCopiedId(true);
+      toast.success('ID de Terminal copiado al portapapeles');
+      setTimeout(() => setCopiedId(false), 2000);
+    });
+  };
+
   const handleActivate = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = key.trim();
     if (trimmed === LIFETIME_LICENSE) {
       const state = persistLicense({ type: 'lifetime' } as LicenseState);
       setLicense(state);
+      toast.success('¡Licencia Permanente activada con éxito!');
     } else if (trimmed === TIMED_LICENSE) {
       const state = persistLicense({
         type: 'timed',
@@ -243,8 +256,30 @@ export default function LicenseGate({ children }: LicenseGateProps) {
         expiresAt: Date.now() + TIMED_DURATION_MS,
       } as LicenseState);
       setLicense(state);
+      toast.success('¡Licencia Periódica activada con éxito!');
+    } else if (trimmed.toUpperCase().startsWith('GVLIC-')) {
+      // Verificación Criptográfica Asimétrica Offline
+      const res = verifyCryptographicLicense(trimmed, device.id || 'GV-DEV-LOCAL');
+      if (res.valid) {
+        if (res.type === 'lifetime') {
+          const state = persistLicense({ type: 'lifetime', deviceId: device.id } as LicenseState);
+          setLicense(state);
+          toast.success('¡Licencia Permanente Offline validada y activada!');
+        } else {
+          const state = persistLicense({
+            type: 'timed',
+            deviceId: device.id,
+            activatedAt: Date.now(),
+            expiresAt: res.expiresAt,
+          } as LicenseState);
+          setLicense(state);
+          toast.success(`¡Licencia autorizada por ${res.days} días activada con éxito!`);
+        }
+      } else {
+        setError(res.reason || 'Clave de licencia criptográfica no válida');
+      }
     } else {
-      setError('Clave de producto inválida');
+      setError('Clave de producto inválida. Verifica que esté bien escrita o solicita tu clave para este terminal.');
     }
   };
 
@@ -378,7 +413,7 @@ export default function LicenseGate({ children }: LicenseGateProps) {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 mb-6 text-xs">
+          <div className="grid grid-cols-2 gap-3 mb-4 text-xs">
             <div className="glass-card p-3.5 flex items-start gap-2.5 border border-border/60">
               <InfinityIcon className="w-4 h-4 text-primary mt-0.5 shrink-0" />
               <div>
@@ -393,6 +428,26 @@ export default function LicenseGate({ children }: LicenseGateProps) {
                 <div className="text-muted-foreground">Renovación asistida</div>
               </div>
             </div>
+          </div>
+
+          {/* Tarjeta de Identificador de Terminal (Device ID) para Activación Offline */}
+          <div className="mb-5 p-3 rounded-xl bg-background/60 border border-border/80 flex items-center justify-between gap-2 shadow-inner">
+            <div className="min-w-0">
+              <div className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">ID de este Terminal:</div>
+              <div className="font-mono text-xs sm:text-sm font-bold text-primary tracking-wide truncate select-all">
+                {friendlyTerminalId}
+              </div>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={copyTerminalId}
+              className="h-8 px-2.5 text-xs shrink-0 flex items-center gap-1 border-border/80 hover:bg-primary/10 hover:text-primary"
+            >
+              {copiedId ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{copiedId ? 'Copiado' : 'Copiar ID'}</span>
+            </Button>
           </div>
 
           <form onSubmit={handleActivate} className="space-y-4">
@@ -546,6 +601,14 @@ export function activateTimedLicenseDays(days = 37): boolean {
   } catch {
     return false;
   }
+}
+
+/** ¿Este dispositivo tiene licencia principal válida (permanente o periódica activa)? */
+export function isDeviceLicensed(): boolean {
+  const state = readLicense();
+  if (state.type === 'lifetime') return true;
+  if (state.type === 'timed') return isTimedActive(state);
+  return false;
 }
 
 /** Expiración del admin para propagarla en el QR de empleados. null = permanente. */

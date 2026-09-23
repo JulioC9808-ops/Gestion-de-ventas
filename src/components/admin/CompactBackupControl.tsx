@@ -213,18 +213,20 @@ export default function CompactBackupControl() {
               <FileCheck className="w-5 h-5" />
               Restaurar Copia de Seguridad
             </DialogTitle>
-            <DialogDescription className="pt-2 text-xs text-muted-foreground space-y-3">
-              <div className="p-3 bg-muted/60 rounded-xl border border-border space-y-1 font-mono text-[11px] text-foreground">
-                <p>Archivo: <strong>{selectedFile?.name}</strong></p>
-                <p>Fecha: <strong>{previewData?.exportedAt ? new Date(previewData.exportedAt).toLocaleString() : 'N/A'}</strong></p>
-                <p>📦 Productos: <strong>{previewData?.products.length || 0}</strong></p>
-                <p>👥 Usuarios: <strong>{previewData?.users.length || 0}</strong></p>
-                <p>📊 Cierres de Turno: <strong>{previewData?.reports.length || 0}</strong></p>
+            <DialogDescription asChild className="pt-2 text-xs text-muted-foreground space-y-3">
+              <div>
+                <div className="p-3 bg-muted/60 rounded-xl border border-border space-y-1 font-mono text-[11px] text-foreground">
+                  <p>Archivo: <strong>{selectedFile?.name}</strong></p>
+                  <p>Fecha: <strong>{previewData?.exportedAt ? new Date(previewData.exportedAt).toLocaleString() : 'N/A'}</strong></p>
+                  <p>📦 Productos: <strong>{previewData?.products.length || 0}</strong></p>
+                  <p>👥 Usuarios: <strong>{previewData?.users.length || 0}</strong></p>
+                  <p>📊 Cierres de Turno: <strong>{previewData?.reports.length || 0}</strong></p>
+                </div>
+                <p className="text-foreground text-xs leading-relaxed mt-2">
+                  <Shield className="w-3.5 h-3.5 inline mr-1 text-emerald-500" />
+                  <strong>Información:</strong> Se cargarán todos los datos contenidos en la copia. La licencia de este terminal permanecerá intacta.
+                </p>
               </div>
-              <p className="text-foreground text-xs leading-relaxed">
-                <Shield className="w-3.5 h-3.5 inline mr-1 text-emerald-500" />
-                <strong>Información:</strong> Se cargarán todos los datos contenidos en la copia. La licencia de este terminal permanecerá intacta.
-              </p>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0 mt-4">
@@ -247,18 +249,20 @@ export default function CompactBackupControl() {
               <History className="w-5 h-5" />
               Restaurar Copia Anterior (Backup.old)
             </DialogTitle>
-            <DialogDescription className="pt-2 text-xs text-muted-foreground space-y-3">
-              <p>
-                ¿Deseas restaurar la penúltima copia de seguridad automática guardada en este dispositivo?
-              </p>
-              {autoInfo.oldData && (
-                <div className="p-3 bg-muted/60 rounded-xl border border-border space-y-1 font-mono text-[11px] text-foreground">
-                  <p>Fecha: <strong>{new Date(autoInfo.oldData.exportedAt).toLocaleString()}</strong></p>
-                  <p>📦 Productos: <strong>{autoInfo.oldData.products.length}</strong></p>
-                  <p>👥 Usuarios: <strong>{autoInfo.oldData.users.length}</strong></p>
-                  <p>📊 Cierres: <strong>{autoInfo.oldData.reports.length}</strong></p>
-                </div>
-              )}
+            <DialogDescription asChild className="pt-2 text-xs text-muted-foreground space-y-3">
+              <div>
+                <p>
+                  ¿Deseas restaurar la penúltima copia de seguridad automática guardada en este dispositivo?
+                </p>
+                {autoInfo.oldData && (
+                  <div className="p-3 bg-muted/60 rounded-xl border border-border space-y-1 font-mono text-[11px] text-foreground mt-2">
+                    <p>Fecha: <strong>{new Date(autoInfo.oldData.exportedAt).toLocaleString()}</strong></p>
+                    <p>📦 Productos: <strong>{autoInfo.oldData.products.length}</strong></p>
+                    <p>👥 Usuarios: <strong>{autoInfo.oldData.users.length}</strong></p>
+                    <p>📊 Cierres: <strong>{autoInfo.oldData.reports.length}</strong></p>
+                  </div>
+                )}
+              </div>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0 mt-4">
@@ -281,37 +285,39 @@ export default function CompactBackupControl() {
               <FolderSearch className="w-5 h-5 text-primary" />
               Rutas para Extracción Manual de Datos
             </DialogTitle>
-            <DialogDescription className="pt-2 text-xs text-muted-foreground space-y-3">
-              <p>
-                Si la aplicación no abre por algún error externo del sistema operativo o dispositivo, los datos físicos se encuentran almacenados en:
-              </p>
+            <DialogDescription asChild className="pt-2 text-xs text-muted-foreground space-y-3">
+              <div>
+                <p>
+                  Si la aplicación no abre por algún error externo del sistema operativo o dispositivo, los datos físicos se encuentran almacenados en:
+                </p>
 
-              <div className="space-y-2">
-                <div className="p-2.5 rounded-lg bg-muted/60 border border-border text-[11px]">
-                  <p className="font-bold text-foreground">📱 Teléfonos Android (APK):</p>
-                  <p className="font-mono text-[10px] text-primary break-all mt-0.5">
-                    /data/data/com.gestion.ventas/app_webview/Default/Local Storage/leveldb/
-                  </p>
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    (O mediante comando ADB backup: <code className="text-foreground">adb backup -f backup.ab -noapk com.gestion.ventas</code>)
-                  </p>
-                </div>
+                <div className="space-y-2 mt-2">
+                  <div className="p-2.5 rounded-lg bg-muted/60 border border-border text-[11px]">
+                    <p className="font-bold text-foreground">📱 Teléfonos Android (APK):</p>
+                    <p className="font-mono text-[10px] text-primary break-all mt-0.5">
+                      /data/data/com.gestion.ventas/app_webview/Default/Local Storage/leveldb/
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      (O mediante comando ADB backup: <code className="text-foreground">adb backup -f backup.ab -noapk com.gestion.ventas</code>)
+                    </p>
+                  </div>
 
-                <div className="p-2.5 rounded-lg bg-muted/60 border border-border text-[11px]">
-                  <p className="font-bold text-foreground">💻 Windows PC (Desktop / Electron):</p>
-                  <p className="font-mono text-[10px] text-primary break-all mt-0.5">
-                    %APPDATA%\gestion-ventas\Local Storage\leveldb\
-                  </p>
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    (Pegar en el Explorador de Windows: <code className="text-foreground">Win + R → %appdata%</code>)
-                  </p>
-                </div>
+                  <div className="p-2.5 rounded-lg bg-muted/60 border border-border text-[11px]">
+                    <p className="font-bold text-foreground">💻 Windows PC (Desktop / Electron):</p>
+                    <p className="font-mono text-[10px] text-primary break-all mt-0.5">
+                      %APPDATA%\gestion-ventas\Local Storage\leveldb\
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      (Pegar en el Explorador de Windows: <code className="text-foreground">Win + R → %appdata%</code>)
+                    </p>
+                  </div>
 
-                <div className="p-2.5 rounded-lg bg-muted/60 border border-border text-[11px]">
-                  <p className="font-bold text-foreground">🌐 Navegador Web:</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    Presionar <code className="text-foreground">F12 → Pestaña Application / Almacenamiento → Local Storage</code>.
-                  </p>
+                  <div className="p-2.5 rounded-lg bg-muted/60 border border-border text-[11px]">
+                    <p className="font-bold text-foreground">🌐 Navegador Web:</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      Presionar <code className="text-foreground">F12 → Pestaña Application / Almacenamiento → Local Storage</code>.
+                    </p>
+                  </div>
                 </div>
               </div>
             </DialogDescription>

@@ -15,106 +15,49 @@ const BUILD_DATE = (() => {
   }
 })();
 
-const EULA_TEXT = `POR FAVOR LEA DETENIDAMENTE EL ACUERDO DE LICENCIA SIGUIENTE ANTES DE CONTINUAR CON EL USO DEL PROGRAMA.
+const EULA_TEXT = `ACUERDO DE LICENCIA DE USUARIO FINAL (EULA)
 
-Acuerdo de Licencia de Usuario Final.
-
-Sistema de Ventas – Julio_GE Software
-
+Sistema de Gestión de Ventas – Desarrollado por Julio_GE
 Última actualización: ${BUILD_DATE}
 
+Le rogamos leer detenidamente este Acuerdo de Licencia de Usuario Final antes de comenzar a utilizar la aplicación. Al instalar, registrar o utilizar este software, usted acepta plenamente los términos y condiciones aquí estipulados.
 
-Este Acuerdo de Licencia de Usuario Final (“EULA”) es un contrato legal entre usted y Julio_GE Software que es el desarrollador para el uso del sistema de ventas y gestión comercial.
+1. NATURALEZA Y PROPÓSITO DEL SOFTWARE
+Gestión de Ventas es una solución tecnológica offline-first diseñada para la gestión comercial integral, control riguroso de inventario, auditoría de flujo de caja, liquidación precisa de salarios y automatización de cierres de turno, orientada a salvaguardar la transparencia operativa del negocio.
 
-Al instalar, activar o utilizar el Software, usted acepta todos los términos establecidos en este documento.
+2. CONCESIÓN DE LICENCIA Y ALCANCE
+• La licencia concedida otorga el derecho de uso personal e intransferible para el establecimiento comercial o terminal registrado.
+• El uso en sucursales, negocios adicionales o terminales independientes requerirá la adquisición de las licencias correspondientes.
+• Las licencias permanentes otorgan acceso continuo e ilimitado al software y a las actualizaciones del canal oficial para el dispositivo autorizado.
+• Las licencias temporales o de prueba permiten la operación del sistema durante el período contratado.
 
+3. DERECHOS DE PROPIEDAD INTELECTUAL Y RESTRICCIONES
+El software, su arquitectura, diseño de interfaz, algoritmos criptográficos y código fuente son propiedad intelectual exclusiva de su Desarrollador.
+El usuario se compromete a:
+• No realizar ingeniería inversa, descompilación, extracción no autorizada de componentes ni desensamblado del aplicativo.
+• No redistribuir, arrendar, sublicenciar, clonar ni comercializar copias no autorizadas del sistema.
+• No intentar vulnerar ni eludir los mecanismos de seguridad, validación de licencias o protocolos criptográficos del software.
 
-Propósito del Software
-El Software está diseñado para ayudar a los negocios a evitar fraudes internos, permitiendo al (USUARIO PRINCIPAL) que es usted supervisar el flujo de dinero, controlar entradas y salidas, y gestionar operaciones comerciales de manera segura y transparente.
+4. PROTECCIÓN DEL SISTEMA E INTEGRIDAD DE DATOS
+La aplicación incorpora mecanismos de verificación de integridad diseñados para proteger la consistencia de la base de datos y evitar manipulaciones maliciosas. Ante intentos de alteración forzada del binario o corrupción intencional de registros, el sistema bloqueará el acceso al entorno operativo para resguardar la seguridad comercial.
 
-Tambien le facilita los cierres de turno de una manera mas practica y sencilla ya que el programa calculara todo por usted
+5. RESPALDOS Y CONTINUIDAD OPERATIVA
+• El sistema incluye utilidades nativas para la generación y restauración de copias de seguridad (.gvbak y respaldo diario automatizado).
+• La información comercial generada es propiedad exclusiva del usuario y reside de forma local y soberana en el dispositivo.
+• El usuario es responsable de realizar copias de respaldo periódicas y de salvaguardar su equipo ante fallos de hardware o software ajenos al aplicativo.
 
+6. SOPORTE TÉCNICO Y ACTUALIZACIONES
+• El Desarrollador ofrece asistencia técnica para la resolución de incidencias operativas a través de los canales de comunicación habilitados.
+• Las actualizaciones de mantenimiento, estabilidad y nuevas funciones se distribuyen a través del canal oficial de la aplicación.
 
-Licencia de Uso
-La licencia otorgada es exclusiva para el negocio registrado al momento de la compra.
+7. LIMITACIÓN DE RESPONSABILIDAD
+El software se suministra en su estado actual para optimizar la gestión comercial. El Desarrollador no asume responsabilidad por pérdidas derivadas de negligencia en el resguardo de credenciales de acceso, errores en el ingreso manual de montos o interrupciones causadas por fallos en el sistema operativo o hardware del usuario.
 
-Si el Usuario desea utilizar el Software en otro negocio,sucursal o entidad (ya sea de usted mismo), deberá adquirir una nueva licencia.
+8. RESCISIÓN Y CANCELACIÓN
+El presente acuerdo quedará sin efecto de pleno derecho si el usuario incumple las cláusulas estipuladas, particularmente en lo relativo a ingeniería inversa, redistribución no autorizada o alteración de mecanismos de seguridad.
 
-Con el uso de la licencia mensual usted no tiene derecho a reclamar algo que le este sucediendo al programa.
-
-
-Restricciones del Usuario!!!
-El Usuario NO puede:....
-
-Modificar, descompilar, manipular o intentar alterar el Software.
-
-Intentar copiar, clonar o reproducir el sistema para uso propio o de terceros.
-
-Forzar el programa, manipular sus archivos internos o intentar evadir los mecanismos de seguridad.
-
-Usar el Software para actividades ilegales o fraudulentas.
-
-Sistema Anti-Hacking
-El Software incluye un sistema de protección que detecta manipulaciones externas, intentos de ingeniería inversa o alteraciones no autorizadas.
-
-Si se detecta actividad sospechosa, el Software eliminará automáticamente archivos esenciales para impedir su funcionamiento y proteger la integridad del sistema.
-
-Instalación, Reinstalación y Backups
-El Software puede desinstalarse y reinstalarse sin afectar la información del negocio, ya que realiza copias de seguridad internas.
-
-El Usuario es responsable de mantener su dispositivo libre de virus, malware o daños que puedan afectar el funcionamiento del Software.
-
-
-Soporte Técnico
-Cualquier error, duda o problema debe ser reportado directamente al Desarrollador,puede tardar hasta 24h en responder su mensaje.
-
-El soporte técnico es gratuito únicamente para usuarios con licencia permanente.
-
-Solicitudes de cambios, mejoras o personalizaciones a su gusto tendrán un costo adicional según la complejidad del trabajo.
-
-
-Actualizaciones
-El Desarrollador puede lanzar actualizaciones para mejorar seguridad, rendimiento o funciones.
-
-El Usuario acepta que algunas actualizaciones pueden ser obligatorias para mantener la estabilidad del sistema.
-
-Las actualizaciones estaran en mi canal de Telegram.
-
-
-Propiedad Intelectual
-El Software, su código, diseño, interfaz y funciones son propiedad exclusiva del Desarrollador.
-
-No se otorga ningún derecho de propiedad al Usuario, solo el derecho de uso bajo licencia.
-
-Cualquier intento de copia o reproducción será considerado una violación grave del EULA.
-
-
-Limitación de Responsabilidad
-El Desarrollador no será responsable por:
-
-Pérdidas económicas derivadas de mal uso del Software.
-
-Daños ocasionados por hardware defectuoso, virus o sistemas operativos corruptos.
-
-Manipulaciones externas realizadas por el Usuario o terceros.
-
-
-Terminación del Contrato
-Este EULA se terminará automáticamente si:
-
-El Usuario viola cualquiera de las restricciones mencionadas.
-
-Se detecta manipulación, hackeo o intento de copia del Software.
-
-El Usuario utiliza el Software en un negocio no autorizado.
-
-En caso de terminación, el Usuario perderá el derecho de uso sin reembolso.
-
-
-Aceptación
-Al instalar o usar el Software, usted declara haber leído, entendido y aceptado este EULA.
-
-(Si no está de acuerdo con los términos, no debe instalar, ni utilizar el Software.)`;
+9. ACEPTACIÓN EXPRESA
+Al pulsar "Acepto", instalar o utilizar el software, usted manifiesta su conformidad total con los términos aquí expuestos. Si no está de acuerdo con alguna disposición, deberá abstenerse de utilizar el aplicativo.`;
 
 /**
  * Muestra el EULA la primera vez que se abre la app. Bloqueante hasta aceptar.
