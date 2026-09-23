@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Search, TrendingUp, AlertCircle, Info } from 'lucide-react';
+import { Search, AlertCircle, Info, WifiOff } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useData } from '@/contexts/DataContext';
@@ -16,21 +16,120 @@ import {
   initElToqueWatcher,
   loadCachedRates,
   getRateDelta,
-  INITIAL_FALLBACK_RATES,
   type ElToqueSnapshot,
   type CurrencyRate,
   type RateDelta,
 } from '@/lib/elToque';
 
-// ---- Banderas: mapa estático (así Vite solo incluye las usadas) ----
+// ---- Banderas de países: mapa estático (Vite solo incluye las usadas) ----
 const FLAG_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  USD: US, ZELLE: US, EUR: EU, MLC: CU, CUP: CU, MXN: MX, CAD: CA,
+  USD: US, EUR: EU, MXN: MX, CAD: CA,
   CHF: CH, GBP: GB, BRL: BR, COP: CO, CLP: CL, ARS: AR, VES: VE,
   PEN: PE, DOP: DO, PAB: PA, CRC: CR, GTQ: GT, HNL: HN, NIO: NI,
   SVC: SV, PYG: PY, UYU: UY, BOB: BO, JPY: JP, CNY: CN, KRW: KR,
   RUB: RU, TRY: TR, INR: IN, ILS: IL, AED: AE, AUD: AU, NZD: NZ,
   SEK: SE, NOK: NO, DKK: DK, PLN: PL,
 };
+
+// ---- Iconos especiales dibujados en SVG (como el sitio de elTOQUE) ----
+
+/** MLC: tarjeta verde/gris */
+function MlcCardIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 16" className={className || 'w-6'} style={{ aspectRatio: '3 / 2' }} aria-label="MLC">
+      <rect width="24" height="16" rx="2.5" fill="#8a9a8c" />
+      <rect y="10.5" width="24" height="5.5" rx="1.5" fill="#5c705e" />
+      <rect x="3" y="3.2" width="9" height="1.8" rx="0.9" fill="#ffffff" opacity="0.9" />
+      <rect x="3" y="6" width="6" height="1.8" rx="0.9" fill="#ffffff" opacity="0.65" />
+      <rect x="16.5" y="3" width="4.5" height="3.4" rx="0.8" fill="#3f7d4e" />
+    </svg>
+  );
+}
+
+/** Zelle: cuadro morado con la Z blanca */
+function ZelleIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className || 'w-6 h-6'} aria-label="Zelle">
+      <rect width="24" height="24" rx="5" fill="#5f22d9" />
+      <text
+        x="12" y="17.5" textAnchor="middle" fill="#ffffff"
+        fontSize="14" fontWeight="800" fontFamily="Arial, Helvetica, sans-serif"
+      >
+        Z
+      </text>
+    </svg>
+  );
+}
+
+/** CLA: Tarjeta Clásica (azul oscuro con franjas) */
+function ClasicaIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 16" className={className || 'w-6'} style={{ aspectRatio: '3 / 2' }} aria-label="CLA">
+      <rect width="24" height="16" rx="2.5" fill="#2b3a55" />
+      <rect y="2.5" width="24" height="1.6" fill="#c0392b" opacity="0.85" />
+      <rect x="3" y="6" width="7" height="1.8" rx="0.9" fill="#ffffff" opacity="0.9" />
+      <rect x="3" y="9" width="5" height="1.6" rx="0.8" fill="#ffffff" opacity="0.6" />
+      <text
+        x="17" y="12.8" textAnchor="middle" fill="#ffffff" opacity="0.95"
+        fontSize="4.6" fontWeight="700" fontFamily="Arial, Helvetica, sans-serif"
+      >
+        CLA
+      </text>
+    </svg>
+  );
+}
+
+/** USDT / cripto: emoji de respaldo */
+function CryptoIcon({ code, className }: { code: string; className?: string }) {
+  const emoji = code === 'USDT' ? '💵' : code === 'BTC' ? '₿' : code === 'ETH' ? 'Ξ' : code === 'TRX' ? '⚡' : '💱';
+  return (
+    <span className={`inline-flex shrink-0 items-center justify-center align-middle ${className || 'w-6'}`}>
+      {emoji}
+    </span>
+  );
+}
+
+/**
+ * Icono de la moneda, con prioridad:
+ * 1) SVG especial (MLC, ZELLE, CLA)  2) Bandera de país SVG  3) Emoji cripto
+ */
+function CurrencyFlag({ code, className }: { code: string; className?: string }) {
+  const upper = code.toUpperCase();
+  if (upper === 'MLC' || upper === 'CUP') {
+    // MLC y CUP usan el ícono de tarjeta cubana; CUP además tiene bandera 🇨🇺 si prefieres
+    if (upper === 'MLC') return <MlcCardIcon className={className} />;
+  }
+  if (upper === 'ZELLE') return <ZelleIcon className={className} />;
+  if (upper === 'CLA') return <ClasicaIcon className={className} />;
+  const Flag = FLAG_MAP[upper];
+  if (Flag) {
+    return (
+      <span
+        className={`inline-flex shrink-0 overflow-hidden rounded-[3px] shadow-sm ring-1 ring-black/10 align-middle ${className || 'w-6'}`}
+        style={{ aspectRatio: '3 / 2' }}
+      >
+        <Flag className="h-full w-full" />
+      </span>
+    );
+  }
+  return <CryptoIcon code={upper} className={className} />;
+}
+
+/** Chip ▲/▼ estilo elTOQUE: rojo al subir, verde al bajar */
+function DeltaChip({ delta, big }: { delta?: RateDelta | null; big?: boolean }) {
+  if (!delta) return null;
+  const up = delta.direction === 'up';
+  const value = Math.abs(delta.diff);
+  const text = value % 1 === 0 ? String(value) : value.toFixed(2);
+  return (
+    <span
+      className={`inline-flex items-center gap-0.5 font-bold whitespace-nowrap ${big ? 'text-[11px]' : 'text-[10px]'}`}
+      style={{ color: up ? '#dc2626' : '#16a34a' }}
+    >
+      {up ? '▲' : '▼'} {up ? '+' : '-'}{text}
+    </span>
+  );
+}
 
 /** Logo de elTOQUE desde src/assets; si el archivo faltara, badge de respaldo. */
 function ElToqueLogo({ className }: { className?: string }) {
@@ -52,43 +151,6 @@ function ElToqueLogo({ className }: { className?: string }) {
       onError={() => setFailed(true)}
       className={`object-contain ${className || 'w-6 h-6'}`}
     />
-  );
-}
-
-/** Bandera SVG de la moneda; emoji de respaldo para cripto */
-function CurrencyFlag({ code, className }: { code: string; className?: string }) {
-  const upper = code.toUpperCase();
-  const Flag = FLAG_MAP[upper];
-  if (Flag) {
-    return (
-      <span
-        className={`inline-flex shrink-0 overflow-hidden rounded-[3px] shadow-sm ring-1 ring-black/10 align-middle ${className || 'w-6'}`}
-        style={{ aspectRatio: '3 / 2' }}
-      >
-        <Flag className="h-full w-full" />
-      </span>
-    );
-  }
-  return (
-    <span className={`inline-flex shrink-0 items-center justify-center align-middle ${className || 'w-6'}`}>
-      {upper === 'USDT' ? '💵' : upper === 'BTC' ? '₿' : upper === 'ETH' ? 'Ξ' : upper === 'TRX' ? '⚡' : '💱'}
-    </span>
-  );
-}
-
-/** Chip ▲/▼ estilo elTOQUE: rojo al subir, verde al bajar */
-function DeltaChip({ delta, big }: { delta?: RateDelta | null; big?: boolean }) {
-  if (!delta) return null;
-  const up = delta.direction === 'up';
-  const value = Math.abs(delta.diff);
-  const text = value % 1 === 0 ? String(value) : value.toFixed(2);
-  return (
-    <span
-      className={`inline-flex items-center gap-0.5 font-bold whitespace-nowrap ${big ? 'text-[11px]' : 'text-[10px]'}`}
-      style={{ color: up ? '#dc2626' : '#16a34a' }}
-    >
-      {up ? '▲' : '▼'} {up ? '+' : '-'}{text}
-    </span>
   );
 }
 
@@ -123,7 +185,7 @@ function timeAgo(iso: string): string {
   return `hace ${days} d`;
 }
 
-/** Fila estilo elTOQUE: "1 USD [bandera] ... 720.00 CUP ▲ +3" */
+/** Fila estilo elTOQUE: "1 USD [icono] ... 720.00 CUP ▲ +3" */
 function RateRow({
   rate, accent, big, delta,
 }: { rate: CurrencyRate; accent?: string; big?: boolean; delta?: RateDelta | null }) {
@@ -160,16 +222,7 @@ function RateRow({
 
 export default function RatesCard() {
   const { settings } = useData();
-  const [snapshot, setSnapshot] = useState<ElToqueSnapshot | null>(() => {
-    const cached = loadCachedRates();
-    if (cached?.data) {
-      const usd = cached.data.find(r => r.code === 'USD');
-      if (usd && usd.value < 400) {
-        return { data: INITIAL_FALLBACK_RATES, fetchedAt: new Date().toISOString(), source: 'Mercado Actual' };
-      }
-    }
-    return cached;
-  });
+  const [snapshot, setSnapshot] = useState<ElToqueSnapshot | null>(() => loadCachedRates());
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -196,7 +249,6 @@ export default function RatesCard() {
 
   const accent = withAlpha(settings.fontColor, 0.95);
 
-  // Deltas ▲/▼ del snapshot actual contra el snapshot oficial anterior
   const deltas = useMemo(() => {
     const map: Record<string, RateDelta | null> = {};
     if (snapshot?.data) {
@@ -223,8 +275,22 @@ export default function RatesCard() {
     );
   }, [snapshot, query]);
 
+  // ---- Estado sin datos: aviso honesto, NINGÚN número inventado ----
   if (!snapshot || snapshot.data.length === 0) {
-    return null;
+    return (
+      <div className="glass-card p-4 md:p-5 mb-6 border border-border/60 bg-card/40 backdrop-blur-md shadow-sm">
+        <div className="flex items-center gap-2 mb-2">
+          <ElToqueLogo className="w-6 h-6" />
+          <h2 className="text-base font-display font-bold">Mercado Informal de Divisas</h2>
+        </div>
+        <div className="flex items-start gap-2 text-xs text-muted-foreground px-2.5 py-2 rounded bg-muted/50 border border-border/40">
+          <WifiOff className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+          <span>
+            {statusMessage || 'No se pudieron cargar las tasas. Se intentará automáticamente al recuperar conexión.'}
+          </span>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -259,7 +325,7 @@ export default function RatesCard() {
 
         {statusMessage && (
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-2 px-2.5 py-1 rounded bg-muted/50 border border-border/40">
-            <ElToqueLogo className="w-4 h-4 shrink-0" />
+            <AlertCircle className="w-3.5 h-3.5 text-primary shrink-0" />
             <span className="truncate">{statusMessage}</span>
           </div>
         )}
@@ -279,7 +345,7 @@ export default function RatesCard() {
         </div>
       </div>
 
-      {/* ---- Modal expandido estilo elTOQUE (logo centrado en cabecera) ---- */}
+      {/* ---- Modal expandido estilo elTOQUE ---- */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md max-h-[85vh] flex flex-col p-0 overflow-hidden">
           <div className="relative bg-gradient-to-b from-blue-500 to-blue-600 text-white px-4 pt-4 pb-4 text-center shrink-0">
@@ -307,7 +373,7 @@ export default function RatesCard() {
 
           {statusMessage && (
             <div className="mx-3 mb-1 flex items-center gap-1.5 text-[11px] text-muted-foreground px-2.5 py-1 rounded bg-muted/50 border border-border/40 shrink-0">
-              <ElToqueLogo className="w-4 h-4 shrink-0" />
+              <AlertCircle className="w-3.5 h-3.5 text-primary shrink-0" />
               <span className="truncate">{statusMessage}</span>
             </div>
           )}
