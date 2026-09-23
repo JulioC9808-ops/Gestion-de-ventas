@@ -79,6 +79,60 @@ export interface StockMovement {
   movedAt: string;
 }
 
+export interface RegisteredTerminal {
+  id: string; // Terminal ID (ej: GV-FF46-931C)
+  businessName: string; // Nombre del negocio asignado
+  clientName?: string; // Nombre del cliente
+  clientPhone?: string; // Teléfono / WhatsApp
+  planType: 'lifetime' | 'timed_37' | 'timed_30' | 'timed_90' | 'promo_custom' | 'none';
+  planLabel: string;
+  pricePaid?: number;
+  currency?: string;
+  status: 'active' | 'blocked' | 'pending';
+  activatedAt: string;
+  expiresAt?: string | null;
+  lastSeenOnline?: string;
+  notes?: string;
+}
+
+export interface LicensePromo {
+  id: string;
+  title: string;
+  description: string;
+  durationDays: number;
+  price: number;
+  currency: string;
+  active: boolean;
+  highlightBadge?: string;
+}
+
+export interface PaymentTransaction {
+  id: string;
+  terminalId: string;
+  businessName: string;
+  clientName?: string;
+  clientPhone?: string;
+  planId: 'timed_37' | 'timed_90' | 'timed_365' | 'lifetime' | string;
+  planTitle: string;
+  amount: number;
+  currency: string;
+  transactionNumber: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+  approvedKey?: string;
+}
+
+export interface BankPaymentConfig {
+  cardNumber: string;
+  confirmPhone: string;
+  beneficiaryName: string;
+  monthlyPrice: number;
+  quarterlyPrice: number;
+  annualPrice: number;
+  lifetimePrice: number;
+  currency: string;
+}
+
 export interface AppSettings {
   businessName: string;
   logoUrl: string | null;
@@ -100,4 +154,10 @@ export interface AppSettings {
   welcomeGreetingsEnabled?: boolean; // mostrar saludo y frase motivacional diaria del turno
   soundEffectsEnabled?: boolean; // reproducir efectos de sonido (bienvenida, confirmación, papelera)
   quoteLanguages?: string[]; // idiomas de las frases motivacionales: ['es'], ['en'], ['pt'], etc.
+  allowNewRegistrations?: boolean; // si está desactivado, se bloquean nuevos registros de licencias
+  blockedTerminalIds?: string[]; // lista negra de terminales bloqueados
+  registeredTerminals?: RegisteredTerminal[]; // base de datos de terminales
+  promos?: LicensePromo[]; // promociones configurables por Julio_GE
+  bankPaymentConfig?: BankPaymentConfig; // configuración de pagos por transferencia
+  paymentTransactions?: PaymentTransaction[]; // historial de transacciones recibidas
 }

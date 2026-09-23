@@ -152,8 +152,13 @@ export function verifyCryptographicLicense(licenseCode: string, currentDeviceId:
   const localFriendly = formatFriendlyDeviceId(currentDeviceId).replace(/-/g, '');
   const targetClean = devicePart.replace(/-/g, '');
 
-  // Permitir "UNIVERSAL" solo si fue firmado expresamente para terminales de prueba
-  if (targetClean !== 'UNIVERSAL' && targetClean !== localFriendly) {
+  // Permitir coincidencia exacta, o comodines de prueba DEV/UNIVERSAL
+  const isMatch =
+    targetClean === localFriendly ||
+    targetClean === 'UNIVERSAL' ||
+    (targetClean === 'GVDEVLOCAL' && (localFriendly === 'GVDEVLOCAL' || localFriendly.startsWith('GV')));
+
+  if (!isMatch) {
     return {
       valid: false,
       reason: `Esta licencia pertenece al equipo (${devicePart}), no a este terminal (${formatFriendlyDeviceId(currentDeviceId)})`,
@@ -180,8 +185,13 @@ export function verifyCryptographicLicense(licenseCode: string, currentDeviceId:
   let durationDays = 37;
   if (typePart === 'T30') durationDays = 30;
   else if (typePart === 'T37') durationDays = 37;
-  else if (typePart === 'T90') durationDays = 90;
+  else if (typePart === 'T90' || typePart === 'PROMO3M') durationDays = 90;
+  else if (typePart === 'T180') durationDays = 180;
   else if (typePart === 'T365') durationDays = 365;
+  else if (typePart.startsWith('T')) {
+    const parsed = parseInt(typePart.substring(1), 10);
+    if (!isNaN(parsed) && parsed > 0) durationDays = parsed;
+  }
 
   const expiresAt = Date.now() + durationDays * 24 * 60 * 60 * 1000;
   return {
@@ -193,9 +203,113 @@ export function verifyCryptographicLicense(licenseCode: string, currentDeviceId:
   };
 }
 
+/**
+ * Generador de licencias criptográficas integrado para el panel de Dev.
+ */
+export function generateCryptographicLicense(deviceId: string, type: 'PERM' | 'T30' | 'T37' | 'T90' | 'PROMO3M' | 'T365' | string): string {
+  const cleanDevice = deviceId.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+  const ts = Math.floor(Date.now() / 1000);
+  const payload = `GVLIC:V1:${cleanDevice}:${type}:${ts}`;
+  const sig = hmacSha256(MASTER_CRYPTO_SALT, payload).substring(0, 12).toUpperCase();
+  return `GVLIC-V1-${cleanDevice}-${type}-${ts}-${sig}`;
+}
+
+/**
+ * Comprueba si un terminal específico se encuentra en la lista negra o bloqueado.
+ */
+export function isTerminalIdBlocked(terminalId: string | null | undefined, blockedList?: string[]): boolean {
+  if (!terminalId) return false;
+  const friendly = formatFriendlyDeviceId(terminalId).toUpperCase();
+  const clean = terminalId.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+  
+  const list = blockedList || (() => {
+    try {
+      const raw = localStorage.getItem('blocked_terminals');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  })();
+
+  return list.some((item: string) => {
+    const itemClean = item.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    return itemClean === clean || item.toUpperCase() === friendly;
+  });
+}
+
 // ============================================================================
-// ACCESO DE DESARROLLADOR OFFLINE (CHALLENGE-RESPONSE OTP)
+// CONFIGURACIÓN DE PAGOS BANCARIOS Y OFERTAS DE RENOVACIÓN
 // ============================================================================
+
+export interface BankPaymentConfig {
+  cardNumber: string;
+  confirmPhone: string;
+  beneficiaryName: string;
+  monthlyPrice: number;
+  quarterlyPrice: number;
+  annualPrice: number;
+  lifetimePrice: number;
+  currency: string;
+}
+
+export const DEFAULT_BANK_PAYMENT_CONFIG: BankPaymentConfig = {
+  cardNumber: '9204-1299-7834-5835',
+  confirmPhone: '51616816',
+  beneficiaryName: 'Julio_GE (Desarrollador Oficial)',
+  monthlyPrice: 1200,
+  quarterlyPrice: 3000,
+  annualPrice: 10000,
+  lifetimePrice: 25000,
+  currency: 'CUP',
+};
+
+export const STORAGE_KEY_SUBMITTED_PAYMENTS = 'gv_submitted_payments_v1';
+
+export function getSubmittedPayments(): Array<{
+  id: string;
+  terminalId: string;
+  businessName: string;
+  clientName?: string;
+  clientPhone?: string;
+  planId: string;
+  planTitle: string;
+  amount: number;
+  currency: string;
+  transactionNumber: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+}> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_SUBMITTED_PAYMENTS);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveSubmittedPayment(payment: {
+  terminalId: string;
+  businessName: string;
+  clientName?: string;
+  clientPhone?: string;
+  planId: string;
+  planTitle: string;
+  amount: number;
+  currency: string;
+  transactionNumber: string;
+}) {
+  const existing = getSubmittedPayments();
+  const record = {
+    ...payment,
+    id: `pay_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    status: 'pending' as const,
+    createdAt: new Date().toISOString(),
+  };
+  const updated = [record, ...existing.filter(p => p.transactionNumber !== payment.transactionNumber)];
+  localStorage.setItem(STORAGE_KEY_SUBMITTED_PAYMENTS, JSON.stringify(updated));
+  return record;
+}
+
 
 /**
  * Genera un código de desafío numérico aleatorio de 6 dígitos.

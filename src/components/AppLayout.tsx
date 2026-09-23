@@ -10,6 +10,7 @@ import { getPendingShift } from '@/lib/syncStore';
 import { toast } from 'sonner';
 import Tutorial from '@/components/Tutorial';
 import EmployeeLicenseBanner from '@/components/EmployeeLicenseBanner';
+import RenewalOfferBanner from '@/components/RenewalOfferBanner';
 
 interface NavItem {
   label: string;
@@ -133,6 +134,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
 
         <main className="flex-1 p-8 overflow-auto">
           <EmployeeLicenseBanner />
+          <RenewalOfferBanner />
           {children}
         </main>
         <Tutorial />
@@ -289,6 +291,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
 
       <main className="flex-1 min-w-0 max-w-full p-3 md:p-8 overflow-x-hidden overflow-y-auto">
         <EmployeeLicenseBanner />
+        <RenewalOfferBanner />
         {children}
       </main>
 

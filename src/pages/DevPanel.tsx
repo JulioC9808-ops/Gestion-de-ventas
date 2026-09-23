@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import AppLayout from '@/components/AppLayout';
-import { Settings, Key, RotateCcw, Image, Send, UserCog, Megaphone, CheckCircle2, RefreshCw, ShieldCheck, Sparkles, Clock, Infinity as InfinityIcon, Eye, EyeOff, AlertTriangle, Trash2 } from 'lucide-react';
+import { Settings, Key, RotateCcw, Image, Send, UserCog, Megaphone, CheckCircle2, RefreshCw, ShieldCheck, Sparkles, Clock, Infinity as InfinityIcon, Eye, EyeOff, AlertTriangle, Trash2, KeyRound } from 'lucide-react';
 import { useData, GITHUB_UPDATES_URL, DEFAULT_ANNOUNCEMENT_URL } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { toast } from 'sonner';
 import { fetchAnnouncement } from '@/lib/announcements';
 import { getLicenseInfo, activateLifetimeLicense, activateTimedLicenseDays } from '@/pages/LicenseGate';
+import { formatFriendlyDeviceId } from '@/lib/cryptoLicense';
 import { fileToCompressedDataUrl } from '@/lib/imageUtils';
 import { resetAllToFactoryDefaults } from '@/lib/backupUtils';
 
@@ -100,7 +101,6 @@ export default function DevPanel() {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      // Máxima calidad y nitidez
       const dataUrl = await fileToCompressedDataUrl(file, 3840);
       if (type === 'logo') updateSettings({ logoUrl: dataUrl });
       else if (type === 'background') updateSettings({ backgroundUrl: dataUrl });
@@ -202,69 +202,100 @@ export default function DevPanel() {
       )}
 
       {active === 'license' && (
-        <div>
-          <div className="page-header">
-            <h1 className="page-title">Administración de Licencia</h1>
-            <p className="text-sm text-muted-foreground mt-1">Control de activación directa y cambio de plan de suscripción a permanente.</p>
+        <div className="space-y-6">
+          <div className="page-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="page-title">Centro de Control de Licencias y Clientes</h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                Administra terminales autorizados, promociones de suscripción, claves criptográficas y bloqueos.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant={settings.allowNewRegistrations !== false ? "outline" : "destructive"}
+                size="sm"
+                onClick={() => {
+                  const nextVal = settings.allowNewRegistrations === false ? true : false;
+                  updateSettings({ allowNewRegistrations: nextVal });
+                  toast.success(nextVal ? 'Nuevas activaciones HABILITADAS' : 'Nuevas activaciones PAUSADAS/BLOQUEADAS');
+                }}
+                className="text-xs font-semibold"
+              >
+                {settings.allowNewRegistrations !== false ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-1.5 text-emerald-500" />
+                    Activaciones Abiertas
+                  </>
+                ) : (
+                  <>
+                    <Ban className="w-3.5 h-3.5 mr-1.5" />
+                    Activaciones Pausadas
+                  </>
+                )}
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExportTerminals} className="text-xs">
+                <Download className="w-3.5 h-3.5 mr-1.5" />
+                Exportar JSON
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => importFileInputRef.current?.click()} className="text-xs">
+                <Upload className="w-3.5 h-3.5 mr-1.5" />
+                Importar
+              </Button>
+              <input ref={importFileInputRef} type="file" accept=".json" className="hidden" onChange={handleImportTerminals} />
+            </div>
           </div>
-          <div className="glass-card p-6 max-w-xl space-y-6">
-            <div className="p-4 rounded-xl border border-border bg-secondary/30 flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                <ShieldCheck className="w-6 h-6" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-foreground">Estado Actual:</h3>
-                  {licenseState.type === 'lifetime' && (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                      <InfinityIcon className="w-3.5 h-3.5" /> Permanente (Ilimitada)
-                    </span>
-                  )}
-                  {licenseState.type === 'timed' && (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20">
-                      <Clock className="w-3.5 h-3.5" /> Periódica ({licenseState.daysLeft} días restantes)
-                    </span>
-                  )}
-                  {licenseState.type === 'none' && (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-destructive/10 text-destructive border border-destructive/20">
-                      Sin Licencia Activa
-                    </span>
-                  )}
+
+          {/* Tarjeta 1: Licencia del Terminal Local Actual */}
+          <div className="glass-card p-5 border border-border">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-start gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+                  <ShieldCheck className="w-5 h-5" />
                 </div>
-                <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-                  {licenseState.type === 'lifetime'
-                    ? 'Este equipo ya posee la licencia permanente oficial. No requiere renovaciones ni comprobaciones periódicas.'
-                    : 'Si el cliente estaba utilizando una suscripción mensual/periódica y deseas convertirlo a permanente, pulsa el botón de abajo para activar la licencia definitiva sin tener que reingresar la clave.'}
-                </p>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-semibold text-foreground text-sm sm:text-base">Terminal Local (Este Equipo):</h3>
+                    {licenseState.type === 'lifetime' && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                        <InfinityIcon className="w-3 h-3" /> Permanente
+                      </span>
+                    )}
+                    {licenseState.type === 'timed' && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                        <Clock className="w-3 h-3" /> Periódica ({licenseState.daysLeft}d restantes)
+                      </span>
+                    )}
+                    {licenseState.type === 'none' && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-destructive/10 text-destructive border border-destructive/20">
+                        Sin Licencia
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    ID del terminal local: <strong className="font-mono text-primary select-all">{licenseState.deviceId ? formatFriendlyDeviceId(licenseState.deviceId) : 'GV-DEV-LOCAL'}</strong>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" onClick={handleActivateLifetime} className="h-9 text-xs font-semibold shadow-xs">
+                  <Sparkles className="w-3.5 h-3.5 mr-1.5 text-yellow-300" />
+                  Activar Permanente
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleActivateTimed} className="h-9 text-xs">
+                  <Clock className="w-3.5 h-3.5 mr-1.5 text-primary" />
+                  +37 Días
+                </Button>
+                <Button variant="ghost" size="sm" onClick={refreshLicense} className="h-9 text-xs">
+                  <RefreshCw className="w-3.5 h-3.5" />
+                </Button>
               </div>
             </div>
 
-            <div className="space-y-3 pt-2">
-              <Button
-                onClick={handleActivateLifetime}
-                className="w-full h-12 text-base font-semibold shadow-md bg-gradient-to-r from-primary to-primary/90 hover:opacity-95 transition-all"
-              >
-                <Sparkles className="w-5 h-5 mr-2 text-yellow-300" />
-                Instalar / Activar Licencia Permanente
-              </Button>
-
-              <div className="grid grid-cols-2 gap-3 pt-1">
-                <Button
-                  variant="outline"
-                  onClick={handleActivateTimed}
-                  className="h-10 text-xs sm:text-sm"
-                >
-                  <Clock className="w-4 h-4 mr-1.5 text-primary" />
-                  Activar Periódica (+37 d)
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={refreshLicense}
-                  className="h-10 text-xs sm:text-sm"
-                >
-                  <RefreshCw className="w-4 h-4 mr-1.5" />
-                  Comprobar Estado
-                </Button>
+            <div className="mt-4 pt-4 border-t border-border/60 text-xs text-muted-foreground flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <KeyRound className="w-4 h-4 text-primary shrink-0" />
+                <span>Para gestionar clientes, generar claves offline, promociones o bloquear terminales, utiliza el archivo portátil <strong>keygen.html</strong>.</span>
               </div>
             </div>
           </div>

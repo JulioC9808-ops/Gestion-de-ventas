@@ -14,7 +14,7 @@ import {
   daysRemaining, hoursRemaining, clearEmployeeLicense, H24_MS,
 } from '@/lib/employeeLicense';
 import { receiveEmployeeShare } from '@/lib/syncTransport';
-import { verifyCryptographicLicense, formatFriendlyDeviceId } from '@/lib/cryptoLicense';
+import { verifyCryptographicLicense, formatFriendlyDeviceId, isTerminalIdBlocked } from '@/lib/cryptoLicense';
 import { toast } from 'sonner';
 
 const LIFETIME_LICENSE = '08022664107';
@@ -158,7 +158,7 @@ function daysLeftOf(state: LicenseState): number {
 
 export default function LicenseGate({ children }: LicenseGateProps) {
   const { login, logout } = useAuth();
-  const { users, addUser, updateUser, applyBackup } = useData();
+  const { users, addUser, updateUser, applyBackup, settings, updateSettings } = useData();
 
   const [license, setLicense] = useState<LicenseState>(() => readLicense());
   const [device, setDevice] = useState<DeviceInfo | 'pending'>('pending');
@@ -183,10 +183,19 @@ export default function LicenseGate({ children }: LicenseGateProps) {
     return () => { alive = false; };
   }, []);
 
+  // Verificar si el terminal está bloqueado por el desarrollador
+  const terminalRawId = device !== 'pending' ? device.id : null;
+  const isBlocked = isTerminalIdBlocked(terminalRawId, settings?.blockedTerminalIds);
+
   // Verificar máquina una vez que el ID está cargado.
   useEffect(() => {
     if (device === 'pending') return;
     if (license.type === 'none') return;
+    if (isBlocked) {
+      localStorage.removeItem(LICENSE_KEY);
+      setLicense({ type: 'none' });
+      return;
+    }
     const verdict = checkMachine(license, device);
     if (verdict === 'ok') return;
     if (verdict === 'rebind') {
@@ -197,7 +206,7 @@ export default function LicenseGate({ children }: LicenseGateProps) {
     localStorage.removeItem(LICENSE_KEY);
     setLicense({ type: 'none' });
     toast.error('La licencia no corresponde a este equipo. Actívala de nuevo.');
-  }, [device, license]);
+  }, [device, license, isBlocked]);
 
   // Re-chequeo horario + ancla anti-reloj cada 5 minutos.
   useEffect(() => {
@@ -226,53 +235,108 @@ export default function LicenseGate({ children }: LicenseGateProps) {
     return () => clearInterval(id);
   }, [empLicense, logout]);
 
-  const licensed = employeeActive || (
+  const licensed = !isBlocked && (employeeActive || (
     license.type === 'lifetime' ||
     (license.type === 'timed' && isTimedActive(license))
-  );
+  ));
 
   const [copiedId, setCopiedId] = useState(false);
-  const friendlyTerminalId = formatFriendlyDeviceId(device.id);
+  const friendlyTerminalId = formatFriendlyDeviceId(device !== 'pending' ? device.id : null);
 
   const copyTerminalId = () => {
-    navigator.clipboard.writeText(friendlyTerminalId).then(() => {
-      setCopiedId(true);
-      toast.success('ID de Terminal copiado al portapapeles');
-      setTimeout(() => setCopiedId(false), 2000);
-    });
+    let success = false;
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = friendlyTerminalId;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      ta.setSelectionRange(0, 99999);
+      success = document.execCommand('copy');
+      document.body.removeChild(ta);
+    } catch {
+      success = false;
+    }
+
+    if (!success && navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(friendlyTerminalId).catch(() => {});
+    }
+    setCopiedId(true);
+    toast.success('ID de Terminal copiado al portapapeles');
+    setTimeout(() => setCopiedId(false), 2000);
+  };
+
+  const registerTerminalRecord = (planType: 'lifetime' | 'timed_37' | 'timed_30' | 'timed_90' | 'promo_custom', planLabel: string, expiresAt?: number) => {
+    const existing = settings?.registeredTerminals || [];
+    const nowIso = new Date().toISOString();
+    const updated = [
+      ...existing.filter(t => t.id !== friendlyTerminalId),
+      {
+        id: friendlyTerminalId,
+        businessName: settings?.businessName || 'Mi Negocio',
+        planType,
+        planLabel,
+        status: 'active' as const,
+        activatedAt: nowIso,
+        expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null,
+        lastSeenOnline: nowIso,
+      }
+    ];
+    updateSettings({ registeredTerminals: updated });
   };
 
   const handleActivate = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isBlocked) {
+      setError('Este terminal ha sido bloqueado por el desarrollador. Comunícate con Julio_GE.');
+      return;
+    }
+    if (settings?.allowNewRegistrations === false && license.type === 'none') {
+      setError('Las nuevas activaciones de licencias están pausadas temporalmente por el desarrollador.');
+      return;
+    }
+
     const trimmed = key.trim();
+    const currentDevId = (device !== 'pending' && device?.id) ? device.id : 'GV-DEV-LOCAL';
+
     if (trimmed === LIFETIME_LICENSE) {
       const state = persistLicense({ type: 'lifetime' } as LicenseState);
       setLicense(state);
+      registerTerminalRecord('lifetime', 'Permanente Directa');
       toast.success('¡Licencia Permanente activada con éxito!');
     } else if (trimmed === TIMED_LICENSE) {
+      const expiresAt = Date.now() + TIMED_DURATION_MS;
       const state = persistLicense({
         type: 'timed',
         activatedAt: Date.now(),
-        expiresAt: Date.now() + TIMED_DURATION_MS,
+        expiresAt,
       } as LicenseState);
       setLicense(state);
+      registerTerminalRecord('timed_37', 'Periódica Mensual (37d)', expiresAt);
       toast.success('¡Licencia Periódica activada con éxito!');
     } else if (trimmed.toUpperCase().startsWith('GVLIC-')) {
       // Verificación Criptográfica Asimétrica Offline
-      const res = verifyCryptographicLicense(trimmed, device.id || 'GV-DEV-LOCAL');
+      const res = verifyCryptographicLicense(trimmed, currentDevId);
       if (res.valid) {
         if (res.type === 'lifetime') {
-          const state = persistLicense({ type: 'lifetime', deviceId: device.id } as LicenseState);
+          const state = persistLicense({ type: 'lifetime', deviceId: currentDevId } as LicenseState);
           setLicense(state);
+          registerTerminalRecord('lifetime', 'Permanente Criptográfica');
           toast.success('¡Licencia Permanente Offline validada y activada!');
         } else {
           const state = persistLicense({
             type: 'timed',
-            deviceId: device.id,
+            deviceId: currentDevId,
             activatedAt: Date.now(),
             expiresAt: res.expiresAt,
           } as LicenseState);
           setLicense(state);
+          const label = res.days === 90 ? 'Promo Trimestral (90d)' : `Periódica (${res.days}d)`;
+          registerTerminalRecord(res.days === 90 ? 'timed_90' : 'timed_37', label, res.expiresAt);
           toast.success(`¡Licencia autorizada por ${res.days} días activada con éxito!`);
         }
       } else {
@@ -429,6 +493,23 @@ export default function LicenseGate({ children }: LicenseGateProps) {
               </div>
             </div>
           </div>
+
+          {isBlocked && (
+            <div className="mb-5 p-4 rounded-xl bg-destructive/15 border border-destructive/40 text-destructive text-center space-y-1 animate-fade-in-up">
+              <div className="font-bold text-sm flex items-center justify-center gap-1.5">
+                <span>🚫</span> Terminal Bloqueado
+              </div>
+              <p className="text-xs leading-relaxed opacity-90">
+                Este terminal ha sido suspendido por el desarrollador. Comunícate con Julio_GE al WhatsApp +5351616816 para reactivarlo.
+              </p>
+            </div>
+          )}
+
+          {settings?.allowNewRegistrations === false && !isBlocked && (
+            <div className="mb-5 p-3.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-500 text-center text-xs leading-relaxed">
+              ⚠️ Las nuevas activaciones de licencias se encuentran en pausa temporal.
+            </div>
+          )}
 
           {/* Tarjeta de Identificador de Terminal (Device ID) para Activación Offline */}
           <div className="mb-5 p-3 rounded-xl bg-background/60 border border-border/80 flex items-center justify-between gap-2 shadow-inner">
