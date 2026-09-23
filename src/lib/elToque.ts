@@ -1,22 +1,31 @@
 /**
  * Módulo de Tasas de cambio elTOQUE para PC y Android.
- * - Endpoint: https://tasas.eltoque.com/v1/trmi
- * - Autenticación: Bearer token SOLO desde la variable de entorno VITE_ELTOQUE_API_KEY
- *   (inyectada al compilar desde el Secret de GitHub).
- * - SIN TASAS INVENTADAS: si no hay datos no se muestra ningún número.
- *   Primera apertura (sin caché) consulta la API inmediatamente.
- *   Con caché: la API solo se consulta en su turno (10 AM / 10 PM), máx. 2/día.
- * - Deltas ▲/▼: al guardar un snapshot OFICIAL se archiva el anterior oficial.
+ * - Endpoint: https://tasas.eltoque.com/v1/trmi (protegido por Cloudflare)
+ * - IMPORTANTE ANDROID: Cloudflare corta la conexión (ECONNRESET/"Connection Reset")
+ *   si el cliente no parece un navegador. Por eso la petición nativa SIEMPRE envía
+ *   User-Agent/Origin/Referer de navegador.
+ * - Sin tasas inventadas: sin datos → aviso, nunca números falsos.
+ * - Primera apertura (sin caché): consulta la API inmediatamente.
+ *   Con caché: solo en turno 10 AM / 10 PM, máx. 2/día.
  */
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 
-// v2: ignora la caché vieja de versiones anteriores (fuerza primera consulta real)
 export const ELTOQUE_CACHE_KEY = 'eltoque_rates_cache_v2';
 export const ELTOQUE_PREVIOUS_KEY = 'eltoque_rates_previous_v2';
 export const ELTOQUE_SCHEDULE_KEY = 'eltoque_rates_schedule';
 
 const API_URL = 'https://tasas.eltoque.com/v1/trmi';
-const FETCH_TIMEOUT_MS = 10000;
+const FETCH_TIMEOUT_MS = 15000;
+
+// Headers de navegador: Cloudflare rechaza clientes que no los llevan
+const BROWSER_HEADERS = {
+  'User-Agent':
+    'Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
+  Accept: 'application/json, text/plain, */*',
+  'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8',
+  Origin: 'https://www.eltoque.com',
+  Referer: 'https://www.eltoque.com/',
+};
 
 export interface CurrencyRate {
   code: string;
@@ -28,7 +37,7 @@ export interface CurrencyRate {
 
 export interface ElToqueSnapshot {
   data: CurrencyRate[];
-  fetchedAt: string; // ISO string
+  fetchedAt: string;
   lastUpdateDate?: string;
   source?: string;
 }
@@ -63,7 +72,6 @@ export const CURRENCY_NAMES: Record<string, string> = {
   TRX: 'Tron',
 };
 
-/** Código de país ISO para las banderas SVG ('' = sin bandera de país). */
 export const CURRENCY_COUNTRY_CODES: Record<string, string> = {
   USD: 'US', ZELLE: 'US', EUR: 'EU', MLC: 'CU', CUP: 'CU', MXN: 'MX',
   CAD: 'CA', CHF: 'CH', GBP: 'GB', BRL: 'BR', COP: 'CO', CLP: 'CL',
@@ -74,12 +82,6 @@ export const CURRENCY_COUNTRY_CODES: Record<string, string> = {
   NOK: 'NO', DKK: 'DK', PLN: 'PL',
 };
 
-/** Emoji de respaldo para monedas sin bandera de país (cripto, etc.) */
-export const CURRENCY_EMOJI_FALLBACK: Record<string, string> = {
-  USDT: '💵', BTC: '₿', ETH: 'Ξ', TRX: '⚡',
-};
-
-/** Clave de API: SOLO la variable de entorno inyectada al compilar. */
 export function getElToqueApiKey(): string {
   return (import.meta.env.VITE_ELTOQUE_API_KEY as string | undefined)?.trim() || '';
 }
@@ -113,10 +115,6 @@ export function loadPreviousRates(): ElToqueSnapshot | null {
   return readSnapshotFrom(ELTOQUE_PREVIOUS_KEY);
 }
 
-/**
- * Guarda el snapshot en caché. Si el actual y el nuevo son OFICIALES (source elTOQUE)
- * y difieren, el actual se archiva como "previous" para los deltas ▲/▼.
- */
 export function saveRatesToCache(snapshot: ElToqueSnapshot): void {
   try {
     if (!snapshot || !Array.isArray(snapshot.data) || typeof snapshot.fetchedAt !== 'string') return;
@@ -135,7 +133,6 @@ export function saveRatesToCache(snapshot: ElToqueSnapshot): void {
   }
 }
 
-/** Delta de una moneda respecto al snapshot oficial anterior. */
 export function getRateDelta(code: string, current: ElToqueSnapshot): RateDelta | null {
   if (current.source !== 'elTOQUE') return null;
   const prev = loadPreviousRates();
@@ -210,7 +207,10 @@ function parseApiResponse(json: unknown): CurrencyRate[] {
 
 let inFlightPromise: Promise<ElToqueSnapshot> | null = null;
 
-/** Petición a la API de elTOQUE (CapacitorHttp en Android, Fetch en Web/Electron) */
+/**
+ * Petición a la API (CapacitorHttp en Android con headers de navegador;
+ * Fetch en Web/Electron). 1 reintento automático en Android.
+ */
 export async function fetchTasas(): Promise<ElToqueSnapshot> {
   const apiKey = getElToqueApiKey();
   if (!apiKey) {
@@ -222,31 +222,46 @@ export async function fetchTasas(): Promise<ElToqueSnapshot> {
   inFlightPromise = (async () => {
     try {
       const headers = {
+        ...BROWSER_HEADERS,
         Authorization: `Bearer ${apiKey}`,
-        Accept: 'application/json',
       };
+
       if (Capacitor.isNativePlatform()) {
-        const res = await CapacitorHttp.get({
-          url: `${API_URL}?t=${Date.now()}`,
-          headers,
-          connectTimeout: FETCH_TIMEOUT_MS,
-          readTimeout: FETCH_TIMEOUT_MS,
-        });
-        if (res.status === 401 || res.status === 403) throw new Error('API key de elTOQUE no válida');
-        if (res.status === 429) throw new Error('Límite de peticiones alcanzado');
-        if (res.status !== 200) throw new Error(`Error de servidor (${res.status})`);
-        const json = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
-        const rates = parseApiResponse(json);
-        const snapshot: ElToqueSnapshot = {
-          data: rates,
-          fetchedAt: new Date().toISOString(),
-          lastUpdateDate: json?.date || json?.last_update || undefined,
-          source: 'elTOQUE',
-        };
-        saveRatesToCache(snapshot);
-        recordScheduledSync();
-        return snapshot;
+        let lastError: Error | null = null;
+        // 2 intentos: Cloudflare a veces resetea el 1ro aunque el cliente sea legítimo
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            const res = await CapacitorHttp.get({
+              url: `${API_URL}?t=${Date.now()}`,
+              headers,
+              connectTimeout: FETCH_TIMEOUT_MS,
+              readTimeout: FETCH_TIMEOUT_MS,
+            });
+            if (res.status === 401 || res.status === 403) throw new Error('API key de elTOQUE no válida');
+            if (res.status === 429) throw new Error('Límite de peticiones alcanzado');
+            if (res.status !== 200) throw new Error(`Error de servidor (${res.status})`);
+            const json = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
+            const rates = parseApiResponse(json);
+            const snapshot: ElToqueSnapshot = {
+              data: rates,
+              fetchedAt: new Date().toISOString(),
+              lastUpdateDate: json?.date || json?.last_update || undefined,
+              source: 'elTOQUE',
+            };
+            saveRatesToCache(snapshot);
+            recordScheduledSync();
+            return snapshot;
+          } catch (err) {
+            lastError = err instanceof Error ? err : new Error(String(err));
+            // Solo reintentar en fallos de conexión, no en errores de la API
+            if (/401|403|429|API key|Límite/.test(lastError.message)) throw lastError;
+            if (attempt === 0) await new Promise(r => setTimeout(r, 1500));
+          }
+        }
+        throw lastError || new Error('No se pudo conectar con el servidor de tasas');
       }
+
+      // Navegador Web / Electron
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
       try {
@@ -296,7 +311,6 @@ function recordScheduledSync(): void {
   }
 }
 
-/** ¿Corresponde el turno? matutino: desde 10 AM; nocturno: desde 10 PM. */
 export function isScheduledUpdateDue(): boolean {
   try {
     const hour = new Date().getHours();
@@ -313,16 +327,10 @@ export function isScheduledUpdateDue(): boolean {
   }
 }
 
-/**
- * Obtiene las tasas:
- * - SIN caché (primera vez): consulta la API inmediatamente. Si falla → error, sin números.
- * - CON caché: solo consulta en turno (10 AM / 10 PM); fuera de turno devuelve la caché.
- */
 export async function getElToqueRates(): Promise<ElToqueFetchResult> {
   const cached = loadCachedRates();
   const apiKey = getElToqueApiKey();
 
-  // ---- Primera vez (sin caché): la API se consulta SÍ o SÍ ----
   if (!cached) {
     if (!apiKey) {
       return {
@@ -350,7 +358,6 @@ export async function getElToqueRates(): Promise<ElToqueFetchResult> {
     }
   }
 
-  // ---- Con caché: regla de turnos ----
   if (!isScheduledUpdateDue()) {
     return {
       snapshot: cached,
@@ -377,15 +384,11 @@ export async function getElToqueRates(): Promise<ElToqueFetchResult> {
   }
 }
 
-/**
- * Watcher: reintenta si no hay caché (cada 15 min o al reconectar),
- * o cuando corresponde el turno 10 AM / 10 PM.
- */
 export function initElToqueWatcher(onUpdate?: (result: ElToqueFetchResult) => void): () => void {
   const tryRefresh = async () => {
     if (typeof navigator !== 'undefined' && !navigator.onLine) return;
     const cached = loadCachedRates();
-    if (cached && !isScheduledUpdateDue()) return; // Fuera de turno y con datos: nada que hacer
+    if (cached && !isScheduledUpdateDue()) return;
     try {
       const result = await getElToqueRates();
       onUpdate?.(result);
@@ -404,7 +407,6 @@ export function initElToqueWatcher(onUpdate?: (result: ElToqueFetchResult) => vo
   };
 }
 
-/** Sincronización QR: aplica un snapshot recibido si es más reciente que el local */
 export function applyIncomingRatesSnapshot(incoming: ElToqueSnapshot | null | undefined): boolean {
   if (!incoming || !Array.isArray(incoming.data) || !incoming.fetchedAt) {
     return false;
