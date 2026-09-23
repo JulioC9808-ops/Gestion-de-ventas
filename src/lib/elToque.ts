@@ -1,8 +1,9 @@
 /**
  * Módulo de Tasas de cambio elTOQUE para PC y Android.
  * - Endpoint: https://tasas.eltoque.com/v1/trmi
- * - Autenticación: Bearer token desde localStorage ('eltoque_custom_api_key') o import.meta.env.VITE_ELTOQUE_API_KEY
- * - Actualización programada: 2 veces al día (después de las 10:00 AM y 10:00 PM / 22:00),
+ * - Autenticación: Bearer token SOLO desde la variable de entorno VITE_ELTOQUE_API_KEY,
+ *   inyectada al compilar desde el Secret de GitHub. Sin entrada manual por UI.
+ * - Actualización programada: 2 veces al día (después de las 10:00 AM y después de las 10:00 PM / 22:00),
  *   más refrescos automáticos al iniciar la app o recuperar conexión si la caché expiró (mínimo 1 hora).
  * - Compatible con CapacitorHttp (Android nativo sin CORS) y Fetch Web / Electron.
  * - Deltas ▲/▼: al guardar un snapshot OFICIAL se archiva el anterior oficial en
@@ -14,7 +15,6 @@ import { Capacitor, CapacitorHttp } from '@capacitor/core';
 export const ELTOQUE_CACHE_KEY = 'eltoque_rates_cache';
 export const ELTOQUE_PREVIOUS_KEY = 'eltoque_rates_previous';
 export const ELTOQUE_SCHEDULE_KEY = 'eltoque_rates_schedule';
-export const ELTOQUE_API_KEY_STORAGE = 'eltoque_custom_api_key';
 
 const API_URL = 'https://tasas.eltoque.com/v1/trmi';
 const ONE_HOUR_MS = 60 * 60 * 1000;
@@ -93,6 +93,14 @@ export const INITIAL_FALLBACK_RATES: CurrencyRate[] = [
   { code: 'CHF', name: 'Franco suizo', buy: 785, sell: 815, value: 815 },
   { code: 'GBP', name: 'Libra esterlina', buy: 885, sell: 915, value: 915 },
 ];
+
+/**
+ * Clave de API: SOLO la variable de entorno inyectada al compilar (Secret de GitHub).
+ * Si no existe, el módulo funciona con caché y tasas de respaldo.
+ */
+export function getElToqueApiKey(): string {
+  return (import.meta.env.VITE_ELTOQUE_API_KEY as string | undefined)?.trim() || '';
+}
 
 function readSnapshotFrom(key: string): ElToqueSnapshot | null {
   try {
@@ -318,34 +326,6 @@ export async function fetchTasas(): Promise<ElToqueSnapshot> {
     }
   })();
   return inFlightPromise;
-}
-
-/**
- * Obtiene la clave de API configurada (desde localStorage o variables de entorno)
- */
-export function getElToqueApiKey(): string {
-  try {
-    const custom = localStorage.getItem(ELTOQUE_API_KEY_STORAGE)?.trim();
-    if (custom) return custom;
-  } catch {
-    // Silencioso
-  }
-  return (import.meta.env.VITE_ELTOQUE_API_KEY as string | undefined)?.trim() || '';
-}
-
-/**
- * Guarda o actualiza la clave de API personalizada en el dispositivo
- */
-export function saveElToqueApiKey(key: string): void {
-  try {
-    if (key.trim()) {
-      localStorage.setItem(ELTOQUE_API_KEY_STORAGE, key.trim());
-    } else {
-      localStorage.removeItem(ELTOQUE_API_KEY_STORAGE);
-    }
-  } catch {
-    // Silencioso
-  }
 }
 
 function recordScheduledSync(): void {
