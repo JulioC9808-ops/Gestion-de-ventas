@@ -6,12 +6,12 @@
  *   más refrescos automáticos al iniciar la app o recuperar conexión si la caché expiró (mínimo 1 hora).
  * - Compatible con CapacitorHttp (Android nativo sin CORS) y Fetch Web / Electron.
  */
-
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 
 export const ELTOQUE_CACHE_KEY = 'eltoque_rates_cache';
 export const ELTOQUE_SCHEDULE_KEY = 'eltoque_rates_schedule';
 export const ELTOQUE_API_KEY_STORAGE = 'eltoque_custom_api_key';
+
 const API_URL = 'https://tasas.eltoque.com/v1/trmi';
 const ONE_HOUR_MS = 60 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 10000;
@@ -56,27 +56,64 @@ export const CURRENCY_NAMES: Record<string, string> = {
   TRX: 'Tron',
 };
 
-export const CURRENCY_FLAGS: Record<string, string> = {
-  USD: '🇺🇸',
-  EUR: '🇪🇺',
-  MLC: '🇨🇺',
-  ZELLE: '🇺🇸',
+/**
+ * Código de país ISO para cada moneda. Lo consume el componente de banderas SVG
+ * (country-flag-icons) desde RatesCard.tsx — funciona igual en PC y Android.
+ * Devuelve null si la moneda no tiene bandera de país (cripto, etc.).
+ */
+export const CURRENCY_COUNTRY_CODES: Record<string, string> = {
+  USD: 'US',
+  ZELLE: 'US',
+  EUR: 'EU',
+  MLC: 'CU',
+  CUP: 'CU',
+  MXN: 'MX',
+  CAD: 'CA',
+  CHF: 'CH',
+  GBP: 'GB',
+  BRL: 'BR',
+  COP: 'CO',
+  CLP: 'CL',
+  ARS: 'AR',
+  VES: 'VE',
+  PEN: 'PE',
+  DOP: 'DO',
+  PAB: 'PA',
+  CRC: 'CR',
+  GTQ: 'GT',
+  HNL: 'HN',
+  NIO: 'NI',
+  SVC: 'SV',
+  PYG: 'PY',
+  UYU: 'UY',
+  BOB: 'BO',
+  JPY: 'JP',
+  CNY: 'CN',
+  KRW: 'KR',
+  RUB: 'RU',
+  TRY: 'TR',
+  INR: 'IN',
+  ILS: 'IL',
+  AED: 'AE',
+  AUD: 'AU',
+  NZD: 'NZ',
+  SEK: 'SE',
+  NOK: 'NO',
+  DKK: 'DK',
+  PLN: 'PL',
+};
+
+/** Emoji de respaldo para monedas sin bandera de país (cripto, USDT, etc.) */
+export const CURRENCY_EMOJI_FALLBACK: Record<string, string> = {
   USDT: '💵',
-  MXN: '🇲🇽',
-  CHF: '🇨🇭',
-  CAD: '🇨🇦',
-  GBP: '🇬🇧',
-  BRL: '🇧🇷',
-  COP: '🇨🇴',
-  CLP: '🇨🇱',
-  CUP: '🇨🇺',
-  BTC: '🪙',
-  ETH: '⟠',
+  BTC: '₿',
+  ETH: 'Ξ',
   TRX: '⚡',
 };
 
-export function getCurrencyFlag(code: string): string {
-  return CURRENCY_FLAGS[code.toUpperCase()] || '🌐';
+/** Código de país ISO para la bandera SVG ('' = usar emoji de respaldo). */
+export function getCurrencyCountryCode(code: string): string {
+  return CURRENCY_COUNTRY_CODES[code.toUpperCase()] || '';
 }
 
 // Tasas representativas actualizadas del mercado informal en Cuba (+700 CUP)
@@ -175,7 +212,6 @@ function parseApiResponse(json: unknown): CurrencyRate[] {
   if (!json || typeof json !== 'object') {
     throw new Error('Formato de respuesta inválido');
   }
-
   const payload = json as Record<string, unknown>;
   const ratesObj = (
     payload.tasas ||
@@ -187,31 +223,21 @@ function parseApiResponse(json: unknown): CurrencyRate[] {
   ) as Record<string, unknown>;
 
   const list: CurrencyRate[] = [];
-
   for (const [key, val] of Object.entries(ratesObj)) {
     if (key === 'date' || key === 'fecha' || key === 'timestamp' || key === 'last_update') continue;
-
     const code = key.toUpperCase();
     if (typeof val === 'number') {
       if (isFinite(val) && val > 0) {
-        list.push({
-          code,
-          name: CURRENCY_NAMES[code] || code,
-          value: val,
-          sell: val,
-        });
+        list.push({ code, name: CURRENCY_NAMES[code] || code, value: val, sell: val });
       }
     } else if (val && typeof val === 'object') {
       const o = val as Record<string, unknown>;
       const buyRaw = o.buy ?? o.compra ?? o.buy_price ?? o.compra_price;
       const sellRaw = o.sell ?? o.venta ?? o.sell_price ?? o.venta_price ?? o.price ?? o.valor;
-
       const buy = typeof buyRaw === 'number' ? buyRaw : typeof buyRaw === 'string' ? parseFloat(buyRaw) : undefined;
       const sell = typeof sellRaw === 'number' ? sellRaw : typeof sellRaw === 'string' ? parseFloat(sellRaw) : undefined;
-
       const validBuy = buy !== undefined && isFinite(buy) && buy > 0 ? buy : undefined;
       const validSell = sell !== undefined && isFinite(sell) && sell > 0 ? sell : undefined;
-
       const value = validSell ?? validBuy;
       if (value !== undefined) {
         list.push({
@@ -224,11 +250,9 @@ function parseApiResponse(json: unknown): CurrencyRate[] {
       }
     }
   }
-
   if (list.length === 0) {
     throw new Error('No se encontraron tasas de cambio en la respuesta');
   }
-
   const priority = ['USD', 'EUR', 'MLC', 'ZELLE', 'USDT', 'MXN', 'CAD', 'CHF', 'GBP'];
   list.sort((a, b) => {
     const idxA = priority.indexOf(a.code);
@@ -238,34 +262,29 @@ function parseApiResponse(json: unknown): CurrencyRate[] {
     if (idxB !== -1) return 1;
     return a.code.localeCompare(b.code);
   });
-
   return list;
 }
 
 let inFlightPromise: Promise<ElToqueSnapshot> | null = null;
 
 /**
- * Realiza la petición a la API de elTOQUE (soporta CapacitorHttp para Android y Fetch para Web/Electron)
+ * Realiza la petición a la API de elTOQUE (CapacitorHttp en Android, Fetch en Web/Electron)
  */
 export async function fetchTasas(): Promise<ElToqueSnapshot> {
   const apiKey = getElToqueApiKey();
-
   if (!apiKey) {
     throw new Error('API key de tasas no configurada');
   }
-
   if (inFlightPromise) {
     return inFlightPromise;
   }
-
   inFlightPromise = (async () => {
     try {
       const headers = {
         Authorization: `Bearer ${apiKey}`,
         Accept: 'application/json',
       };
-
-      // En Android Nativo (Capacitor), usar CapacitorHttp para evitar bloqueos de CORS
+      // Android nativo: CapacitorHttp evita bloqueos de CORS
       if (Capacitor.isNativePlatform()) {
         const res = await CapacitorHttp.get({
           url: `${API_URL}?t=${Date.now()}`,
@@ -273,36 +292,24 @@ export async function fetchTasas(): Promise<ElToqueSnapshot> {
           connectTimeout: FETCH_TIMEOUT_MS,
           readTimeout: FETCH_TIMEOUT_MS,
         });
-
-        if (res.status === 401 || res.status === 403) {
-          throw new Error('API key de elTOQUE no válida');
-        }
-        if (res.status === 429) {
-          throw new Error('Límite de peticiones alcanzado');
-        }
-        if (res.status !== 200) {
-          throw new Error(`Error de servidor (${res.status})`);
-        }
-
+        if (res.status === 401 || res.status === 403) throw new Error('API key de elTOQUE no válida');
+        if (res.status === 429) throw new Error('Límite de peticiones alcanzado');
+        if (res.status !== 200) throw new Error(`Error de servidor (${res.status})`);
         const json = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
         const rates = parseApiResponse(json);
-
         const snapshot: ElToqueSnapshot = {
           data: rates,
           fetchedAt: new Date().toISOString(),
           lastUpdateDate: json?.date || json?.last_update || undefined,
           source: 'elTOQUE',
         };
-
         saveRatesToCache(snapshot);
         recordScheduledSync();
         return snapshot;
       }
-
-      // En Navegador Web / Electron
+      // Navegador Web / Electron
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-
       try {
         const response = await fetch(`${API_URL}?t=${Date.now()}`, {
           method: 'GET',
@@ -310,27 +317,17 @@ export async function fetchTasas(): Promise<ElToqueSnapshot> {
           signal: controller.signal,
           cache: 'no-store',
         });
-
-        if (response.status === 401 || response.status === 403) {
-          throw new Error('API key de elTOQUE no válida');
-        }
-        if (response.status === 429) {
-          throw new Error('Límite de peticiones alcanzado');
-        }
-        if (!response.ok) {
-          throw new Error(`Error de conexión (${response.status})`);
-        }
-
+        if (response.status === 401 || response.status === 403) throw new Error('API key de elTOQUE no válida');
+        if (response.status === 429) throw new Error('Límite de peticiones alcanzado');
+        if (!response.ok) throw new Error(`Error de conexión (${response.status})`);
         const json = await response.json();
         const rates = parseApiResponse(json);
-
         const snapshot: ElToqueSnapshot = {
           data: rates,
           fetchedAt: new Date().toISOString(),
           lastUpdateDate: json?.date || json?.last_update || undefined,
           source: 'elTOQUE',
         };
-
         saveRatesToCache(snapshot);
         recordScheduledSync();
         return snapshot;
@@ -346,7 +343,6 @@ export async function fetchTasas(): Promise<ElToqueSnapshot> {
       inFlightPromise = null;
     }
   })();
-
   return inFlightPromise;
 }
 
@@ -373,7 +369,6 @@ export function isScheduledUpdateDue(): boolean {
     const today = new Date().toISOString().slice(0, 10);
     const raw = localStorage.getItem(ELTOQUE_SCHEDULE_KEY);
     const currentPeriod = hour >= 10 && hour < 22 ? 'morning' : 'evening';
-
     if (!raw) return true;
     const parsed = JSON.parse(raw) as { date: string; period: string; time: number };
     if (parsed.date !== today) return true;
@@ -385,48 +380,32 @@ export function isScheduledUpdateDue(): boolean {
 }
 
 /**
- * Obtiene las tasas garantizando protección del límite horario y actualización programada (10 AM y 10 PM)
+ * Obtiene las tasas garantizando protección del límite horario y actualización programada
  */
 export async function getElToqueRates(options?: { force?: boolean }): Promise<ElToqueFetchResult> {
   const apiKey = getElToqueApiKey();
   const cached = loadCachedRates();
   const now = Date.now();
-
   const isCacheFresh = cached && now - new Date(cached.fetchedAt).getTime() < ONE_HOUR_MS;
   const isDue = isScheduledUpdateDue();
 
-  // Si la caché es fresca, no corresponde turno programado y no se forzó, retornar de inmediato
   if (isCacheFresh && !isDue && !options?.force) {
-    return {
-      snapshot: cached,
-      status: 'online',
-    };
+    return { snapshot: cached, status: 'online' };
   }
 
-  // Si no hay API key configurada
   if (!apiKey) {
     if (cached) {
-      return {
-        snapshot: cached,
-        status: 'cached',
-        message: 'Tasas locales guardadas',
-      };
+      return { snapshot: cached, status: 'cached', message: 'Tasas locales guardadas' };
     }
-    // Si la app está recién abierta sin caché y sin API key, retornar fallback de referencia actualizado (+700 CUP)
     const initialSnapshot: ElToqueSnapshot = {
       data: INITIAL_FALLBACK_RATES,
       fetchedAt: new Date().toISOString(),
       source: 'Mercado Actual',
     };
     saveRatesToCache(initialSnapshot);
-    return {
-      snapshot: initialSnapshot,
-      status: 'no_key',
-      message: 'Tasas representativas de mercado (+700 CUP)',
-    };
+    return { snapshot: initialSnapshot, status: 'no_key', message: 'Tasas representativas de mercado (+700 CUP)' };
   }
 
-  // Si no hay conexión a internet
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
     if (cached) {
       return {
@@ -441,28 +420,16 @@ export async function getElToqueRates(options?: { force?: boolean }): Promise<El
       source: 'Mercado Actual',
     };
     saveRatesToCache(initialSnapshot);
-    return {
-      snapshot: initialSnapshot,
-      status: 'cached',
-      message: 'Sin conexión a internet (tasas de mercado)',
-    };
+    return { snapshot: initialSnapshot, status: 'cached', message: 'Sin conexión a internet (tasas de mercado)' };
   }
 
-  // Intentar consultar la API
   try {
     const freshSnapshot = await fetchTasas();
-    return {
-      snapshot: freshSnapshot,
-      status: 'online',
-    };
+    return { snapshot: freshSnapshot, status: 'online' };
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : 'Error al consultar tasas';
     if (cached) {
-      return {
-        snapshot: cached,
-        status: 'cached',
-        message: `${errorMsg} — datos guardados`,
-      };
+      return { snapshot: cached, status: 'cached', message: `${errorMsg} — datos guardados` };
     }
     const initialSnapshot: ElToqueSnapshot = {
       data: INITIAL_FALLBACK_RATES,
@@ -470,19 +437,12 @@ export async function getElToqueRates(options?: { force?: boolean }): Promise<El
       source: 'Mercado Actual',
     };
     saveRatesToCache(initialSnapshot);
-    return {
-      snapshot: initialSnapshot,
-      status: 'cached',
-      message: `${errorMsg} (tasas de mercado)`,
-    };
+    return { snapshot: initialSnapshot, status: 'cached', message: `${errorMsg} (tasas de mercado)` };
   }
 }
 
 /**
- * Watcher programado:
- * - Refresco matutino (después de las 10:00 AM)
- * - Refresco nocturno (después de las 10:00 PM / 22:00)
- * - Refresco al recuperar conexión
+ * Watcher programado: refresco 10 AM / 10 PM + al recuperar conexión
  */
 export function initElToqueWatcher(onUpdate?: (result: ElToqueFetchResult) => void): () => void {
   const tryRefresh = async () => {
@@ -490,7 +450,6 @@ export function initElToqueWatcher(onUpdate?: (result: ElToqueFetchResult) => vo
     const now = Date.now();
     const isStale = !cached || now - new Date(cached.fetchedAt).getTime() >= ONE_HOUR_MS;
     const isDue = isScheduledUpdateDue();
-
     if ((isStale || isDue) && navigator.onLine) {
       try {
         const result = await getElToqueRates();
@@ -502,14 +461,9 @@ export function initElToqueWatcher(onUpdate?: (result: ElToqueFetchResult) => vo
   };
 
   setTimeout(tryRefresh, 1500);
-
-  const handleOnline = () => {
-    tryRefresh();
-  };
-
+  const handleOnline = () => tryRefresh();
   window.addEventListener('online', handleOnline);
   const intervalId = setInterval(tryRefresh, 15 * 60 * 1000);
-
   return () => {
     window.removeEventListener('online', handleOnline);
     clearInterval(intervalId);
@@ -523,20 +477,16 @@ export function applyIncomingRatesSnapshot(incoming: ElToqueSnapshot | null | un
   if (!incoming || !Array.isArray(incoming.data) || !incoming.fetchedAt) {
     return false;
   }
-
   const local = loadCachedRates();
   if (!local) {
     saveRatesToCache(incoming);
     return true;
   }
-
   const incomingTime = new Date(incoming.fetchedAt).getTime();
   const localTime = new Date(local.fetchedAt).getTime();
-
   if (incomingTime > localTime) {
     saveRatesToCache(incoming);
     return true;
   }
-
   return false;
 }
