@@ -1,14 +1,13 @@
 /**
  * Módulo de Tasas de cambio elTOQUE para PC y Android.
  * - Endpoint: https://tasas.eltoque.com/v1/trmi
- * - Autenticación: Bearer token SOLO desde la variable de entorno VITE_ELTOQUE_API_KEY,
- *   inyectada al compilar desde el Secret de GitHub. Sin entrada manual por UI.
- * - Actualización programada: 2 veces al día (después de las 10:00 AM y después de las 10:00 PM / 22:00),
- *   más refrescos automáticos al iniciar la app o recuperar conexión si la caché expiró (mínimo 1 hora).
- * - Compatible con CapacitorHttp (Android nativo sin CORS) y Fetch Web / Electron.
+ * - Autenticación: Bearer token SOLO desde la variable de entorno VITE_ELTOQUE_API_KEY
+ *   (inyectada al compilar desde el Secret de GitHub).
+ * - REGLA DE LÍMITE: la API se consulta ÚNICAMENTE en su turno programado
+ *   (después de las 10:00 AM y después de las 10:00 PM). Máximo 2 peticiones/día
+ *   por dispositivo. No existe refresco manual ni por UI.
  * - Deltas ▲/▼: al guardar un snapshot OFICIAL se archiva el anterior oficial en
- *   'eltoque_rates_previous' para calcular subidas/bajadas. Las ediciones manuales
- *   ('Personalizado') y el fallback inicial ('Mercado Actual') NO crean historial.
+ *   'eltoque_rates_previous' para calcular subidas/bajadas.
  */
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 
@@ -17,7 +16,6 @@ export const ELTOQUE_PREVIOUS_KEY = 'eltoque_rates_previous';
 export const ELTOQUE_SCHEDULE_KEY = 'eltoque_rates_schedule';
 
 const API_URL = 'https://tasas.eltoque.com/v1/trmi';
-const ONE_HOUR_MS = 60 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 10000;
 
 export interface CurrencyRate {
@@ -81,7 +79,7 @@ export const CURRENCY_EMOJI_FALLBACK: Record<string, string> = {
   USDT: '💵', BTC: '₿', ETH: 'Ξ', TRX: '⚡',
 };
 
-// Tasas representativas actualizadas del mercado informal en Cuba (+700 CUP)
+// Tasas representativas de respaldo (solo si nunca se ha podido consultar la API)
 export const INITIAL_FALLBACK_RATES: CurrencyRate[] = [
   { code: 'USD', name: 'Dólar estadounidense', buy: 710, sell: 720, value: 720 },
   { code: 'EUR', name: 'Euro', buy: 740, sell: 750, value: 750 },
@@ -96,7 +94,6 @@ export const INITIAL_FALLBACK_RATES: CurrencyRate[] = [
 
 /**
  * Clave de API: SOLO la variable de entorno inyectada al compilar (Secret de GitHub).
- * Si no existe, el módulo funciona con caché y tasas de respaldo.
  */
 export function getElToqueApiKey(): string {
   return (import.meta.env.VITE_ELTOQUE_API_KEY as string | undefined)?.trim() || '';
@@ -134,7 +131,6 @@ export function loadPreviousRates(): ElToqueSnapshot | null {
 /**
  * Guarda el snapshot en caché. Si el actual y el nuevo son OFICIALES (source elTOQUE)
  * y difieren, el actual se archiva como "previous" para los deltas ▲/▼.
- * Los snapshots manuales/fallback no alteran el historial.
  */
 export function saveRatesToCache(snapshot: ElToqueSnapshot): void {
   try {
@@ -156,8 +152,6 @@ export function saveRatesToCache(snapshot: ElToqueSnapshot): void {
 
 /**
  * Delta de una moneda respecto al snapshot oficial anterior.
- * Devuelve null si: el snapshot actual no es oficial, no hay historial,
- * la moneda no existe en ambos, o la diferencia es 0.
  */
 export function getRateDelta(code: string, current: ElToqueSnapshot): RateDelta | null {
   if (current.source !== 'elTOQUE') return null;
@@ -172,19 +166,6 @@ export function getRateDelta(code: string, current: ElToqueSnapshot): RateDelta 
   const diff = Math.round((a - b) * 100) / 100;
   if (!isFinite(diff) || diff === 0) return null;
   return { diff, direction: diff > 0 ? 'up' : 'down' };
-}
-
-/**
- * Actualiza las tasas de cambio de forma manual por el Administrador
- */
-export function updateManualRates(updatedRates: CurrencyRate[]): ElToqueSnapshot {
-  const snapshot: ElToqueSnapshot = {
-    data: updatedRates,
-    fetchedAt: new Date().toISOString(),
-    source: 'Personalizado',
-  };
-  saveRatesToCache(snapshot);
-  return snapshot;
 }
 
 /**
@@ -339,6 +320,10 @@ function recordScheduledSync(): void {
   }
 }
 
+/**
+ * ¿Corresponde el turno de actualización? Turno matutino: desde las 10:00 AM.
+ * Turno nocturno: desde las 10:00 PM. Solo 1 consulta por turno = máx. 2/día.
+ */
 export function isScheduledUpdateDue(): boolean {
   try {
     const hour = new Date().getHours();
@@ -355,15 +340,27 @@ export function isScheduledUpdateDue(): boolean {
   }
 }
 
-export async function getElToqueRates(options?: { force?: boolean }): Promise<ElToqueFetchResult> {
+/**
+ * Obtiene las tasas. REGLA ESTRICTA: la API SOLO se consulta en su turno
+ * programado (10 AM / 10 PM). Fuera de turno devuelve SIEMPRE la caché,
+ * sin gastar el límite de peticiones.
+ */
+export async function getElToqueRates(): Promise<ElToqueFetchResult> {
   const apiKey = getElToqueApiKey();
   const cached = loadCachedRates();
-  const now = Date.now();
-  const isCacheFresh = cached && now - new Date(cached.fetchedAt).getTime() < ONE_HOUR_MS;
   const isDue = isScheduledUpdateDue();
 
-  if (isCacheFresh && !isDue && !options?.force) {
-    return { snapshot: cached, status: 'online' };
+  // Fuera de turno: caché siempre, jamás se llama a la API
+  if (!isDue) {
+    if (cached) {
+      return {
+        snapshot: cached,
+        status: cached.source === 'elTOQUE' ? 'online' : 'cached',
+        message: cached.source === 'elTOQUE'
+          ? undefined
+          : 'Tasas locales guardadas',
+      };
+    }
   }
 
   if (!apiKey) {
@@ -414,19 +411,19 @@ export async function getElToqueRates(options?: { force?: boolean }): Promise<El
   }
 }
 
+/**
+ * Watcher: revisa cada 15 min SI corresponde turno (no llama a la API fuera de él)
+ * y también al recuperar conexión. La llamada real solo ocurre en turno 10 AM / 10 PM.
+ */
 export function initElToqueWatcher(onUpdate?: (result: ElToqueFetchResult) => void): () => void {
   const tryRefresh = async () => {
-    const cached = loadCachedRates();
-    const now = Date.now();
-    const isStale = !cached || now - new Date(cached.fetchedAt).getTime() >= ONE_HOUR_MS;
-    const isDue = isScheduledUpdateDue();
-    if ((isStale || isDue) && navigator.onLine) {
-      try {
-        const result = await getElToqueRates();
-        onUpdate?.(result);
-      } catch {
-        // Silencioso
-      }
+    if (!isScheduledUpdateDue()) return; // Fuera de turno: nada que hacer
+    if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+    try {
+      const result = await getElToqueRates();
+      onUpdate?.(result);
+    } catch {
+      // Silencioso
     }
   };
 
@@ -440,6 +437,9 @@ export function initElToqueWatcher(onUpdate?: (result: ElToqueFetchResult) => vo
   };
 }
 
+/**
+ * Sincronización QR: aplica un snapshot recibido si es más reciente que el local
+ */
 export function applyIncomingRatesSnapshot(incoming: ElToqueSnapshot | null | undefined): boolean {
   if (!incoming || !Array.isArray(incoming.data) || !incoming.fetchedAt) {
     return false;
