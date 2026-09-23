@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import HelpTip from '@/components/HelpTip';
 import type { ShiftReport } from '@/types';
 import { buildBackup } from '@/lib/backup';
+import { isDeviceLicensed } from '@/lib/deviceLicense';
 import {
   receiveShiftShare,
   startAdminShare,
@@ -43,6 +44,21 @@ export default function ShiftSync() {
     };
   }, []);
 
+  // ---- Verificación de privilegios para la sincronización ENTRE ADMINS ----
+  // Regla: sesión de Administrador (o dev) abierta Y dispositivo con licencia activa.
+  // La pantalla de licencia JAMÁS puede usar estos paquetes (ver LicenseGate).
+  const canUseAdminSync = (): boolean => {
+    if (user?.role !== 'admin' && user?.role !== 'dev') {
+      toast.error('Solo una cuenta con sesión de Administrador puede usar esta sincronización.');
+      return false;
+    }
+    if (!isDeviceLicensed()) {
+      toast.error('Este dispositivo no tiene licencia activa. La sincronización entre administradores requiere la app licenciada.');
+      return false;
+    }
+    return true;
+  };
+
   // Manejo de escaneo de turno de empleado
   const handleShiftScan = async (text: string) => {
     if (receivingShift) return;
@@ -68,10 +84,7 @@ export default function ShiftSync() {
 
   // Generar QR para emitir sincronización a otro Administrador
   const handleStartAdminShare = async () => {
-    if (user?.role !== 'admin') {
-      toast.error('Solo un usuario con rol de Administrador puede emitir sincronización.');
-      return;
-    }
+    if (!canUseAdminSync()) return;
     setSharingAdmin(true);
     try {
       const backupPayload = buildBackup({
@@ -82,14 +95,12 @@ export default function ShiftSync() {
         reports,
         settings,
       });
-
       const adminPackage: AdminSyncPackage = {
         v: 1,
         role: 'admin',
         timestamp: new Date().toISOString(),
         backup: backupPayload,
       };
-
       const qrData = await startAdminShare(adminPackage);
       setShareAdminQr(qrData);
       setShareDialogOpen(true);
@@ -103,10 +114,7 @@ export default function ShiftSync() {
   // Manejo de escaneo de sincronización de otro Administrador
   const handleAdminScan = async (text: string) => {
     if (receivingAdmin) return;
-    if (user?.role !== 'admin') {
-      toast.error('Solo una cuenta con sesión de Administrador puede recibir estos datos.');
-      return;
-    }
+    if (!canUseAdminSync()) return;
     setReceivingAdmin(true);
     try {
       const pkg = await receiveAdminShare(text.trim());
@@ -114,7 +122,6 @@ export default function ShiftSync() {
         toast.error('Este QR no corresponde a una sincronización autorizada entre Administradores.');
         return;
       }
-
       applyBackup(pkg.backup);
       setScanAdminOpen(false);
       toast.success('¡Datos del negocio sincronizados con éxito!', {
@@ -150,7 +157,6 @@ export default function ShiftSync() {
           <QrCode className="w-3.5 h-3.5 mr-1.5" />
           Cierres de Turno (Empleados)
         </Button>
-
         <Button
           variant={activeTab === 'admin' ? 'default' : 'outline'}
           size="sm"
@@ -172,11 +178,9 @@ export default function ShiftSync() {
           <p className="text-sm text-muted-foreground">
             Pídele a tu empleado que abra la sección "Cierre de Turno" y muestre su QR. Apunta la cámara hacia su pantalla para transferir las ventas del turno a tu dispositivo.
           </p>
-
           <Button onClick={() => setScanShiftOpen(true)} className="w-full text-sm font-semibold h-10 shadow-sm">
             <ScanLine className="w-4 h-4 mr-2" /> Escanear QR del Empleado
           </Button>
-
           <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 text-xs text-muted-foreground text-left space-y-1">
             <p className="font-semibold text-foreground flex items-center gap-1.5">
               <Smartphone className="w-3.5 h-3.5 text-primary" /> Transferencia directa sin internet
@@ -213,7 +217,6 @@ export default function ShiftSync() {
                   Muestra el código QR con todos los datos actuales del negocio para que el otro Administrador lo escanee.
                 </p>
               </div>
-
               <Button
                 variant="outline"
                 size="sm"
@@ -237,7 +240,6 @@ export default function ShiftSync() {
                   Apunta tu cámara al QR que está mostrando el otro Administrador para recibir y actualizar todos los datos.
                 </p>
               </div>
-
               <Button
                 size="sm"
                 onClick={() => setScanAdminOpen(true)}
@@ -254,7 +256,7 @@ export default function ShiftSync() {
               <Shield className="w-3.5 h-3.5" /> Protocolo de Seguridad Admin
             </p>
             <p>
-              Solo terminales con sesión iniciada con rol de Administrador pueden generar y recibir esta sincronización. La licencia y preferencias visuales de cada equipo se conservan intactas.
+              Solo funciona con sesión de Administrador abierta Y aplicación licenciada. La pantalla de licencia jamás acepta estos códigos, así nadie sin licencia puede capturar los datos. La licencia y preferencias visuales de cada equipo se conservan intactas.
             </p>
           </div>
         </div>
@@ -320,7 +322,6 @@ export default function ShiftSync() {
               Pídele al otro Administrador que abra esta misma pestaña y pulse "Escanear QR de Admin".
             </DialogDescription>
           </DialogHeader>
-
           {shareAdminQr && (
             <div className="flex flex-col items-center justify-center p-3 space-y-3">
               <div className="bg-white p-3 rounded-2xl border shadow-sm flex items-center justify-center">
@@ -331,7 +332,6 @@ export default function ShiftSync() {
               </p>
             </div>
           )}
-
           <DialogFooter>
             <Button
               className="w-full"
