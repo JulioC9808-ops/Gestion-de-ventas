@@ -25,7 +25,7 @@ jobs:
         run: |
           if exist node_modules rd /s /q node_modules
           if exist package-lock.json del /f /q package-lock.json
-          npm install --include=optional --no-audit --no-fund --registry=https://registry.npmjs.org/
+          npm install --include=optional --no-audit --no-fund --legacy-peer-deps --registry=https://registry.npmjs.org/
 
       - name: Force install native bindings (Rollup + SWC)
         shell: cmd
