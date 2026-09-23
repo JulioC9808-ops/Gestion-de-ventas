@@ -181,7 +181,7 @@ Quedo a la espera de tu confirmación y la clave de activación. ¡Muchas gracia
     if (!cleanKey) return;
 
     if (cleanKey === '08022664107') {
-      localStorage.setItem('license_state', JSON.stringify({ type: 'lifetime', lastSeenAt: Date.now() }));
+      localStorage.setItem('license_state', JSON.stringify({ type: 'lifetime', method: 'LEGACY', plan: 'PERM', lastSeenAt: Date.now() }));
       toast.success('¡Licencia Permanente activada de por vida!');
       if (onKeyActivated) onKeyActivated();
       onClose();
@@ -191,11 +191,21 @@ Quedo a la espera de tu confirmación y la clave de activación. ¡Muchas gracia
     const res = verifyCryptographicLicense(cleanKey, terminalId);
     if (res.valid) {
       if (res.type === 'lifetime') {
-        localStorage.setItem('license_state', JSON.stringify({ type: 'lifetime', deviceId: terminalId, lastSeenAt: Date.now() }));
+        localStorage.setItem('license_state', JSON.stringify({
+          type: 'lifetime',
+          method: 'GVLIC',
+          plan: 'PERM',
+          issuedAt: res.issuedAt,
+          deviceId: terminalId,
+          lastSeenAt: Date.now(),
+        }));
         toast.success('¡Licencia Permanente validada y activada!');
       } else {
         localStorage.setItem('license_state', JSON.stringify({
           type: 'timed',
+          method: 'GVLIC',
+          plan: res.plan,
+          issuedAt: res.issuedAt,
           deviceId: terminalId,
           activatedAt: Date.now(),
           expiresAt: res.expiresAt,

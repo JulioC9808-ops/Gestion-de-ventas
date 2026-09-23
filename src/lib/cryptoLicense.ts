@@ -8,13 +8,13 @@
  * Este secreto es el núcleo matemático que vincula el generador offline
  * con el motor de validación del aplicativo.
  */
-const MASTER_CRYPTO_SALT = 'GV-JULIO-GE-2026-SECURE-KEY-ENGINE-8F92';
+export const MASTER_CRYPTO_SALT = 'GV-JULIO-GE-2026-SECURE-KEY-ENGINE-8F92';
 
 /**
  * Implementación portable y ligera de HMAC-SHA256 sincrónica para JS.
  * Funciona 100% offline en cualquier entorno (React, Electron, WebView Android).
  */
-function sha256(ascii: string): string {
+export function sha256(ascii: string): string {
   function rightRotate(value: number, amount: number) {
     return (value >>> amount) | (value << (32 - amount));
   }
@@ -82,7 +82,7 @@ function sha256(ascii: string): string {
   return result;
 }
 
-function hmacSha256(key: string, message: string): string {
+export function hmacSha256(key: string, message: string): string {
   const blockSize = 64;
   if (key.length > blockSize) key = sha256(key);
   while (key.length < blockSize) key += '\x00';
@@ -107,13 +107,32 @@ export function formatFriendlyDeviceId(rawId: string | null | undefined): string
 }
 
 export type ValidatedLicenseResult =
-  | { valid: true; type: 'lifetime'; deviceId: string }
-  | { valid: true; type: 'timed'; deviceId: string; expiresAt: number; days: number }
+  | {
+      valid: true;
+      type: 'lifetime';
+      plan: 'PERM';
+      method: 'GVLIC';
+      deviceId: string;
+      issuedAt: number;
+    }
+  | {
+      valid: true;
+      type: 'timed';
+      plan: string;
+      method: 'GVLIC';
+      deviceId: string;
+      expiresAt: number;
+      days: number;
+      issuedAt: number;
+    }
   | { valid: false; reason: string };
 
 /**
  * Valida un código de licencia criptográfico 100% offline.
- * Formato del código: GVLIC-V1-[ID_EQUIPO]-[TIPO:PERM|T37|T30|T90]-[TIMESTAMP]-[FIRMA_12]
+ * Formato del código: GVLIC-V1-[ID_EQUIPO]-[TIPO:PERM|T37|T30|PROMO3M|T180|T365]-[TIMESTAMP]-[FIRMA_12]
+ * Corrección de cálculo temporal:
+ * expiresAt = (issuedAt * 1000) + duraciónMs (no Date.now() + duración).
+ * Se rechazan claves con issuedAt de más de 30 días de antigüedad o emitidas en fecha futura.
  */
 export function verifyCryptographicLicense(licenseCode: string, currentDeviceId: string): ValidatedLicenseResult {
   const code = licenseCode.trim().toUpperCase();
@@ -122,8 +141,6 @@ export function verifyCryptographicLicense(licenseCode: string, currentDeviceId:
   }
 
   const parts = code.split('-');
-  // Esperado: ["GVLIC", "V1", "ID_EQUIPO_1", "ID_EQUIPO_2", "TIPO", "TIMESTAMP", "FIRMA"]
-  // O ["GVLIC", "V1", "IDEQUIPO", "TIPO", "TIMESTAMP", "FIRMA"]
   if (parts.length < 6) {
     return { valid: false, reason: 'Código de licencia incompleto' };
   }
@@ -178,8 +195,29 @@ export function verifyCryptographicLicense(licenseCode: string, currentDeviceId:
     return { valid: false, reason: 'Parámetro temporal no válido' };
   }
 
+  const now = Date.now();
+  const issuedMs = issuedAt * 1000;
+
+  // Tolerancia de 10 minutos para reloj en el futuro
+  if (issuedMs > now + 10 * 60 * 1000) {
+    return { valid: false, reason: 'La fecha de emisión de esta licencia está en el futuro respecto al equipo' };
+  }
+
+  // Rechazar códigos emitidos hace más de 30 días sin haber sido activados
+  const maxActivationWindowMs = 30 * 24 * 60 * 60 * 1000;
+  if (now - issuedMs > maxActivationWindowMs) {
+    return { valid: false, reason: 'Esta clave de licencia ha expirado (más de 30 días desde su emisión por el desarrollador)' };
+  }
+
   if (typePart === 'PERM') {
-    return { valid: true, type: 'lifetime', deviceId: currentDeviceId };
+    return {
+      valid: true,
+      type: 'lifetime',
+      plan: 'PERM',
+      method: 'GVLIC',
+      deviceId: currentDeviceId,
+      issuedAt,
+    };
   }
 
   let durationDays = 37;
@@ -193,20 +231,29 @@ export function verifyCryptographicLicense(licenseCode: string, currentDeviceId:
     if (!isNaN(parsed) && parsed > 0) durationDays = parsed;
   }
 
-  const expiresAt = Date.now() + durationDays * 24 * 60 * 60 * 1000;
+  // Regla estricta: expiresAt = issuedAt * 1000 + duración
+  const expiresAt = issuedMs + durationDays * 24 * 60 * 60 * 1000;
+
+  if (expiresAt <= now) {
+    return { valid: false, reason: 'El período de validez de esta licencia ya ha concluido' };
+  }
+
   return {
     valid: true,
     type: 'timed',
+    plan: typePart,
+    method: 'GVLIC',
     deviceId: currentDeviceId,
     expiresAt,
     days: durationDays,
+    issuedAt,
   };
 }
 
 /**
  * Generador de licencias criptográficas integrado para el panel de Dev.
  */
-export function generateCryptographicLicense(deviceId: string, type: 'PERM' | 'T30' | 'T37' | 'T90' | 'PROMO3M' | 'T365' | string): string {
+export function generateCryptographicLicense(deviceId: string, type: 'PERM' | 'T30' | 'T37' | 'T90' | 'PROMO3M' | 'T180' | 'T365' | string): string {
   const cleanDevice = deviceId.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
   const ts = Math.floor(Date.now() / 1000);
   const payload = `GVLIC:V1:${cleanDevice}:${type}:${ts}`;
@@ -235,6 +282,60 @@ export function isTerminalIdBlocked(terminalId: string | null | undefined, block
     const itemClean = item.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
     return itemClean === clean || item.toUpperCase() === friendly;
   });
+}
+
+// ============================================================================
+// REPORTE EXPORTABLE DE TERMINAL (FUNCIÓN C - FIRMADO CON HMAC)
+// ============================================================================
+
+export interface TerminalReportPayload {
+  version: '1.0';
+  friendlyDeviceId: string;
+  businessName: string;
+  users: Array<{ username: string; name: string; role: 'admin' | 'employee'; method?: string }>;
+  method: 'GVLIC' | 'LEGACY' | 'QR_SYNC';
+  plan: string;
+  issuedAt?: number;
+  expiresAt?: number | null;
+  licenseSource: string;
+  timestamp: number;
+  signature: string;
+}
+
+export function generateSignedTerminalReport(params: {
+  friendlyDeviceId: string;
+  businessName: string;
+  users: Array<{ username: string; name: string; role: 'admin' | 'employee'; method?: string }>;
+  method: 'GVLIC' | 'LEGACY' | 'QR_SYNC';
+  plan: string;
+  issuedAt?: number;
+  expiresAt?: number | null;
+  licenseSource?: string;
+}): TerminalReportPayload {
+  const timestamp = Date.now();
+  const payloadToSign = `REPORT:V1:${params.friendlyDeviceId}:${params.businessName}:${params.method}:${params.plan}:${params.expiresAt ?? 'perm'}:${timestamp}`;
+  const signature = hmacSha256(MASTER_CRYPTO_SALT, payloadToSign);
+
+  return {
+    version: '1.0',
+    friendlyDeviceId: params.friendlyDeviceId,
+    businessName: params.businessName,
+    users: params.users,
+    method: params.method,
+    plan: params.plan,
+    issuedAt: params.issuedAt,
+    expiresAt: params.expiresAt,
+    licenseSource: params.licenseSource || 'Terminal Local',
+    timestamp,
+    signature,
+  };
+}
+
+export function verifyTerminalReportSignature(report: TerminalReportPayload): boolean {
+  if (!report || !report.signature || !report.friendlyDeviceId) return false;
+  const payloadToSign = `REPORT:V1:${report.friendlyDeviceId}:${report.businessName}:${report.method}:${report.plan}:${report.expiresAt ?? 'perm'}:${report.timestamp}`;
+  const expectedSig = hmacSha256(MASTER_CRYPTO_SALT, payloadToSign);
+  return report.signature === expectedSig;
 }
 
 // ============================================================================
@@ -310,7 +411,6 @@ export function saveSubmittedPayment(payment: {
   return record;
 }
 
-
 /**
  * Genera un código de desafío numérico aleatorio de 6 dígitos.
  */
@@ -326,7 +426,6 @@ export function generateDevChallenge(): string {
 export function calculateDevOtpResponse(challenge: string): string {
   const clean = challenge.replace(/\s+/g, '').trim();
   const hash = hmacSha256(MASTER_CRYPTO_SALT, `DEV-CHALLENGE:${clean}`);
-  // Convertir los primeros 8 caracteres hexadecimales en un número de 6 dígitos
   const subInt = parseInt(hash.substring(0, 8), 16);
   const otp = String(subInt % 1000000).padStart(6, '0');
   return otp;

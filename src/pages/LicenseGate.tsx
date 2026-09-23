@@ -14,7 +14,14 @@ import {
   daysRemaining, hoursRemaining, clearEmployeeLicense, H24_MS,
 } from '@/lib/employeeLicense';
 import { receiveEmployeeShare } from '@/lib/syncTransport';
-import { verifyCryptographicLicense, formatFriendlyDeviceId, isTerminalIdBlocked } from '@/lib/cryptoLicense';
+import {
+  verifyCryptographicLicense,
+  formatFriendlyDeviceId,
+  isTerminalIdBlocked,
+  generateSignedTerminalReport,
+} from '@/lib/cryptoLicense';
+import { getLicenseStatus, initLicenseStatusChecker, subscribeLicenseStatus } from '@/lib/licenseStatus';
+import { queueRegistryReport } from '@/lib/remoteRegistry';
 import { toast } from 'sonner';
 
 const LIFETIME_LICENSE = '08022664107';
@@ -32,10 +39,13 @@ interface DeviceInfo {
   hw: HardwareComponents | null;
 }
 
-type LicenseState =
+export type LicenseState =
   | { type: 'none' }
   | {
       type: 'lifetime';
+      method?: 'GVLIC' | 'LEGACY' | 'QR_SYNC';
+      plan?: string;
+      issuedAt?: number;
       deviceId?: string | null;
       hw?: HardwareComponents;
       rebound?: number;
@@ -43,6 +53,9 @@ type LicenseState =
     }
   | {
       type: 'timed';
+      method?: 'GVLIC' | 'LEGACY' | 'QR_SYNC';
+      plan?: string;
+      issuedAt?: number;
       activatedAt: number;
       expiresAt: number;
       deviceId?: string | null;
@@ -59,6 +72,9 @@ function normalize(state: unknown): LicenseState {
   if (s.type === 'lifetime') {
     return {
       type: 'lifetime',
+      method: (s.method as 'GVLIC' | 'LEGACY' | 'QR_SYNC') || 'LEGACY',
+      plan: typeof s.plan === 'string' ? s.plan : 'PERM',
+      issuedAt: typeof s.issuedAt === 'number' ? s.issuedAt : undefined,
       deviceId: (typeof s.deviceId === 'string' ? s.deviceId : (typeof s.machineId === 'string' ? s.machineId : null)),
       hw: (s.hw as HardwareComponents | undefined),
       rebound: typeof s.rebound === 'number' ? s.rebound : undefined,
@@ -68,6 +84,9 @@ function normalize(state: unknown): LicenseState {
   if (s.type === 'timed' && typeof s.activatedAt === 'number') {
     return {
       type: 'timed',
+      method: (s.method as 'GVLIC' | 'LEGACY' | 'QR_SYNC') || 'LEGACY',
+      plan: typeof s.plan === 'string' ? s.plan : 'T37',
+      issuedAt: typeof s.issuedAt === 'number' ? s.issuedAt : undefined,
       activatedAt: s.activatedAt,
       expiresAt: typeof s.expiresAt === 'number' ? s.expiresAt : s.activatedAt + TIMED_DURATION_MS,
       deviceId: (typeof s.deviceId === 'string' ? s.deviceId : (typeof s.machineId === 'string' ? s.machineId : null)),
@@ -79,23 +98,22 @@ function normalize(state: unknown): LicenseState {
   return { type: 'none' };
 }
 
-function readLicense(): LicenseState {
+export function readLicense(): LicenseState {
   try {
     const raw = localStorage.getItem(LICENSE_KEY);
     if (raw) return normalize(JSON.parse(raw));
-    // Clave guardada de versiones muy viejas (activación directa).
     if (localStorage.getItem('license_key') === LIFETIME_LICENSE) {
-      const state: LicenseState = { type: 'lifetime' };
+      const state: LicenseState = { type: 'lifetime', method: 'LEGACY', plan: 'PERM' };
       localStorage.setItem(LICENSE_KEY, JSON.stringify(state));
       return state;
     }
   } catch {
-    // Estado corrupto: se ignora.
+    // Estado corrupto: se ignora
   }
   return { type: 'none' };
 }
 
-function persistLicense(state: LicenseState): LicenseState {
+export function persistLicense(state: LicenseState): LicenseState {
   const withSeen: LicenseState = { ...state, lastSeenAt: Date.now() };
   localStorage.setItem(LICENSE_KEY, JSON.stringify(withSeen));
   return withSeen;
@@ -113,15 +131,11 @@ function isTimedActive(state: Extract<LicenseState, { type: 'timed' }>): boolean
 }
 
 /**
- * Verificación de dispositivo con TOLERANCIA:
- * - PC: coincide el ID combinado, O al menos 3 de 4 componentes de hardware válidos.
- * - Android: coincide el hash de ANDROID_ID.
- * - Estados viejos sin ID se adoptan (migración, no consume el rebound).
- * Devuelve 'ok' | 'rebind' (re-vinculación única) | 'fail'.
+ * Verificación de dispositivo con tolerancia de hardware
  */
 function checkMachine(state: LicenseState, device: DeviceInfo): 'ok' | 'rebind' | 'fail' {
   if (state.type === 'none') return 'ok';
-  if (!device.id) return 'ok'; // sin ID disponible (web/dev): no invalidar ni re-vincular
+  if (!device.id) return 'ok';
   if (!state.deviceId) return 'rebind';
   if (state.deviceId === device.id) return 'ok';
   if (isDesktop() && state.hw && device.hw) {
@@ -176,16 +190,28 @@ export default function LicenseGate({ children }: LicenseGateProps) {
     setShowWelcome(false);
   };
 
-  // Cargar el ID de dispositivo (PC: sincrónico; Android: asíncrono).
+  // Cargar el ID de dispositivo
   useEffect(() => {
     let alive = true;
     getDeviceId().then(d => { if (alive) setDevice(d); });
     return () => { alive = false; };
   }, []);
 
-  // Verificar si el terminal está bloqueado por el desarrollador
+  // Inicializar chequeo remoto de licencias (cada 2h y al inicio)
+  useEffect(() => {
+    initLicenseStatusChecker();
+    const unsub = subscribeLicenseStatus(() => {
+      setDevice(prev => (prev === 'pending' ? prev : { ...prev }));
+    });
+    return unsub;
+  }, []);
+
+  // Verificar si el terminal está bloqueado por el desarrollador (local y remoto)
   const terminalRawId = device !== 'pending' ? device.id : null;
-  const isBlocked = isTerminalIdBlocked(terminalRawId, settings?.blockedTerminalIds);
+  const remoteStatus = getLicenseStatus(terminalRawId);
+  const isBlocked = remoteStatus.isBlocked || isTerminalIdBlocked(terminalRawId, settings?.blockedTerminalIds);
+  const blockedReason = remoteStatus.blockedReason || 'Este terminal ha sido suspendido por el desarrollador.';
+  const allowActivations = remoteStatus.allowNewActivations && settings?.allowNewRegistrations !== false;
 
   // Verificar máquina una vez que el ID está cargado.
   useEffect(() => {
@@ -220,7 +246,7 @@ export default function LicenseGate({ children }: LicenseGateProps) {
 
   const employeeActive = isEmployeeLicenseActive(empLicense);
 
-  // Al caducar la licencia de empleado: cerrar sesión y pedir nuevo escaneo.
+  // Al caducar la licencia de empleado: cerrar sesión
   useEffect(() => {
     if (!empLicense) return;
     const id = setInterval(() => {
@@ -229,7 +255,7 @@ export default function LicenseGate({ children }: LicenseGateProps) {
         clearEmployeeLicense();
         logout();
         setEmpLicense(null);
-        toast.error('Tu licencia de <strong>empleado</strong> caducó. Escanea de nuevo el QR del Admin.');
+        toast.error('Tu licencia de empleado caducó. Escanea de nuevo el QR del Admin.');
       }
     }, 60 * 1000);
     return () => clearInterval(id);
@@ -270,14 +296,22 @@ export default function LicenseGate({ children }: LicenseGateProps) {
     setTimeout(() => setCopiedId(false), 2000);
   };
 
-  const registerTerminalRecord = (planType: 'lifetime' | 'timed_37' | 'timed_30' | 'timed_90' | 'promo_custom', planLabel: string, expiresAt?: number) => {
+  const registerTerminalRecord = (
+    method: 'GVLIC' | 'LEGACY' | 'QR_SYNC',
+    planType: 'lifetime' | 'timed_37' | 'timed_30' | 'timed_90' | 'promo_custom',
+    planLabel: string,
+    expiresAt?: number | null,
+    issuedAt?: number
+  ) => {
     const existing = settings?.registeredTerminals || [];
     const nowIso = new Date().toISOString();
+    const bName = settings?.businessName || 'Mi Negocio';
+
     const updated = [
       ...existing.filter(t => t.id !== friendlyTerminalId),
       {
         id: friendlyTerminalId,
-        businessName: settings?.businessName || 'Mi Negocio',
+        businessName: bName,
         planType,
         planLabel,
         status: 'active' as const,
@@ -287,15 +321,38 @@ export default function LicenseGate({ children }: LicenseGateProps) {
       }
     ];
     updateSettings({ registeredTerminals: updated });
+
+    // Reporte firmado para el phone-home
+    const signedReport = generateSignedTerminalReport({
+      friendlyDeviceId: friendlyTerminalId,
+      businessName: bName,
+      users: users.map(u => ({ username: u.username, name: u.name || u.username, role: u.role as 'admin' | 'employee' })),
+      method,
+      plan: planLabel,
+      issuedAt,
+      expiresAt,
+    });
+
+    // Encolar phone-home silencioso (Función A)
+    queueRegistryReport({
+      friendlyDeviceId: friendlyTerminalId,
+      businessName: bName,
+      method,
+      plan: planLabel,
+      issuedAt,
+      expiresAt,
+      timestamp: Date.now(),
+      report: signedReport,
+    });
   };
 
   const handleActivate = (e: React.FormEvent) => {
     e.preventDefault();
     if (isBlocked) {
-      setError('Este terminal ha sido bloqueado por el desarrollador. Comunícate con Julio_GE.');
+      setError(`🚫 Terminal Suspendido: ${blockedReason}. Comunícate con Julio_GE al WhatsApp +5351616816.`);
       return;
     }
-    if (settings?.allowNewRegistrations === false && license.type === 'none') {
+    if (!allowActivations && license.type === 'none') {
       setError('Las nuevas activaciones de licencias están pausadas temporalmente por el desarrollador.');
       return;
     }
@@ -304,39 +361,50 @@ export default function LicenseGate({ children }: LicenseGateProps) {
     const currentDevId = (device !== 'pending' && device?.id) ? device.id : 'GV-DEV-LOCAL';
 
     if (trimmed === LIFETIME_LICENSE) {
-      const state = persistLicense({ type: 'lifetime' } as LicenseState);
+      const state = persistLicense({ type: 'lifetime', method: 'LEGACY', plan: 'PERM' } as LicenseState);
       setLicense(state);
-      registerTerminalRecord('lifetime', 'Permanente Directa');
+      registerTerminalRecord('LEGACY', 'lifetime', 'Permanente Directa (Default)');
       toast.success('¡Licencia Permanente activada con éxito!');
     } else if (trimmed === TIMED_LICENSE) {
       const expiresAt = Date.now() + TIMED_DURATION_MS;
       const state = persistLicense({
         type: 'timed',
+        method: 'LEGACY',
+        plan: 'T37',
         activatedAt: Date.now(),
         expiresAt,
       } as LicenseState);
       setLicense(state);
-      registerTerminalRecord('timed_37', 'Periódica Mensual (37d)', expiresAt);
+      registerTerminalRecord('LEGACY', 'timed_37', 'Periódica Mensual (37d Legacy)', expiresAt);
       toast.success('¡Licencia Periódica activada con éxito!');
     } else if (trimmed.toUpperCase().startsWith('GVLIC-')) {
       // Verificación Criptográfica Asimétrica Offline
       const res = verifyCryptographicLicense(trimmed, currentDevId);
       if (res.valid) {
         if (res.type === 'lifetime') {
-          const state = persistLicense({ type: 'lifetime', deviceId: currentDevId } as LicenseState);
+          const state = persistLicense({
+            type: 'lifetime',
+            method: 'GVLIC',
+            plan: 'PERM',
+            issuedAt: res.issuedAt,
+            deviceId: currentDevId,
+          } as LicenseState);
           setLicense(state);
-          registerTerminalRecord('lifetime', 'Permanente Criptográfica');
+          registerTerminalRecord('GVLIC', 'lifetime', 'Permanente GVLIC', null, res.issuedAt);
           toast.success('¡Licencia Permanente Offline validada y activada!');
         } else {
           const state = persistLicense({
             type: 'timed',
+            method: 'GVLIC',
+            plan: res.plan,
+            issuedAt: res.issuedAt,
             deviceId: currentDevId,
             activatedAt: Date.now(),
             expiresAt: res.expiresAt,
           } as LicenseState);
           setLicense(state);
           const label = res.days === 90 ? 'Promo Trimestral (90d)' : `Periódica (${res.days}d)`;
-          registerTerminalRecord(res.days === 90 ? 'timed_90' : 'timed_37', label, res.expiresAt);
+          registerTerminalRecord('GVLIC', res.days === 90 ? 'timed_90' : 'timed_37', label, res.expiresAt, res.issuedAt);
           toast.success(`¡Licencia autorizada por ${res.days} días activada con éxito!`);
         }
       } else {
@@ -347,7 +415,7 @@ export default function LicenseGate({ children }: LicenseGateProps) {
     }
   };
 
-  // ---- Activación de EMPLEADO con UN solo QR (respeta lo que el admin eligió) ----
+  // Activación de EMPLEADO con UN solo QR
   const [receiving, setReceiving] = useState(false);
 
   const handleEmployeeScan = async (text: string) => {
@@ -361,21 +429,16 @@ export default function LicenseGate({ children }: LicenseGateProps) {
         return;
       }
 
-      // ===== BLINDAJE =====
-      // El QR de sincronización ENTRE ADMINISTRADORES jamás se acepta desde la
-      // pantalla de licencia. Solo el QR de personal (empleado) activa aquí,
-      // para que nadie sin licencia pueda capturar los datos del negocio.
       const anyPacket = packet as unknown as { role?: string };
       if (anyPacket.role === 'admin' || !('account' in packet)) {
         toast.error('Este QR es de sincronización entre administradores: solo funciona con sesión de Administrador abierta y la app licenciada.');
         return;
       }
-      // ====================
 
-      // 1) Todos los datos del jefe (el backup ya solo trae la cuenta del empleado).
+      // 1) Aplicar datos del jefe
       applyBackup(packet.backup);
 
-      // 2) La cuenta del empleado en este dispositivo (rol SIEMPRE empleado).
+      // 2) Cuenta de empleado
       const { u, p, n, s: sal, h } = packet.account;
       const existing = users.find(x => x.username === u);
       if (existing) {
@@ -391,17 +454,16 @@ export default function LicenseGate({ children }: LicenseGateProps) {
         } as never);
       }
 
-      // 3) Licencia según lo que el admin eligió al generar el QR.
+      // 3) Licencia
       const grant = packet.license;
       let expiresAt: number | null;
       if (!grant) {
-        expiresAt = Date.now() + H24_MS; // QR v2 viejo: 24 h
+        expiresAt = Date.now() + H24_MS;
       } else if (grant.mode === 'permanent') {
         expiresAt = null;
       } else if (grant.mode === 'admin') {
         expiresAt = grant.expiresAt ?? null;
       } else {
-        // h24: rechazar QR reciclado de hace más de 7 días.
         if (grant.issuedAt && grant.issuedAt < Date.now() - 7 * 24 * 60 * 60 * 1000) {
           toast.error('Este QR es muy antiguo. Pide al Admin que genere otro.');
           return;
@@ -412,6 +474,17 @@ export default function LicenseGate({ children }: LicenseGateProps) {
       const lic = saveLinkedLicense(u, expiresAt);
       setEmpLicense(lic);
 
+      // Registrar phone-home silencioso para el empleado
+      const bName = settings?.businessName || 'Mi Negocio';
+      queueRegistryReport({
+        friendlyDeviceId: friendlyTerminalId,
+        businessName: bName,
+        method: 'QR_SYNC',
+        plan: 'Empleado (QR Sync)',
+        expiresAt,
+        timestamp: Date.now(),
+      });
+
       setTimeout(() => {
         if (login(u, p)) {
           setScanOpen(false);
@@ -420,7 +493,7 @@ export default function LicenseGate({ children }: LicenseGateProps) {
             : daysRemaining(lic) >= 1
               ? `${daysRemaining(lic)} día(s)`
               : `${hoursRemaining(lic)} h`;
-          toast.success(`Datos recibidos. Licencia de <strong>empleado</strong> activa: <strong>${remaining}</strong>.`);
+          toast.success(`Datos recibidos. Licencia de empleado activa: ${remaining}.`);
         } else {
           clearEmployeeLicense();
           setEmpLicense(null);
@@ -495,19 +568,22 @@ export default function LicenseGate({ children }: LicenseGateProps) {
           </div>
 
           {isBlocked && (
-            <div className="mb-5 p-4 rounded-xl bg-destructive/15 border border-destructive/40 text-destructive text-center space-y-1 animate-fade-in-up">
+            <div className="mb-5 p-4 rounded-xl bg-destructive/15 border border-destructive/40 text-destructive text-center space-y-2 animate-fade-in-up">
               <div className="font-bold text-sm flex items-center justify-center gap-1.5">
-                <span>🚫</span> Terminal Bloqueado
+                <span>🚫</span> Terminal Suspendido
               </div>
-              <p className="text-xs leading-relaxed opacity-90">
-                Este terminal ha sido suspendido por el desarrollador. Comunícate con Julio_GE al WhatsApp +5351616816 para reactivarlo.
+              <p className="text-xs leading-relaxed font-medium bg-destructive/10 p-2 rounded-lg border border-destructive/20 text-foreground">
+                <strong>Motivo:</strong> {blockedReason}
+              </p>
+              <p className="text-[11px] leading-relaxed opacity-90">
+                Para reactivar este terminal o solicitar aclaraciones, comunícate con el desarrollador <strong>Julio_GE</strong> por WhatsApp al <strong className="font-mono">+5351616816</strong>.
               </p>
             </div>
           )}
 
-          {settings?.allowNewRegistrations === false && !isBlocked && (
+          {!allowActivations && !isBlocked && (
             <div className="mb-5 p-3.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-500 text-center text-xs leading-relaxed">
-              ⚠️ Las nuevas activaciones de licencias se encuentran en pausa temporal.
+              ⚠️ Las nuevas activaciones de licencias se encuentran en pausa temporal por el desarrollador.
             </div>
           )}
 
@@ -650,15 +726,15 @@ export default function LicenseGate({ children }: LicenseGateProps) {
 /** Info de licencia para otras pantallas (legado). */
 export function getLicenseInfo() {
   const state = readLicense();
-  if (state.type === 'lifetime') return { type: 'lifetime' as const };
-  if (state.type === 'timed') return { type: 'timed' as const, daysLeft: daysLeftOf(state) };
+  if (state.type === 'lifetime') return { type: 'lifetime' as const, method: state.method || 'LEGACY' };
+  if (state.type === 'timed') return { type: 'timed' as const, daysLeft: daysLeftOf(state), method: state.method || 'LEGACY', plan: state.plan || 'T37' };
   return { type: 'none' as const };
 }
 
 /** Activa de forma directa la Licencia Permanente desde el panel de desarrollador. */
 export function activateLifetimeLicense(): boolean {
   try {
-    const state: LicenseState = { type: 'lifetime', lastSeenAt: Date.now() };
+    const state: LicenseState = { type: 'lifetime', method: 'GVLIC', plan: 'PERM', lastSeenAt: Date.now() };
     localStorage.setItem(LICENSE_KEY, JSON.stringify(state));
     localStorage.setItem('license_key', LIFETIME_LICENSE);
     return true;
@@ -673,6 +749,8 @@ export function activateTimedLicenseDays(days = 37): boolean {
     const now = Date.now();
     const state: LicenseState = {
       type: 'timed',
+      method: 'GVLIC',
+      plan: `T${days}`,
       activatedAt: now,
       expiresAt: now + days * 24 * 60 * 60 * 1000,
       lastSeenAt: now,

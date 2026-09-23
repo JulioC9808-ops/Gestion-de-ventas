@@ -5,7 +5,7 @@ import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Palette, Type, Layout, DollarSign, Users as UsersIcon, Info, Settings as SettingsIcon, ShieldCheck, DownloadCloud, Sparkles, MessageCircle, HelpCircle, HardDriveDownload, Lock, CheckCircle2, UserPlus, Volume2, VolumeX, MessageSquare, RefreshCw, Globe } from 'lucide-react';
+import { Palette, Type, Layout, DollarSign, Users as UsersIcon, Info, Settings as SettingsIcon, ShieldCheck, DownloadCloud, Sparkles, MessageCircle, HelpCircle, HardDriveDownload, Lock, CheckCircle2, UserPlus, Volume2, VolumeX, MessageSquare, RefreshCw, Globe, FileText, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import UserManagement from '@/components/admin/UserManagement';
@@ -17,6 +17,9 @@ import { checkPCUpdates } from '@/lib/updates';
 import { GITHUB_UPDATES_URL } from '@/contexts/DataContext';
 import { getShiftGreeting, fetchOnlineQuote, SUPPORTED_LANGUAGES, setQuoteLanguages } from '@/lib/greeting';
 import { areSoundsEnabled, setSoundsEnabled } from '@/lib/soundUtils';
+import { getDeviceId } from '@/lib/machine';
+import { formatFriendlyDeviceId, generateSignedTerminalReport } from '@/lib/cryptoLicense';
+import { readLicense } from '@/pages/LicenseGate';
 
 interface AppUpdatePluginInterface {
   checkForUpdate(): Promise<{ status: string }>;
@@ -59,6 +62,87 @@ const FONT_COLORS = [
  * - PC / Web: consulta GitHub; si no hay nada dice "Tu programa está actualizado",
  *   si hay versión nueva muestra "¿Deseas descargarla?" con Sí / No.
  */
+function TerminalReportCard() {
+  const { settings, users } = useData();
+  const [friendlyId, setFriendlyId] = useState('GV-DEV-LOCAL');
+  const [copied, setCopied] = useState(false);
+
+  React.useEffect(() => {
+    getDeviceId().then(d => {
+      if (d.id) setFriendlyId(formatFriendlyDeviceId(d.id));
+    });
+  }, []);
+
+  const handleCopyReport = () => {
+    const lic = readLicense();
+    const method = ((lic as unknown as { method?: 'GVLIC' | 'LEGACY' | 'QR_SYNC' }).method) || (lic.type === 'lifetime' ? 'LEGACY' : 'GVLIC');
+    const plan = ((lic as unknown as { plan?: string }).plan) || (lic.type === 'lifetime' ? 'PERM' : 'T37');
+    const expiresAt = lic.type === 'timed' ? lic.expiresAt : null;
+    const issuedAt = (lic as unknown as { issuedAt?: number }).issuedAt;
+
+    const report = generateSignedTerminalReport({
+      friendlyDeviceId: friendlyId,
+      businessName: settings.businessName || 'Mi Negocio',
+      users: users.map(u => ({ username: u.username, name: u.name || u.username, role: u.role as 'admin' | 'employee' })),
+      method,
+      plan,
+      issuedAt,
+      expiresAt,
+    });
+
+    const jsonStr = JSON.stringify(report, null, 2);
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(jsonStr).catch(() => {});
+      } else {
+        throw new Error();
+      }
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = jsonStr;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+
+    setCopied(true);
+    toast.success('Reporte de Terminal firmado copiado al portapapeles');
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="glass-card p-4 sm:p-5 space-y-3 border border-border/80">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-start gap-2.5">
+          <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0 mt-0.5">
+            <FileText className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="font-display font-bold text-sm sm:text-base text-foreground">Reporte Criptográfico del Terminal</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              ID de Terminal: <strong className="font-mono text-primary">{friendlyId}</strong>
+            </p>
+          </div>
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={handleCopyReport}
+          className="text-xs shrink-0 flex items-center gap-1.5 self-start sm:self-auto"
+        >
+          {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+          <span>{copied ? '¡Reporte Copiado!' : 'Copiar Reporte Firmado'}</span>
+        </Button>
+      </div>
+      <p className="text-xs text-muted-foreground leading-relaxed">
+        Genera un comprobante oficial firmado con HMAC que contiene el estado de tu licencia, negocio y usuarios autorizados para validar con Julio_GE.
+      </p>
+    </div>
+  );
+}
+
 function CheckUpdatesButton() {
   const { settings } = useData();
   const [checking, setChecking] = useState(false);
@@ -623,6 +707,9 @@ function GeneralSettings() {
       </div>
 
       <Button onClick={handleSave} className="w-full" size="lg">Guardar Configuración</Button>
+
+      {/* Reporte firmado de terminal para Dev */}
+      <TerminalReportCard />
 
       {/* Copia de Seguridad compacta y cifrada */}
       <CompactBackupControl />
