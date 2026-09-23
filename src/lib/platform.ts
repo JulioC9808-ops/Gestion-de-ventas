@@ -1,25 +1,26 @@
-// Versiones oficiales separadas por plataforma:
-// Android: v2.1
-// PC / Desktop: v1.3.8 (o el semver del package)
-export const PC_APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.3.8';
-export const ANDROID_APP_VERSION = '2.1';
+// Versiones oficiales separadas por plataforma, cada una desde su fuente de verdad:
+// - PC:     package.json (inyectado por vite.config.ts como __APP_VERSION__)
+// - Android: android/app/build.gradle → versionName (inyectado como __ANDROID_APP_VERSION__)
+// Ya no hay versiones escritas a mano: cambia la versión en su archivo y la app la muestra sola.
+export const PC_APP_VERSION: string =
+  typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.3.8';
+
+export const ANDROID_APP_VERSION: string =
+  typeof __ANDROID_APP_VERSION__ !== 'undefined' ? __ANDROID_APP_VERSION__ : '2.1';
 
 // Detecta si la app corre en un dispositivo móvil real (Android/iOS nativo via Capacitor)
 // o, como fallback, un navegador móvil. En PC/Electron retorna false.
 export function isMobileDevice(): boolean {
   if (typeof window === 'undefined') return false;
-
   // Capacitor nativo (Android/iOS empaquetado)
-  const cap = window.Capacitor;
+  const cap = (window as any).Capacitor;
   if (cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform()) {
     return true;
   }
-
   // Electron => PC
   if (navigator.userAgent && /Electron/i.test(navigator.userAgent)) {
     return false;
   }
-
   // Fallback: User-Agent móvil + pantalla táctil
   const ua = navigator.userAgent || '';
   const isMobileUA = /Android|iPhone|iPad|iPod|Mobile|BlackBerry|IEMobile|Opera Mini/i.test(ua);
@@ -34,4 +35,3 @@ export function getAppVersion(): string {
 export function getPlatformLabel(): string {
   return isMobileDevice() ? 'Android' : 'PC';
 }
-
