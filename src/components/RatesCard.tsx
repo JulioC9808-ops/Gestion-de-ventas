@@ -1,11 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Search, TrendingUp, AlertCircle, Edit3, Check, RefreshCw, Info } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Search, TrendingUp, AlertCircle, Info } from 'lucide-react';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { useData } from '@/contexts/DataContext';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
 // Banderas SVG (se ven igual en PC y Android, a diferencia de los emojis de bandera)
 import {
   US, EU, CU, MX, CA, CH, GB, BR, CO, CL, AR, VE, PE, DO, PA,
@@ -17,7 +14,6 @@ import {
   initElToqueWatcher,
   loadCachedRates,
   getRateDelta,
-  updateManualRates,
   INITIAL_FALLBACK_RATES,
   type ElToqueSnapshot,
   type CurrencyRate,
@@ -33,6 +29,29 @@ const FLAG_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   RUB: RU, TRY: TR, INR: IN, ILS: IL, AED: AE, AUD: AU, NZD: NZ,
   SEK: SE, NOK: NO, DKK: DK, PLN: PL,
 };
+
+/** Logo de elTOQUE. Carga public/eltoque.png; si falta, muestra un badge de respaldo. */
+function ElToqueLogo({ className }: { className?: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <span
+        className={`inline-flex items-center justify-center rounded-full bg-primary/10 text-primary font-black tracking-tighter ${className || 'w-6 h-6'}`}
+        style={{ fontSize: '0.45em' }}
+      >
+        ((Q))
+      </span>
+    );
+  }
+  return (
+    <img
+      src="eltoque.png"
+      alt="elTOQUE"
+      onError={() => setFailed(true)}
+      className={`object-contain ${className || 'w-6 h-6'}`}
+    />
+  );
+}
 
 /** Bandera SVG de la moneda; emoji de respaldo para cripto */
 function CurrencyFlag({ code, className }: { code: string; className?: string }) {
@@ -139,7 +158,6 @@ function RateRow({
 
 export default function RatesCard() {
   const { settings } = useData();
-  const { user } = useAuth();
   const [snapshot, setSnapshot] = useState<ElToqueSnapshot | null>(() => {
     const cached = loadCachedRates();
     if (cached?.data) {
@@ -153,9 +171,6 @@ export default function RatesCard() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [editRates, setEditRates] = useState<CurrencyRate[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -206,32 +221,6 @@ export default function RatesCard() {
     );
   }, [snapshot, query]);
 
-  const handleOpenEdit = () => {
-    if (snapshot?.data) setEditRates(JSON.parse(JSON.stringify(snapshot.data)));
-    setEditModalOpen(true);
-  };
-  const handleSaveEdit = () => {
-    const updated = updateManualRates(editRates);
-    setSnapshot(updated);
-    setEditModalOpen(false);
-    toast.success('Tasas de cambio actualizadas correctamente.');
-  };
-  const handleForceRefresh = async () => {
-    setRefreshing(true);
-    try {
-      const res = await getElToqueRates({ force: true });
-      if (res.snapshot) {
-        setSnapshot(res.snapshot);
-        toast.success('Tasas actualizadas desde el servidor.');
-      }
-      if (res.message) setStatusMessage(res.message);
-    } catch {
-      toast.error('No se pudo conectar con el servidor.');
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
   if (!snapshot || snapshot.data.length === 0) {
     return null;
   }
@@ -253,9 +242,7 @@ export default function RatesCard() {
       >
         <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
-              <TrendingUp className="w-4 h-4" />
-            </div>
+            <ElToqueLogo className="w-6 h-6" />
             <h2 className="text-base font-display font-bold flex items-center gap-2">
               Mercado Informal de Divisas
               <span className="text-[10px] font-normal px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono">
@@ -270,7 +257,7 @@ export default function RatesCard() {
 
         {statusMessage && (
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-2 px-2.5 py-1 rounded bg-muted/50 border border-border/40">
-            <AlertCircle className="w-3.5 h-3.5 text-primary shrink-0" />
+            <ElToqueLogo className="w-4 h-4 shrink-0" />
             <span className="truncate">{statusMessage}</span>
           </div>
         )}
@@ -290,34 +277,15 @@ export default function RatesCard() {
         </div>
       </div>
 
-      {/* ---- Modal expandido estilo elTOQUE ---- */}
+      {/* ---- Modal expandido estilo elTOQUE (con logo centrado en cabecera) ---- */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md max-h-[85vh] flex flex-col p-0 overflow-hidden">
           {/* Cabecera azul estilo elTOQUE */}
-          <div className="relative bg-gradient-to-b from-blue-500 to-blue-600 text-white px-4 pt-5 pb-4 text-center shrink-0">
-            {user?.role === 'admin' && (
-              <div className="absolute right-2 top-2 flex items-center gap-0.5">
-                <Button
-                  variant="ghost" size="icon"
-                  className="h-7 w-7 text-white/80 hover:text-white hover:bg-white/20"
-                  title="Actualizar ahora"
-                  disabled={refreshing}
-                  onClick={handleForceRefresh}
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-                </Button>
-                <Button
-                  variant="ghost" size="icon"
-                  className="h-7 w-7 text-white/80 hover:text-white hover:bg-white/20"
-                  title="Editar tasas manualmente"
-                  onClick={handleOpenEdit}
-                >
-                  <Edit3 className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            )}
+          <div className="relative bg-gradient-to-b from-blue-500 to-blue-600 text-white px-4 pt-4 pb-4 text-center shrink-0">
+            <div className="flex justify-center mb-1.5">
+              <ElToqueLogo className="w-10 h-10" />
+            </div>
             <DialogTitle className="text-lg font-bold flex items-center justify-center gap-2">
-              <TrendingUp className="w-5 h-5" />
               Mercado Informal de Divisas en Cuba
             </DialogTitle>
             <DialogDescription className="text-xs text-white/85 mt-0.5">
@@ -338,7 +306,7 @@ export default function RatesCard() {
 
           {statusMessage && (
             <div className="mx-3 mb-1 flex items-center gap-1.5 text-[11px] text-muted-foreground px-2.5 py-1 rounded bg-muted/50 border border-border/40 shrink-0">
-              <AlertCircle className="w-3.5 h-3.5 text-primary shrink-0" />
+              <ElToqueLogo className="w-4 h-4 shrink-0" />
               <span className="truncate">{statusMessage}</span>
             </div>
           )}
@@ -360,69 +328,6 @@ export default function RatesCard() {
             <Info className="w-3.5 h-3.5 opacity-60" />
             {formatSpanishDateTime(snapshot.fetchedAt)}
           </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* ---- Modal Editar Tasas (admin) ---- */}
-      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-        <DialogContent className="max-w-md max-h-[85vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base">
-              <Edit3 className="w-4 h-4 text-primary" /> Editar Tasas Manualmente
-            </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Ajusta los precios de compra y venta según el valor actual de tu mercado.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex-1 overflow-y-auto space-y-3 pr-1 max-h-[50vh] py-2">
-            {editRates.map((r, i) => (
-              <div key={r.code} className="p-2.5 rounded-lg border border-border bg-background/60 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-xs flex items-center gap-1.5">
-                    <CurrencyFlag code={r.code} className="w-5" /> {r.code} ({r.name || r.code})
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-[10px] text-muted-foreground block mb-0.5">Compra (CUP)</label>
-                    <Input
-                      type="number"
-                      value={r.buy ?? r.value ?? ''}
-                      onChange={(e) => {
-                        const val = parseFloat(e.target.value) || 0;
-                        const copy = [...editRates];
-                        copy[i] = { ...copy[i], buy: val, value: copy[i].sell ?? val };
-                        setEditRates(copy);
-                      }}
-                      className="h-8 text-xs font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-muted-foreground block mb-0.5">Venta (CUP)</label>
-                    <Input
-                      type="number"
-                      value={r.sell ?? r.value ?? ''}
-                      onChange={(e) => {
-                        const val = parseFloat(e.target.value) || 0;
-                        const copy = [...editRates];
-                        copy[i] = { ...copy[i], sell: val, value: val };
-                        setEditRates(copy);
-                      }}
-                      className="h-8 text-xs font-mono"
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0 mt-2">
-            <Button variant="outline" size="sm" onClick={() => setEditModalOpen(false)}>
-              Cancelar
-            </Button>
-            <Button size="sm" onClick={handleSaveEdit}>
-              <Check className="w-3.5 h-3.5 mr-1" /> Guardar Cambios
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
