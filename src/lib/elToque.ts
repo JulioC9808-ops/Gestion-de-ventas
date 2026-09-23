@@ -1,31 +1,23 @@
 /**
  * Módulo de Tasas de cambio elTOQUE para PC y Android.
- * - Endpoint: https://tasas.eltoque.com/v1/trmi (protegido por Cloudflare)
- * - IMPORTANTE ANDROID: Cloudflare corta la conexión (ECONNRESET/"Connection Reset")
- *   si el cliente no parece un navegador. Por eso la petición nativa SIEMPRE envía
- *   User-Agent/Origin/Referer de navegador.
+ * - FUENTE: el proxy del dev (Apps Script): REMOTE_REGISTRY_URL + '?action=rates'.
+ *   Google consulta elTOQUE desde sus servidores (fuera de Cuba) y devuelve el
+ *   MISMO JSON que la API original, así que el parseo no cambia. Esto evita el
+ *   "Connection Reset" que Cloudflare causa a las IPs de Cuba.
+ * - La API key NO viaja en la app: vive solo en el proxy del dev.
  * - Sin tasas inventadas: sin datos → aviso, nunca números falsos.
- * - Primera apertura (sin caché): consulta la API inmediatamente.
+ * - Primera apertura (sin caché): consulta inmediata.
  *   Con caché: solo en turno 10 AM / 10 PM, máx. 2/día.
  */
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
+import { REMOTE_REGISTRY_URL } from './remoteRegistry';
 
 export const ELTOQUE_CACHE_KEY = 'eltoque_rates_cache_v2';
 export const ELTOQUE_PREVIOUS_KEY = 'eltoque_rates_previous_v2';
 export const ELTOQUE_SCHEDULE_KEY = 'eltoque_rates_schedule';
 
-const API_URL = 'https://tasas.eltoque.com/v1/trmi';
-const FETCH_TIMEOUT_MS = 15000;
-
-// Headers de navegador: Cloudflare rechaza clientes que no los llevan
-const BROWSER_HEADERS = {
-  'User-Agent':
-    'Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
-  Accept: 'application/json, text/plain, */*',
-  'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8',
-  Origin: 'https://www.eltoque.com',
-  Referer: 'https://www.eltoque.com/',
-};
+const PROXY_URL = REMOTE_REGISTRY_URL;
+const FETCH_TIMEOUT_MS = 20000;
 
 export interface CurrencyRate {
   code: string;
@@ -82,6 +74,7 @@ export const CURRENCY_COUNTRY_CODES: Record<string, string> = {
   NOK: 'NO', DKK: 'DK', PLN: 'PL',
 };
 
+/** @deprecated La key ya no se usa en la app (vive en el proxy del dev). Se mantiene por compatibilidad. */
 export function getElToqueApiKey(): string {
   return (import.meta.env.VITE_ELTOQUE_API_KEY as string | undefined)?.trim() || '';
 }
@@ -149,6 +142,11 @@ export function getRateDelta(code: string, current: ElToqueSnapshot): RateDelta 
 }
 
 function parseApiResponse(json: unknown): CurrencyRate[] {
+  // El proxy puede devolver { ok:false, error } cuando elTOQUE falla
+  if (json && typeof json === 'object' && (json as Record<string, unknown>).ok === false) {
+    const errMsg = (json as Record<string, unknown>).error;
+    throw new Error(typeof errMsg === 'string' ? errMsg : 'Error del servidor de tasas');
+  }
   if (!json || typeof json !== 'object') {
     throw new Error('Formato de respuesta inválido');
   }
@@ -161,7 +159,6 @@ function parseApiResponse(json: unknown): CurrencyRate[] {
     payload.data ||
     payload
   ) as Record<string, unknown>;
-
   const list: CurrencyRate[] = [];
   for (const [key, val] of Object.entries(ratesObj)) {
     if (key === 'date' || key === 'fecha' || key === 'timestamp' || key === 'last_update') continue;
@@ -208,44 +205,35 @@ function parseApiResponse(json: unknown): CurrencyRate[] {
 let inFlightPromise: Promise<ElToqueSnapshot> | null = null;
 
 /**
- * Petición a la API (CapacitorHttp en Android con headers de navegador;
- * Fetch en Web/Electron). 1 reintento automático en Android.
+ * Consulta al proxy del dev (Apps Script action=rates).
+ * El proxy devuelve el JSON exacto de tasas.eltoque.com (parseo idéntico).
+ * 1 reintento automático en fallos de conexión.
  */
 export async function fetchTasas(): Promise<ElToqueSnapshot> {
-  const apiKey = getElToqueApiKey();
-  if (!apiKey) {
-    throw new Error('API key de tasas no configurada en este build');
-  }
   if (inFlightPromise) {
     return inFlightPromise;
   }
   inFlightPromise = (async () => {
     try {
-      const headers = {
-        ...BROWSER_HEADERS,
-        Authorization: `Bearer ${apiKey}`,
-      };
-
+      const requestUrl = `${PROXY_URL}?action=rates&t=${Date.now()}`;
       if (Capacitor.isNativePlatform()) {
         let lastError: Error | null = null;
-        // 2 intentos: Cloudflare a veces resetea el 1ro aunque el cliente sea legítimo
         for (let attempt = 0; attempt < 2; attempt++) {
           try {
             const res = await CapacitorHttp.get({
-              url: `${API_URL}?t=${Date.now()}`,
-              headers,
+              url: requestUrl,
+              headers: { Accept: 'application/json, text/plain, */*' },
               connectTimeout: FETCH_TIMEOUT_MS,
               readTimeout: FETCH_TIMEOUT_MS,
             });
-            if (res.status === 401 || res.status === 403) throw new Error('API key de elTOQUE no válida');
-            if (res.status === 429) throw new Error('Límite de peticiones alcanzado');
             if (res.status !== 200) throw new Error(`Error de servidor (${res.status})`);
             const json = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
             const rates = parseApiResponse(json);
             const snapshot: ElToqueSnapshot = {
               data: rates,
               fetchedAt: new Date().toISOString(),
-              lastUpdateDate: json?.date || json?.last_update || undefined,
+              lastUpdateDate: (json as Record<string, unknown>)?.date as string ||
+                (json as Record<string, unknown>)?.last_update as string || undefined,
               source: 'elTOQUE',
             };
             saveRatesToCache(snapshot);
@@ -253,33 +241,29 @@ export async function fetchTasas(): Promise<ElToqueSnapshot> {
             return snapshot;
           } catch (err) {
             lastError = err instanceof Error ? err : new Error(String(err));
-            // Solo reintentar en fallos de conexión, no en errores de la API
-            if (/401|403|429|API key|Límite/.test(lastError.message)) throw lastError;
             if (attempt === 0) await new Promise(r => setTimeout(r, 1500));
           }
         }
         throw lastError || new Error('No se pudo conectar con el servidor de tasas');
       }
-
-      // Navegador Web / Electron
+      // Navegador Web / Electron (Apps Script permite GET cross-origin)
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
       try {
-        const response = await fetch(`${API_URL}?t=${Date.now()}`, {
+        const response = await fetch(requestUrl, {
           method: 'GET',
-          headers,
+          headers: { Accept: 'application/json, text/plain, */*' },
           signal: controller.signal,
           cache: 'no-store',
         });
-        if (response.status === 401 || response.status === 403) throw new Error('API key de elTOQUE no válida');
-        if (response.status === 429) throw new Error('Límite de peticiones alcanzado');
         if (!response.ok) throw new Error(`Error de conexión (${response.status})`);
         const json = await response.json();
         const rates = parseApiResponse(json);
         const snapshot: ElToqueSnapshot = {
           data: rates,
           fetchedAt: new Date().toISOString(),
-          lastUpdateDate: json?.date || json?.last_update || undefined,
+          lastUpdateDate: (json as Record<string, unknown>)?.date as string ||
+            (json as Record<string, unknown>)?.last_update as string || undefined,
           source: 'elTOQUE',
         };
         saveRatesToCache(snapshot);
@@ -289,7 +273,7 @@ export async function fetchTasas(): Promise<ElToqueSnapshot> {
         if ((err as Error).name === 'AbortError') {
           throw new Error('Tiempo de espera agotado al consultar tasas');
         }
-        throw new Error('No se pudo conectar con el servidor de tasas');
+        throw err instanceof Error ? err : new Error('No se pudo conectar con el servidor de tasas');
       } finally {
         clearTimeout(timeoutId);
       }
@@ -329,16 +313,7 @@ export function isScheduledUpdateDue(): boolean {
 
 export async function getElToqueRates(): Promise<ElToqueFetchResult> {
   const cached = loadCachedRates();
-  const apiKey = getElToqueApiKey();
-
   if (!cached) {
-    if (!apiKey) {
-      return {
-        snapshot: null,
-        status: 'no_key',
-        message: 'Tasas no disponibles: este build no tiene la API key de elTOQUE configurada',
-      };
-    }
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       return {
         snapshot: null,
@@ -357,16 +332,12 @@ export async function getElToqueRates(): Promise<ElToqueFetchResult> {
       };
     }
   }
-
   if (!isScheduledUpdateDue()) {
     return {
       snapshot: cached,
       status: cached.source === 'elTOQUE' ? 'online' : 'cached',
       message: cached.source === 'elTOQUE' ? undefined : 'Tasas locales guardadas',
     };
-  }
-  if (!apiKey) {
-    return { snapshot: cached, status: 'cached', message: 'Tasas locales guardadas (falta API key en el build)' };
   }
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
     return {
@@ -396,7 +367,6 @@ export function initElToqueWatcher(onUpdate?: (result: ElToqueFetchResult) => vo
       // Silencioso
     }
   };
-
   setTimeout(tryRefresh, 1500);
   const handleOnline = () => tryRefresh();
   window.addEventListener('online', handleOnline);
