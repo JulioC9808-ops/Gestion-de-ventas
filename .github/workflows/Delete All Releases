@@ -1,0 +1,73 @@
+name: Delete All Releases
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Escribe BORRAR para confirmar'
+        required: true
+        default: 'NO'
+
+permissions:
+  contents: write
+
+jobs:
+  delete-releases:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm == 'BORRAR'
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Delete all releases and tags
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPO="${{ github.repository }}"
+          echo "=== Borrando TODOS los releases de $REPO ==="
+
+          TAGS=$(gh release list --repo "$REPO" --limit 1000 --json tagName --jq '.[].tagName')
+
+          if [ -z "$TAGS" ]; then
+            echo "No hay releases para borrar."
+            exit 0
+          fi
+
+          echo "Releases encontrados:"
+          echo "$TAGS"
+
+          for TAG in $TAGS; do
+            echo "Borrando release: $TAG"
+            gh release delete "$TAG" --repo "$REPO" --yes --cleanup-tag || echo "  (ya no existia o error menor)"
+          done
+
+          echo "=== Verificando ==="
+          REMAINING=$(gh release list --repo "$REPO" --limit 1000 --json tagName --jq '.[].tagName')
+          if [ -z "$REMAINING" ]; then
+            echo "✅ Todos los releases fueron borrados."
+          else
+            echo "⚠️ Quedan releases:"
+            echo "$REMAINING"
+          fi
+
+      - name: Delete orphan tags
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPO="${{ github.repository }}"
+          echo "=== Borrando tags huerfanos ==="
+
+          TAGS=$(gh api "repos/$REPO/tags" --paginate --jq '.[].name' 2>/dev/null || echo "")
+
+          if [ -z "$TAGS" ]; then
+            echo "No hay tags."
+            exit 0
+          fi
+
+          for TAG in $TAGS; do
+            echo "Borrando tag: $TAG"
+            gh api -X DELETE "repos/$REPO/git/refs/tags/$TAG" || echo "  (error menor)"
+          done
+
+          echo "✅ Tags borrados."
