@@ -9,6 +9,8 @@ import {
   CR, GT, HN, NI, SV, PY, UY, BO, JP, CN, KR, RU, TR, IN, IL,
   AE, AU, NZ, SE, NO, DK, PL,
 } from 'country-flag-icons/react/3x2';
+// Logo de elTOQUE empaquetado por Vite (ruta garantizada en Electron y Android)
+import elToqueLogoUrl from '@/assets/eltoque.png';
 import {
   getElToqueRates,
   initElToqueWatcher,
@@ -30,7 +32,7 @@ const FLAG_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   SEK: SE, NOK: NO, DKK: DK, PLN: PL,
 };
 
-/** Logo de elTOQUE. Carga public/eltoque.png; si falta, muestra un badge de respaldo. */
+/** Logo de elTOQUE desde src/assets; si el archivo faltara, badge de respaldo. */
 function ElToqueLogo({ className }: { className?: string }) {
   const [failed, setFailed] = useState(false);
   if (failed) {
@@ -45,7 +47,7 @@ function ElToqueLogo({ className }: { className?: string }) {
   }
   return (
     <img
-      src="eltoque.png"
+      src={elToqueLogoUrl}
       alt="elTOQUE"
       onError={() => setFailed(true)}
       className={`object-contain ${className || 'w-6 h-6'}`}
@@ -277,10 +279,9 @@ export default function RatesCard() {
         </div>
       </div>
 
-      {/* ---- Modal expandido estilo elTOQUE (con logo centrado en cabecera) ---- */}
+      {/* ---- Modal expandido estilo elTOQUE (logo centrado en cabecera) ---- */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md max-h-[85vh] flex flex-col p-0 overflow-hidden">
-          {/* Cabecera azul estilo elTOQUE */}
           <div className="relative bg-gradient-to-b from-blue-500 to-blue-600 text-white px-4 pt-4 pb-4 text-center shrink-0">
             <div className="flex justify-center mb-1.5">
               <ElToqueLogo className="w-10 h-10" />
