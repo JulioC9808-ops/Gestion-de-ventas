@@ -1,14 +1,10 @@
 /**
  * Módulo de Tasas de cambio elTOQUE para PC y Android.
- * - FUENTE: el proxy del dev (Apps Script): REMOTE_REGISTRY_URL + '?action=rates'.
- *   Google consulta elTOQUE desde sus servidores (fuera de Cuba) y devuelve el
- *   JSON fusionado (API + web: TODAS las monedas). Esto evita el "Connection Reset"
- *   que Cloudflare causa a las IPs de Cuba.
- * - La API key NO viaja en la app: vive solo en el proxy del dev.
- * - elTOQUE publica el Euro con el código "ECU": aquí se mapea a EUR.
+ * - FUENTE: proxy del dev (Apps Script action=rates) → JSON con NÚMEROS.
+ * - El proxy mapea ECU→EUR; aquí se re-normaliza también la CACHÉ vieja.
+ * - Cripto ocultas por decisión del dev: BTC, TRX, USDT_TRC20 (añade más
+ *   códigos a HIDDEN_CURRENCIES si quieres ocultar ETH o USDT).
  * - Sin tasas inventadas: sin datos → aviso, nunca números falsos.
- * - Primera apertura (sin caché): consulta inmediata.
- *   Con caché: solo en turno 10 AM / 10 PM, máx. 2/día.
  */
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { REMOTE_REGISTRY_URL } from './remoteRegistry';
@@ -19,6 +15,9 @@ export const ELTOQUE_SCHEDULE_KEY = 'eltoque_rates_schedule';
 
 const PROXY_URL = REMOTE_REGISTRY_URL;
 const FETCH_TIMEOUT_MS = 20000;
+
+/** Monedas que NO se muestran (cripto retiradas a petición del dev) */
+const HIDDEN_CURRENCIES: string[] = ['BTC', 'TRX', 'USDT_TRC20'];
 
 export interface CurrencyRate {
   code: string;
@@ -53,7 +52,6 @@ export const CURRENCY_NAMES: Record<string, string> = {
   ZELLE: 'Dólar Zelle',
   CLA: 'Tarjeta Clásica',
   USDT: 'Tether USD',
-  USDT_TRC20: 'Tether TRC20',
   MXN: 'Peso mexicano',
   CHF: 'Franco suizo',
   CAD: 'Dólar canadiense',
@@ -62,9 +60,7 @@ export const CURRENCY_NAMES: Record<string, string> = {
   COP: 'Peso colombiano',
   CLP: 'Peso chileno',
   CUP: 'Peso cubano',
-  BTC: 'Bitcoin',
   ETH: 'Ethereum',
-  TRX: 'Tron',
 };
 
 export const CURRENCY_COUNTRY_CODES: Record<string, string> = {
@@ -77,7 +73,12 @@ export const CURRENCY_COUNTRY_CODES: Record<string, string> = {
   NOK: 'NO', DKK: 'DK', PLN: 'PL',
 };
 
-/** @deprecated La key ya no se usa en la app (vive en el proxy del dev). Se mantiene por compatibilidad. */
+/** Normaliza códigos: elTOQUE llama al Euro "ECU" */
+function normalizeCode(code: string): string {
+  return code.toUpperCase() === 'ECU' ? 'EUR' : code.toUpperCase();
+}
+
+/** @deprecated La key ya no se usa en la app (vive en el proxy). Compatibilidad. */
 export function getElToqueApiKey(): string {
   return (import.meta.env.VITE_ELTOQUE_API_KEY as string | undefined)?.trim() || '';
 }
@@ -95,7 +96,15 @@ function readSnapshotFrom(key: string): ElToqueSnapshot | null {
       'fetchedAt' in parsed &&
       typeof (parsed as ElToqueSnapshot).fetchedAt === 'string'
     ) {
-      return parsed as ElToqueSnapshot;
+      const snap = parsed as ElToqueSnapshot;
+      // Normaliza ECU→EUR y oculta cripto retiradas también en la caché vieja
+      snap.data = snap.data
+        .map(r => {
+          const code = normalizeCode(r.code);
+          return { ...r, code, name: CURRENCY_NAMES[code] || r.name || code };
+        })
+        .filter(r => !HIDDEN_CURRENCIES.includes(r.code));
+      return snap;
     }
     return null;
   } catch {
@@ -145,7 +154,6 @@ export function getRateDelta(code: string, current: ElToqueSnapshot): RateDelta 
 }
 
 function parseApiResponse(json: unknown): CurrencyRate[] {
-  // El proxy puede devolver { ok:false, error } cuando elTOQUE falla
   if (json && typeof json === 'object' && (json as Record<string, unknown>).ok === false) {
     const errMsg = (json as Record<string, unknown>).error;
     throw new Error(typeof errMsg === 'string' ? errMsg : 'Error del servidor de tasas');
@@ -166,8 +174,8 @@ function parseApiResponse(json: unknown): CurrencyRate[] {
   const list: CurrencyRate[] = [];
   for (const [key, val] of Object.entries(ratesObj)) {
     if (key === 'date' || key === 'fecha' || key === 'timestamp' || key === 'last_update') continue;
-    const rawCode = key.toUpperCase();
-    const code = rawCode === 'ECU' ? 'EUR' : rawCode; // elTOQUE llama al Euro "ECU"
+    const code = normalizeCode(key);
+    if (HIDDEN_CURRENCIES.includes(code)) continue;
     if (typeof val === 'number') {
       if (isFinite(val) && val > 0) {
         list.push({ code, name: CURRENCY_NAMES[code] || code, value: val, sell: val });
@@ -175,7 +183,7 @@ function parseApiResponse(json: unknown): CurrencyRate[] {
     } else if (val && typeof val === 'object') {
       const o = val as Record<string, unknown>;
       const buyRaw = o.buy ?? o.compra ?? o.buy_price ?? o.compra_price;
-      const sellRaw = o.sell ?? o.venta ?? o.sell_price ?? o.venta_price ?? o.price ?? o.valor;
+      const sellRaw = o.sell ?? o.venta ?? o.sell_price ?? o.venta_price ?? o.price ?? o.valor ?? o.value;
       const buy = typeof buyRaw === 'number' ? buyRaw : typeof buyRaw === 'string' ? parseFloat(buyRaw) : undefined;
       const sell = typeof sellRaw === 'number' ? sellRaw : typeof sellRaw === 'string' ? parseFloat(sellRaw) : undefined;
       const validBuy = buy !== undefined && isFinite(buy) && buy > 0 ? buy : undefined;
@@ -195,9 +203,8 @@ function parseApiResponse(json: unknown): CurrencyRate[] {
   if (list.length === 0) {
     throw new Error('No se encontraron tasas de cambio en la respuesta');
   }
-  // Orden como el sitio: fiat primero (USD, EUR, MLC, ZELLE, CLA...), cripto AL FINAL
-  const priority = ['USD', 'EUR', 'MLC', 'ZELLE', 'CLA', 'CAD', 'MXN', 'CHF', 'GBP'];
-  const cryptoLast = ['USDT', 'USDT_TRC20', 'BTC', 'ETH', 'TRX'];
+  const priority = ['USD', 'EUR', 'MLC', 'ZELLE', 'CLA', 'CAD', 'MXN', 'CHF', 'GBP', 'BRL', 'COP', 'CLP'];
+  const cryptoLast = ['USDT', 'ETH'];
   list.sort((a, b) => {
     const idxA = priority.indexOf(a.code);
     const idxB = priority.indexOf(b.code);
@@ -213,11 +220,6 @@ function parseApiResponse(json: unknown): CurrencyRate[] {
 
 let inFlightPromise: Promise<ElToqueSnapshot> | null = null;
 
-/**
- * Consulta al proxy del dev (Apps Script action=rates).
- * El proxy devuelve el JSON fusionado (API + web) — parseo idéntico.
- * 1 reintento automático en fallos de conexión.
- */
 export async function fetchTasas(): Promise<ElToqueSnapshot> {
   if (inFlightPromise) {
     return inFlightPromise;
@@ -257,7 +259,6 @@ export async function fetchTasas(): Promise<ElToqueSnapshot> {
         throw lastError || new Error('No se pudo conectar con el servidor de tasas');
       }
 
-      // Navegador Web / Electron (Apps Script permite GET cross-origin)
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
       try {
