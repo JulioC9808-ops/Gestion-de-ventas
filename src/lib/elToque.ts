@@ -2,9 +2,10 @@
  * Módulo de Tasas de cambio elTOQUE para PC y Android.
  * - FUENTE: el proxy del dev (Apps Script): REMOTE_REGISTRY_URL + '?action=rates'.
  *   Google consulta elTOQUE desde sus servidores (fuera de Cuba) y devuelve el
- *   MISMO JSON que la API original, así que el parseo no cambia. Esto evita el
- *   "Connection Reset" que Cloudflare causa a las IPs de Cuba.
+ *   JSON fusionado (API + web: TODAS las monedas). Esto evita el "Connection Reset"
+ *   que Cloudflare causa a las IPs de Cuba.
  * - La API key NO viaja en la app: vive solo en el proxy del dev.
+ * - elTOQUE publica el Euro con el código "ECU": aquí se mapea a EUR.
  * - Sin tasas inventadas: sin datos → aviso, nunca números falsos.
  * - Primera apertura (sin caché): consulta inmediata.
  *   Con caché: solo en turno 10 AM / 10 PM, máx. 2/día.
@@ -50,7 +51,9 @@ export const CURRENCY_NAMES: Record<string, string> = {
   EUR: 'Euro',
   MLC: 'Moneda Libremente Convertible',
   ZELLE: 'Dólar Zelle',
+  CLA: 'Tarjeta Clásica',
   USDT: 'Tether USD',
+  USDT_TRC20: 'Tether TRC20',
   MXN: 'Peso mexicano',
   CHF: 'Franco suizo',
   CAD: 'Dólar canadiense',
@@ -159,10 +162,12 @@ function parseApiResponse(json: unknown): CurrencyRate[] {
     payload.data ||
     payload
   ) as Record<string, unknown>;
+
   const list: CurrencyRate[] = [];
   for (const [key, val] of Object.entries(ratesObj)) {
     if (key === 'date' || key === 'fecha' || key === 'timestamp' || key === 'last_update') continue;
-    const code = key.toUpperCase();
+    const rawCode = key.toUpperCase();
+    const code = rawCode === 'ECU' ? 'EUR' : rawCode; // elTOQUE llama al Euro "ECU"
     if (typeof val === 'number') {
       if (isFinite(val) && val > 0) {
         list.push({ code, name: CURRENCY_NAMES[code] || code, value: val, sell: val });
@@ -190,13 +195,17 @@ function parseApiResponse(json: unknown): CurrencyRate[] {
   if (list.length === 0) {
     throw new Error('No se encontraron tasas de cambio en la respuesta');
   }
-  const priority = ['USD', 'EUR', 'MLC', 'ZELLE', 'USDT', 'MXN', 'CAD', 'CHF', 'GBP'];
+  // Orden como el sitio: fiat primero (USD, EUR, MLC, ZELLE, CLA...), cripto AL FINAL
+  const priority = ['USD', 'EUR', 'MLC', 'ZELLE', 'CLA', 'CAD', 'MXN', 'CHF', 'GBP'];
+  const cryptoLast = ['USDT', 'USDT_TRC20', 'BTC', 'ETH', 'TRX'];
   list.sort((a, b) => {
     const idxA = priority.indexOf(a.code);
     const idxB = priority.indexOf(b.code);
-    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-    if (idxA !== -1) return -1;
-    if (idxB !== -1) return 1;
+    const cryA = cryptoLast.indexOf(a.code);
+    const cryB = cryptoLast.indexOf(b.code);
+    const rankA = idxA !== -1 ? idxA : cryA !== -1 ? 100 + cryA : 50;
+    const rankB = idxB !== -1 ? idxB : cryB !== -1 ? 100 + cryB : 50;
+    if (rankA !== rankB) return rankA - rankB;
     return a.code.localeCompare(b.code);
   });
   return list;
@@ -206,7 +215,7 @@ let inFlightPromise: Promise<ElToqueSnapshot> | null = null;
 
 /**
  * Consulta al proxy del dev (Apps Script action=rates).
- * El proxy devuelve el JSON exacto de tasas.eltoque.com (parseo idéntico).
+ * El proxy devuelve el JSON fusionado (API + web) — parseo idéntico.
  * 1 reintento automático en fallos de conexión.
  */
 export async function fetchTasas(): Promise<ElToqueSnapshot> {
@@ -216,6 +225,7 @@ export async function fetchTasas(): Promise<ElToqueSnapshot> {
   inFlightPromise = (async () => {
     try {
       const requestUrl = `${PROXY_URL}?action=rates&t=${Date.now()}`;
+
       if (Capacitor.isNativePlatform()) {
         let lastError: Error | null = null;
         for (let attempt = 0; attempt < 2; attempt++) {
@@ -246,6 +256,7 @@ export async function fetchTasas(): Promise<ElToqueSnapshot> {
         }
         throw lastError || new Error('No se pudo conectar con el servidor de tasas');
       }
+
       // Navegador Web / Electron (Apps Script permite GET cross-origin)
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
