@@ -1,1689 +1,567 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Master Dev & Keygen Suite | Julio_GE</title>
-  <meta name="theme-color" content="#0b0f19">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <style>
-    :root {
-      --bg: #070a12;
-      --card: #111827;
-      --card-inner: #0b1120;
-      --card-hover: #172238;
-      --text: #f8fafc;
-      --muted: #94a3b8;
-      --primary: #3b82f6;
-      --primary-hover: #2563eb;
-      --accent: #10b981;
-      --accent-hover: #059669;
-      --danger: #ef4444;
-      --danger-bg: rgba(239, 68, 68, 0.15);
-      --border: #1e293b;
-      --border-focus: #3b82f6;
-      --gold: #f59e0b;
-      --gold-hover: #d97706;
-      --gold-bg: rgba(245, 158, 11, 0.15);
-      --emerald-bg: rgba(16, 185, 129, 0.15);
-      --purple: #a855f7;
-      --purple-bg: rgba(168, 85, 247, 0.15);
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
-    body {
-      background-color: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 0.75rem 0.5rem 3rem;
-    }
-    .container {
-      width: 100%;
-      max-width: 820px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 1.25rem;
-      padding: 1.25rem;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85);
-    }
-    @media (max-width: 480px) {
-      .container { padding: 1rem 0.75rem; border-radius: 1rem; }
-    }
-
-    .header {
-      text-align: center;
-      margin-bottom: 1.25rem;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 1rem;
-    }
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      padding: 0.25rem 0.75rem;
-      background: var(--emerald-bg);
-      color: var(--accent);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      border-radius: 9999px;
-      font-size: 0.72rem;
-      font-weight: 700;
-      margin-bottom: 0.5rem;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-    }
-    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
-    h1 { font-size: 1.35rem; font-weight: 800; color: #fff; letter-spacing: -0.02em; }
-    p.subtitle { font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem; }
-
-    /* Barra de navegación de pestañas */
-    .nav-tabs {
-      display: flex;
-      gap: 0.3rem;
-      margin-bottom: 1.25rem;
-      background: var(--card-inner);
-      padding: 0.3rem;
-      border-radius: 0.75rem;
-      border: 1px solid var(--border);
-      overflow-x: auto;
-      scrollbar-width: none;
-    }
-    .nav-tabs::-webkit-scrollbar { display: none; }
-    .tab-btn {
-      flex: 1;
-      min-width: max-content;
-      padding: 0.6rem 0.75rem;
-      background: transparent;
-      border: none;
-      color: var(--muted);
-      font-weight: 700;
-      font-size: 0.76rem;
-      border-radius: 0.5rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.35rem;
-      transition: all 0.2s ease;
-      white-space: nowrap;
-    }
-    .tab-btn.active {
-      background: var(--primary);
-      color: #fff;
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-    }
-    .tab-btn.gold-active.active {
-      background: var(--gold);
-      color: #0b0f19;
-      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
-    }
-
-    .form-group { margin-bottom: 1rem; }
-    label { display: block; font-size: 0.76rem; font-weight: 700; margin-bottom: 0.35rem; color: #e2e8f0; text-transform: uppercase; letter-spacing: 0.04em; }
-    input, select, textarea {
-      width: 100%;
-      padding: 0.75rem 0.85rem;
-      background: var(--card-inner);
-      border: 1px solid var(--border);
-      border-radius: 0.65rem;
-      color: #fff;
-      font-size: 0.88rem;
-      outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    textarea { resize: vertical; min-height: 60px; font-size: 0.85rem; }
-    input:focus, select:focus, textarea:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
-    }
-
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; }
-    @media (max-width: 580px) {
-      .grid-2, .grid-3 { grid-template-columns: 1fr; }
-    }
-
-    .btn {
-      width: 100%;
-      padding: 0.75rem 1rem;
-      background: var(--primary);
-      border: none;
-      border-radius: 0.65rem;
-      color: #fff;
-      font-weight: 700;
-      font-size: 0.88rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.45rem;
-      transition: all 0.2s;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-      text-decoration: none;
-    }
-    .btn:active { transform: scale(0.98); }
-    .btn-gold { background: var(--gold); color: #0b0f19; }
-    .btn-gold:hover { background: var(--gold-hover); }
-    .btn-accent { background: var(--accent); color: #fff; }
-    .btn-accent:hover { background: var(--accent-hover); }
-    .btn-danger { background: var(--danger); color: #fff; }
-    .btn-outline { background: transparent; border: 1px solid var(--border); color: #fff; box-shadow: none; }
-    .btn-outline:hover { background: rgba(255,255,255,0.06); }
-    .btn-purple { background: var(--purple); color: #fff; }
-    .btn-sm { padding: 0.45rem 0.7rem; font-size: 0.76rem; border-radius: 0.5rem; width: auto; }
-
-    .result-box {
-      margin-top: 1.25rem;
-      padding: 1rem;
-      background: var(--card-inner);
-      border: 1px solid var(--border);
-      border-radius: 0.75rem;
-      display: none;
-      animation: fadeIn 0.25s ease-out;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .result-title { font-size: 0.72rem; color: var(--muted); font-weight: 700; text-transform: uppercase; margin-bottom: 0.5rem; }
-    .code-display {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 0.88rem;
-      font-weight: 800;
-      color: #38bdf8;
-      word-break: break-all;
-      background: rgba(0,0,0,0.6);
-      padding: 0.85rem;
-      border-radius: 0.5rem;
-      border: 1px solid rgba(56, 189, 248, 0.25);
-      margin-bottom: 0.75rem;
-      text-align: center;
-      user-select: all;
-    }
-    .code-display.gold {
-      color: #fbbf24;
-      font-size: 1.8rem;
-      letter-spacing: 0.25em;
-      border-color: rgba(245, 158, 11, 0.3);
-    }
-    .json-preview {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 0.75rem;
-      color: #a5f3fc;
-      background: #020617;
-      padding: 0.75rem;
-      border-radius: 0.5rem;
-      border: 1px solid var(--border);
-      max-height: 200px;
-      overflow-y: auto;
-      white-space: pre-wrap;
-      word-break: break-all;
-      margin-bottom: 0.75rem;
-    }
-
-    .actions-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.5rem;
-    }
-    @media (max-width: 440px) {
-      .actions-grid { grid-template-columns: 1fr; }
-    }
-
-    .copy-btn {
-      width: 100%;
-      padding: 0.75rem;
-      background: rgba(255,255,255,0.08);
-      border: 1px solid var(--border);
-      color: #fff;
-      font-size: 0.82rem;
-      font-weight: 700;
-      border-radius: 0.5rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.4rem;
-      transition: background 0.15s;
-    }
-    .copy-btn:hover { background: rgba(255,255,255,0.15); }
-    .copy-btn.copied { background: #059669; border-color: #10b981; }
-
-    /* Tarjetas de Clientes y Negocios */
-    .business-card {
-      background: var(--card-inner);
-      border: 1px solid var(--border);
-      border-radius: 0.85rem;
-      margin-bottom: 1rem;
-      overflow: hidden;
-      transition: border-color 0.2s;
-    }
-    .business-card:hover { border-color: rgba(59, 130, 246, 0.4); }
-    .business-header {
-      padding: 0.85rem 1rem;
-      background: rgba(255, 255, 255, 0.03);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-    }
-    .business-title {
-      font-weight: 800;
-      font-size: 0.95rem;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .members-list {
-      padding: 0.5rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-    .member-item {
-      background: rgba(0, 0, 0, 0.35);
-      border: 1px solid var(--border);
-      border-radius: 0.65rem;
-      padding: 0.75rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-    .member-item.is-admin {
-      border-left: 3px solid var(--gold);
-    }
-    .member-item.is-employee {
-      border-left: 3px solid var(--accent);
-    }
-    .member-item.is-legacy {
-      border: 1px solid var(--danger);
-      background: rgba(239, 68, 68, 0.06);
-    }
-    .member-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-    }
-    .member-info {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-    }
-    .member-name { font-weight: 700; font-size: 0.85rem; color: #fff; }
-    .member-id { font-family: ui-monospace, monospace; font-size: 0.75rem; color: #38bdf8; font-weight: 700; }
-    .tag {
-      font-size: 0.68rem;
-      font-weight: 700;
-      padding: 0.15rem 0.45rem;
-      border-radius: 0.35rem;
-      text-transform: uppercase;
-    }
-    .tag-admin { background: var(--gold-bg); color: var(--gold); border: 1px solid rgba(245, 158, 11, 0.3); }
-    .tag-emp { background: var(--emerald-bg); color: var(--accent); border: 1px solid rgba(16, 185, 129, 0.3); }
-    .tag-legacy { background: var(--danger-bg); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.5); font-weight: 800; animation: pulseRed 2s infinite; }
-    .tag-gvlic { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
-    .tag-qrsync { background: var(--emerald-bg); color: var(--accent); border: 1px solid rgba(16, 185, 129, 0.3); }
-    .tag-blocked { background: var(--danger-bg); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
-    .member-actions {
-      display: flex;
-      align-items: center;
-      gap: 0.35rem;
-      flex-wrap: wrap;
-    }
-
-    @keyframes pulseRed {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.6; }
-    }
-
-    /* Modal emergente */
-    .modal-backdrop {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.8);
-      backdrop-filter: blur(4px);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 1rem;
-      z-index: 100;
-    }
-    .modal-box {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 1rem;
-      max-width: 480px;
-      width: 100%;
-      padding: 1.25rem;
-      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
-    }
-    .modal-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 1rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 1px solid var(--border);
-    }
-    .modal-title { font-weight: 800; font-size: 1rem; color: #fff; }
-    .close-modal { background: transparent; border: none; color: var(--muted); font-size: 1.2rem; cursor: pointer; }
-
-    /* Toast */
-    .toast {
-      position: fixed;
-      bottom: 1.5rem;
-      left: 50%;
-      transform: translateX(-50%) translateY(100px);
-      background: #1e293b;
-      color: #fff;
-      border: 1px solid var(--border);
-      padding: 0.65rem 1.25rem;
-      border-radius: 9999px;
-      font-size: 0.8rem;
-      font-weight: 700;
-      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5);
-      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      z-index: 1000;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      pointer-events: none;
-    }
-    .toast.show { transform: translateX(-50%) translateY(0); }
-    .toast.success { background: #065f46; border-color: #059669; }
-    .toast.error { background: #991b1b; border-color: #dc2626; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Master Dev & Keygen Suite | Julio_GE</title>
+<style>
+  :root { --bg:#0b0f17; --card:#121826; --card2:#161e30; --line:rgba(255,255,255,.12); --txt:#e5e7eb; --mut:#9ca3af; --blue:#3B82F6; --gold:#f59e0b; --red:#ef4444; --green:#10b981; }
+  * { box-sizing: border-box; }
+  html, body { max-width:100%; overflow-x:hidden; }
+  body { margin:0; padding:18px; background:var(--bg); color:var(--txt); font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; font-size:14px; }
+  .wrap { max-width:980px; margin:0 auto; }
+  .badge { display:inline-block; background:rgba(16,185,129,.12); color:#34d399; border:1px solid rgba(16,185,129,.4); border-radius:999px; padding:4px 12px; font-size:11px; font-weight:700; letter-spacing:.5px; }
+  h1 { text-align:center; margin:10px 0 2px; font-size:22px; }
+  .sub { text-align:center; color:var(--mut); font-size:12px; margin-bottom:16px; }
+  .tabs { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:14px; }
+  .tab-btn { background:var(--card); border:1px solid var(--line); color:var(--txt); border-radius:9px; padding:9px 12px; font-size:12.5px; cursor:pointer; min-height:40px; }
+  .tab-btn.active { background:var(--blue); border-color:var(--blue); font-weight:700; }
+  .tab-content { display:none; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:12px; }
+  .card h3 { margin:0 0 10px; font-size:15px; }
+  .card h4 { margin:0 0 8px; font-size:13.5px; }
+  label { display:block; font-size:11.5px; color:var(--mut); margin:8px 0 3px; }
+  input, select, textarea { width:100%; background:var(--card2); border:1px solid var(--line); color:var(--txt); border-radius:8px; padding:9px 10px; font-size:14px; }
+  textarea { min-height:90px; font-family:ui-monospace,monospace; font-size:12px; }
+  .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:10px; }
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; background:var(--card2); border:1px solid var(--line); color:var(--txt); border-radius:9px; padding:9px 14px; font-size:13px; cursor:pointer; min-height:40px; text-decoration:none; }
+  .btn-gold { background:var(--gold); border-color:var(--gold); color:#1a1205; font-weight:700; }
+  .btn-blue { background:var(--blue); border-color:var(--blue); color:#fff; font-weight:700; }
+  .btn-green { background:var(--green); border-color:var(--green); color:#04160e; font-weight:700; }
+  .btn-red { background:rgba(239,68,68,.15); border-color:rgba(239,68,68,.5); color:#fca5a5; }
+  .mini { padding:5px 9px; min-height:0; font-size:11.5px; border-radius:7px; }
+  .muted { color:var(--mut); font-size:12px; }
+  .help { background:rgba(59,130,246,.08); border:1px solid rgba(59,130,246,.3); border-radius:10px; padding:10px 12px; font-size:12px; color:#bfdbfe; margin-bottom:12px; }
+  .biz { border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:10px; background:var(--card2); }
+  .member { display:flex; gap:8px; align-items:flex-start; flex-wrap:wrap; border-top:1px dashed var(--line); padding:9px 0 3px; }
+  .member .info { flex:1; min-width:180px; }
+  .pill { display:inline-block; border-radius:6px; padding:2px 8px; font-size:10.5px; font-weight:700; margin-right:4px; }
+  .pill-ok { background:rgba(16,185,129,.15); color:#34d399; }
+  .pill-warn { background:rgba(245,158,11,.15); color:#fbbf24; }
+  .pill-red { background:rgba(239,68,68,.15); color:#f87171; }
+  .pill-blue { background:rgba(59,130,246,.15); color:#93c5fd; }
+  .code { width:100%; font-family:ui-monospace,monospace; font-size:12.5px; background:#0a0e16; color:#93c5fd; border:1px solid rgba(59,130,246,.4); }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th, td { text-align:left; padding:7px 8px; border-bottom:1px solid var(--line); word-break:break-word; }
+  th { color:var(--mut); font-size:11px; text-transform:uppercase; }
+  .imgthumb { max-width:100%; max-height:110px; border-radius:8px; border:1px solid var(--line); display:block; margin-top:6px; }
+  .toast { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); background:#111827; border:1px solid var(--blue); color:#fff; padding:10px 16px; border-radius:10px; font-size:13px; z-index:99999; display:none; max-width:92vw; }
+  .toast.err { border-color:var(--red); }
+  .modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.65); z-index:9998; display:none; align-items:center; justify-content:center; padding:16px; }
+  .modal { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; width:100%; max-width:460px; max-height:88vh; overflow-y:auto; }
+  @media (max-width:760px) {
+    body { padding:10px; }
+    .grid { grid-template-columns:1fr; }
+    .tab-btn { padding:8px 9px; font-size:11.5px; }
+    table { display:block; overflow-x:auto; white-space:nowrap; -webkit-overflow-scrolling:touch; }
+  }
+</style>
 </head>
 <body>
+<div class="wrap">
+  <div style="text-align:center"><span class="badge">• SUITE DEV OFICIAL • JULIO_GE</span></div>
+  <h1>Master Keygen & Control Central</h1>
+  <div class="sub">Licencias Criptográficas HMAC • Bloqueos Remotos • Ofertas & Branding Online • Tasas en Vivo • Registro Phone-Home</div>
 
-<div class="container">
-  <div class="header">
-    <div class="badge"><div class="dot"></div> SUITE DEV OFICIAL • JULIO_GE</div>
-    <h1>Master Keygen & Control Central</h1>
-    <p class="subtitle">Licencias Criptográficas HMAC • Bloqueos Remotos • Registro Phone-Home</p>
-  </div>
+  <nav class="tabs">
+    <button class="tab-btn active" id="btn-tab-clients" onclick="switchTab('tab-clients',this)">🏢 Negocios</button>
+    <button class="tab-btn" id="btn-tab-keygen" onclick="switchTab('tab-keygen',this)">🔑 Generar Clave</button>
+    <button class="tab-btn" id="btn-tab-offers" onclick="switchTab('tab-offers',this)">🏷️ Ofertas & Branding</button>
+    <button class="tab-btn" id="btn-tab-status" onclick="switchTab('tab-status',this)">🛡️ Bloqueos & Estado</button>
+    <button class="tab-btn" id="btn-tab-ann" onclick="switchTab('tab-ann',this)">📢 Anuncios</button>
+    <button class="tab-btn" id="btn-tab-payments" onclick="switchTab('tab-payments',this)">💳 Comprobantes</button>
+    <button class="tab-btn" id="btn-tab-registry" onclick="switchTab('tab-registry',this)">🛰️ Registro</button>
+    <button class="tab-btn" id="btn-tab-otp" onclick="switchTab('tab-otp',this)">⚡ Acceso Dev</button>
+    <button class="tab-btn" id="btn-tab-backup" onclick="switchTab('tab-backup',this)">💾 Respaldo</button>
+  </nav>
 
-  <!-- Navegación de Pestañas -->
-  <div class="nav-tabs">
-    <button class="tab-btn active" onclick="switchTab('tab-clients')">🏢 Negocios</button>
-    <button class="tab-btn" onclick="switchTab('tab-keygen')">🔑 Generar Clave</button>
-    <button class="tab-btn" onclick="switchTab('tab-status')">🛡️ Bloqueos & Estado</button>
-    <button class="tab-btn" onclick="switchTab('tab-announcements')">📢 Anuncios</button>
-    <button class="tab-btn" onclick="switchTab('tab-payments')">💳 Comprobantes</button>
-    <button class="tab-btn gold-active" onclick="switchTab('tab-otp')">⚡ Acceso Dev</button>
-    <button class="tab-btn" onclick="switchTab('tab-backup')">💾 Respaldo</button>
-  </div>
-
-  <!-- PESTAÑA 1: NEGOCIOS Y CLIENTES -->
-  <div id="tab-clients" class="tab-content">
-    <div class="form-group" style="margin-bottom: 0.75rem;">
-      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-        <input type="text" id="search-input" placeholder="🔍 Buscar por negocio, terminal (GV-...), cliente o método..." oninput="renderBusinesses()" style="flex: 1; min-width: 200px;">
-        <button class="btn btn-accent btn-sm" onclick="openNewBusinessModal()">+ Nuevo Negocio</button>
-        <button class="btn btn-gold btn-sm" onclick="syncOnlineRegistry()">🔄 Registro Online</button>
-      </div>
+  <!-- ============ NEGOCIOS ============ -->
+  <section id="tab-clients" class="tab-content">
+    <div class="help">Cada cafetería agrupa a sus admins y empleados. A cada terminal (ID GV-XXXX-XXXX) se le registra su plan, método y vencimiento. El botón <b>⬆️ Plan</b> cambia/amplía la licencia y genera la clave nueva para enviar.</div>
+    <div class="row" style="margin-bottom:10px">
+      <button class="btn btn-green" onclick="openBizModal()">＋ Nueva Cafetería</button>
+      <button class="btn" onclick="openReportModal()">📥 Importar reporte de terminal</button>
     </div>
+    <div id="biz-list"></div>
+  </section>
 
-    <!-- Barra de estado / Online Sync -->
-    <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 0.65rem; padding: 0.65rem 0.85rem; margin-bottom: 1rem; font-size: 0.75rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap;">
-      <div>
-        <span style="color: #60a5fa; font-weight: 700;">📡 Registro Remoto (Google Sheets):</span>
-        <span id="sync-status-text" style="color: var(--muted); margin-left: 0.35rem;">Listo para sincronizar</span>
-      </div>
-      <div style="display: flex; gap: 0.35rem;">
-        <button class="btn btn-outline btn-sm" style="padding: 0.25rem 0.5rem; font-size: 0.7rem;" onclick="openImportReportModal()">📥 Importar Reporte Firmado</button>
-        <button class="btn btn-outline btn-sm" style="padding: 0.25rem 0.5rem; font-size: 0.7rem;" onclick="openCorsFallbackModal()">📋 Pegar JSON</button>
-      </div>
-    </div>
-
-    <div id="businesses-container">
-      <!-- Se llena dinámicamente -->
-    </div>
-  </div>
-
-  <!-- PESTAÑA 2: GENERAR CLAVE CRIPTOGRÁFICA -->
-  <div id="tab-keygen" class="tab-content" style="display: none;">
-    <div class="form-group">
-      <label>ID de Terminal (Hardware / Amigable)</label>
-      <input type="text" id="kg-device-id" placeholder="Ej: GV-A89F-12B0 o hash completo" spellcheck="false" autoCapitalize="none">
-    </div>
-
-    <div class="grid-2">
-      <div class="form-group">
-        <label>Tipo de Plan</label>
-        <select id="kg-type" onchange="toggleCustomDays()">
-          <option value="PERM">👑 Permanente (De Por Vida)</option>
-          <option value="PROMO3M">🔥 Promo Trimestral Especial (90 días)</option>
-          <option value="T37">📅 Periódica Estándar (37 días con gracia)</option>
-          <option value="T30">📅 Mensual Exacto (30 días)</option>
-          <option value="T365">🌟 Plan Anual Emprendedor (365 días)</option>
-          <option value="CUSTOM">⚙️ Duración Personalizada en Días...</option>
-        </select>
-      </div>
-      <div class="form-group" id="custom-days-group" style="display: none;">
-        <label>Días Personalizados</label>
-        <input type="number" id="kg-custom-days" min="1" max="3650" value="60">
-      </div>
-    </div>
-
-    <button class="btn btn-accent" onclick="generateKeyFromForm()">🔑 Generar Clave GVLIC-V1 Criptográfica</button>
-
-    <div id="keygen-result" class="result-box">
-      <div class="result-title">Clave de Licencia Generada (100% Offline HMAC-SHA256):</div>
-      <div class="code-display" id="kg-generated-code"></div>
-      <div class="actions-grid">
-        <button class="copy-btn" id="kg-copy-btn" onclick="copyResultCode('kg-generated-code', 'kg-copy-btn')">📋 Copiar Clave</button>
-        <button class="copy-btn" style="background: #059669;" onclick="shareKeyWhatsApp()">💬 Enviar por WhatsApp</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- PESTAÑA 3: ESTADO Y BLOQUEOS REMOTOS -->
-  <div id="tab-status" class="tab-content" style="display: none;">
-    <div style="background: var(--card-inner); border: 1px solid var(--border); border-radius: 0.85rem; padding: 1rem; margin-bottom: 1rem;">
-      <h3 style="font-size: 0.95rem; font-weight: 800; margin-bottom: 0.5rem; color: #fff;">🛡️ Generador de license-status.json</h3>
-      <p style="font-size: 0.78rem; color: var(--muted); margin-bottom: 1rem; leading-relaxed">
-        Este archivo controla las activaciones y el bloqueo centralizado con motivo. Súbelo a tu repositorio <strong>Sistema-Updates</strong> en GitHub para que las apps lo apliquen automáticamente.
-      </p>
-
-      <div class="form-group" style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 0.5rem; border: 1px solid var(--border);">
-        <div>
-          <div style="font-weight: 700; font-size: 0.85rem; color: #fff;">Permitir Nuevas Activaciones (Master Switch)</div>
-          <div style="font-size: 0.72rem; color: var(--muted);">Si se desactiva, ningún terminal nuevo podrá registrarse temporalmente.</div>
-        </div>
-        <input type="checkbox" id="status-allow-new" checked onchange="updateLicenseStatusJson()" style="width: 22px; height: 22px; accent-color: var(--primary); cursor: pointer;">
-      </div>
-
-      <div style="margin-top: 1rem;">
-        <label>Terminales Bloqueados con Motivo (<span id="blocked-count">0</span>)</label>
-        <div id="blocked-list-container" style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem;">
-          <!-- Lista de bloqueados -->
-        </div>
-      </div>
-
-      <label>Vista Previa de license-status.json</label>
-      <pre class="json-preview" id="license-status-preview"></pre>
-
-      <div class="grid-3" style="margin-top: 0.75rem;">
-        <button class="btn btn-outline" onclick="copyLicenseStatusJson()">📋 Copiar JSON</button>
-        <button class="btn btn-accent" onclick="downloadLicenseStatusJson()">📥 Descargar license-status.json</button>
-        <a class="btn btn-gold" href="https://github.com/JulioC9808-ops/Sistema-Updates/upload/main" target="_blank" rel="noreferrer">🚀 Subir a GitHub</a>
-      </div>
-    </div>
-  </div>
-
-  <!-- PESTAÑA 4: ANUNCIOS -->
-  <div id="tab-announcements" class="tab-content" style="display: none;">
-    <div style="background: var(--card-inner); border: 1px solid var(--border); border-radius: 0.85rem; padding: 1rem;">
-      <h3 style="font-size: 0.95rem; font-weight: 800; margin-bottom: 0.5rem; color: #fff;">📢 Creador de announcement.json</h3>
-      <p style="font-size: 0.78rem; color: var(--muted); margin-bottom: 1rem;">
-        Emite avisos flotantes que aparecerán en las aplicaciones activas conectadas a internet.
-      </p>
-
-      <div class="grid-2">
-        <div class="form-group">
-          <label>ID del Aviso (Identificador único)</label>
-          <input type="text" id="anc-id" value="aviso_2026_01">
-        </div>
-        <div class="form-group">
-          <label>Tipo de Mensaje</label>
-          <select id="anc-type">
-            <option value="info">🔵 Informativo (Info)</option>
-            <option value="warning">🟡 Advertencia (Warning)</option>
-            <option value="success">🟢 Novedad Exitosa (Success)</option>
-            <option value="destructive">🔴 Crítico / Urgente (Destructive)</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>Título del Aviso</label>
-        <input type="text" id="anc-title" placeholder="Ej: Nueva Actualización Disponible">
-      </div>
-
-      <div class="form-group">
-        <label>Mensaje Completo</label>
-        <textarea id="anc-message" rows="3" placeholder="Escribe el mensaje para los clientes..."></textarea>
-      </div>
-
-      <div class="grid-2">
-        <div class="form-group">
-          <label>URL de Botón de Acción (Opcional)</label>
-          <input type="url" id="anc-url" placeholder="https://t.me/Gestion_Ventas">
-        </div>
-        <div class="form-group">
-          <label>Texto del Botón (Opcional)</label>
-          <input type="text" id="anc-url-label" placeholder="Ej: Ver Novedades">
-        </div>
-      </div>
-
-      <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem;">
-        <input type="checkbox" id="anc-active" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
-        <label for="anc-active" style="margin: 0; cursor: pointer;">Aviso Activo (Mostrar en la app)</label>
-      </div>
-
-      <label>Vista Previa de announcement.json</label>
-      <pre class="json-preview" id="anc-preview"></pre>
-
-      <div class="grid-3" style="margin-top: 0.75rem;">
-        <button class="btn btn-outline" onclick="copyAnnouncementJson()">📋 Copiar JSON</button>
-        <button class="btn btn-accent" onclick="downloadAnnouncementJson()">📥 Descargar announcement.json</button>
-        <a class="btn btn-gold" href="https://github.com/JulioC9808-ops/Sistema-Updates/upload/main" target="_blank" rel="noreferrer">🚀 Subir a GitHub</a>
-      </div>
-    </div>
-  </div>
-
-  <!-- PESTAÑA 5: COMPROBANTES DE PAGO -->
-  <div id="tab-payments" class="tab-content" style="display: none;">
-    <div style="background: var(--card-inner); border: 1px solid var(--border); border-radius: 0.85rem; padding: 1rem;">
-      <h3 style="font-size: 0.95rem; font-weight: 800; margin-bottom: 0.5rem; color: #fff;">💳 Comprobantes y Pagos Transfermóvil</h3>
-      <p style="font-size: 0.78rem; color: var(--muted); margin-bottom: 1rem;">
-        Revisa los pagos enviados por los clientes para emitir la clave de renovación correspondiente.
-      </p>
-
-      <div id="payments-container">
-        <!-- Lista de pagos -->
-      </div>
-    </div>
-  </div>
-
-  <!-- PESTAÑA 6: ACCESO DEV OTP -->
-  <div id="tab-otp" class="tab-content" style="display: none;">
-    <div style="background: var(--card-inner); border: 1px solid var(--border); border-radius: 0.85rem; padding: 1rem;">
-      <h3 style="font-size: 0.95rem; font-weight: 800; margin-bottom: 0.5rem; color: var(--gold);">⚡ Acceso Desarrollador OTP Offline</h3>
-      <p style="font-size: 0.78rem; color: var(--muted); margin-bottom: 1rem;">
-        Ingresa el desafío de 6 dígitos que muestra la aplicación en el terminal del cliente para obtener la respuesta matemática instantánea.
-      </p>
-
-      <div class="form-group">
-        <label>Código de Desafío (6 dígitos)</label>
-        <input type="text" id="otp-challenge" placeholder="Ej: 489201" maxlength="6" style="font-size: 1.25rem; font-weight: 800; letter-spacing: 0.15em; text-align: center;" oninput="calcOtp()">
-      </div>
-
-      <div id="otp-result" class="result-box" style="display: block;">
-        <div class="result-title">Código OTP de Desbloqueo:</div>
-        <div class="code-display gold" id="otp-output">------</div>
-        <button class="copy-btn" id="otp-copy-btn" onclick="copyResultCode('otp-output', 'otp-copy-btn')">📋 Copiar OTP</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- PESTAÑA 7: RESPALDO Y CONFIGURACIÓN -->
-  <div id="tab-backup" class="tab-content" style="display: none;">
-    <div style="background: var(--card-inner); border: 1px solid var(--border); border-radius: 0.85rem; padding: 1rem; margin-bottom: 1rem;">
-      <h3 style="font-size: 0.95rem; font-weight: 800; margin-bottom: 0.5rem; color: #fff;">⚙️ Endpoint de Registro Remoto (Phone-Home)</h3>
-      <div class="form-group">
-        <label>URL de Google Apps Script (/exec)</label>
-        <input type="text" id="cfg-registry-url" value="https://script.google.com/macros/s/AKfycbwMVB6YPa3hCIG3fk6awwkuMz9sGMOoffWpBl5OJj7noYAkbSfs0ArsgGGvukwi4jBB9Q/exec">
-      </div>
-      <button class="btn btn-outline btn-sm" onclick="saveRegistryUrl()">Guardar URL de Registro</button>
-    </div>
-
-    <div style="background: var(--card-inner); border: 1px solid var(--border); border-radius: 0.85rem; padding: 1rem;">
-      <h3 style="font-size: 0.95rem; font-weight: 800; margin-bottom: 0.5rem; color: #fff;">💾 Copia de Seguridad de la Base Dev</h3>
-      <p style="font-size: 0.78rem; color: var(--muted); margin-bottom: 1rem;">
-        Exporta todos los negocios, terminales registrados, notas y bloqueos para guardar tu respaldo local.
-      </p>
-
-      <div class="grid-2">
-        <button class="btn btn-accent" onclick="exportBackupJson()">📤 Exportar Respaldo JSON</button>
-        <label class="btn btn-outline" style="cursor: pointer;">
-          📥 Importar Respaldo JSON
-          <input type="file" accept=".json" onchange="importBackupJson(event)" style="display: none;">
-        </label>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: NUEVO / EDITAR NEGOCIO -->
-<div id="business-modal" class="modal-backdrop">
-  <div class="modal-box">
-    <div class="modal-header">
-      <div class="modal-title" id="business-modal-title">Nuevo Negocio</div>
-      <button class="close-modal" onclick="closeModal('business-modal')">&times;</button>
-    </div>
-    <div class="form-group">
-      <label>Nombre del Negocio (Cafetería / Sucursal)</label>
-      <input type="text" id="modal-business-name" placeholder="Ej: Cafetería el ARBORETUM">
-    </div>
-    <div class="form-group">
-      <label>Teléfono de Contacto (Opcional)</label>
-      <input type="text" id="modal-business-phone" placeholder="Ej: 51616816">
-    </div>
-    <div class="form-group">
-      <label>Notas Internas (Opcional)</label>
-      <textarea id="modal-business-notes" placeholder="Detalles de pago, ubicación, etc..."></textarea>
-    </div>
-    <div class="grid-2" style="margin-top: 1rem;">
-      <button class="btn btn-outline" onclick="closeModal('business-modal')">Cancelar</button>
-      <button class="btn btn-accent" onclick="saveBusinessModal()">Guardar Negocio</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: AÑADIR / EDITAR MIEMBRO -->
-<div id="member-modal" class="modal-backdrop">
-  <div class="modal-box">
-    <div class="modal-header">
-      <div class="modal-title" id="member-modal-title">Añadir Administrador / Empleado</div>
-      <button class="close-modal" onclick="closeModal('member-modal')">&times;</button>
-    </div>
-    <input type="hidden" id="modal-member-biz-id">
-    <input type="hidden" id="modal-member-idx">
-
-    <div class="form-group">
-      <label>Rol en el Negocio</label>
-      <select id="modal-member-role">
-        <option value="admin">👑 Administrador (Licencia Principal)</option>
-        <option value="employee">🧑 Empleado (QR Sync / Terminal de Ventas)</option>
+  <!-- ============ GENERAR CLAVE ============ -->
+  <section id="tab-keygen" class="tab-content">
+    <div class="help">Genera una clave GVLIC firmada para <b>cualquier ID</b>. El cliente la pega en su pantalla de licencia y se activa 100% offline. La clave se puede copiar (✓ compatible Android) o mantener pulsada sobre el campo.</div>
+    <div class="card">
+      <label>ID del terminal (GV-XXXX-XXXX o hash completo)</label>
+      <input id="kg-device-id" placeholder="Ej: GV-A89F-12B0">
+      <label>Plan</label>
+      <select id="kg-type" onchange="toggleCustomDays()">
+        <option value="PERM">Permanente (PERM)</option>
+        <option value="T37">Mensual 37 días (T37)</option>
+        <option value="T30">30 días (T30)</option>
+        <option value="PROMO3M">Promo Trimestral 90 días (PROMO3M)</option>
+        <option value="T180">180 días (T180)</option>
+        <option value="T365">Anual 365 días (T365)</option>
+        <option value="CUSTOM">Personalizado…</option>
       </select>
-    </div>
-
-    <div class="form-group">
-      <label>Nombre del Usuario / Terminal</label>
-      <input type="text" id="modal-member-name" placeholder="Ej: JOSE / Juan">
-    </div>
-
-    <div class="form-group">
-      <label>ID del Terminal (Friendly ID)</label>
-      <input type="text" id="modal-member-device-id" placeholder="Ej: GV-A89F-12B0">
-    </div>
-
-    <div class="grid-2">
-      <div class="form-group">
-        <label>Plan de Licencia</label>
-        <select id="modal-member-plan">
-          <option value="PERM">Permanente</option>
-          <option value="PROMO3M">Promo Trimestral (3 Meses)</option>
-          <option value="T37">Mensual (37 Días)</option>
-          <option value="T30">Mensual (30 Días)</option>
-          <option value="T365">Anual (365 Días)</option>
-          <option value="EMPLOYEE">Empleado (QR)</option>
-        </select>
+      <div id="kg-custom-wrap" style="display:none">
+        <label>Días personalizados</label>
+        <input id="kg-custom-days" type="number" min="1" placeholder="Ej: 15">
       </div>
-      <div class="form-group">
-        <label>Método de Activación</label>
-        <select id="modal-member-method">
-          <option value="GVLIC">GVLIC (Criptográfico)</option>
-          <option value="QR_SYNC">QR_SYNC (Sincronizado)</option>
-          <option value="LEGACY">LEGACY (Clave Default / Retrocompat)</option>
-        </select>
+      <div class="row" style="margin-top:12px">
+        <button class="btn btn-blue" onclick="generateKeyFromForm()">⚡ Generar Clave</button>
+        <button class="btn" id="kg-copy-btn" onclick="copyFromInput('kg-generated-code','kg-copy-btn')">📋 Copiar Clave</button>
+        <button class="btn" onclick="shareGeneratedKey()">💬 Enviar por WhatsApp</button>
+      </div>
+      <label style="margin-top:12px">Clave generada (mantén pulsado para copiar a mano si prefieres)</label>
+      <input id="kg-generated-code" class="code" readonly onclick="this.select()">
+    </div>
+  </section>
+
+  <!-- ============ OFERTAS & BRANDING ============ -->
+  <section id="tab-offers" class="tab-content">
+    <div class="card">
+      <h3>💰 Precios, Descuentos y Datos Bancarios</h3>
+      <div class="grid">
+        <div><label>Tarjeta (QR de pago)</label><input id="of-card"></div>
+        <div><label>Teléfono de confirmación</label><input id="of-phone"></div>
+        <div><label>Beneficiario</label><input id="of-benef"></div>
+        <div><label>Moneda</label><input id="of-curr"></div>
+      </div>
+      <div class="grid" style="margin-top:8px" id="of-plans"></div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn btn-gold" onclick="saveOffers()">💾 Guardar Ofertas</button>
+        <span class="muted">Los precios llegan a la app dentro de remote-config.json</span>
       </div>
     </div>
 
-    <div class="form-group">
-      <label>Teléfono de WhatsApp</label>
-      <input type="text" id="modal-member-phone" placeholder="Ej: 5351616816">
+    <div class="card">
+      <h3>📶 Tasas Manuales en Vivo (ZELLE, CLA, MXN, CAD)</h3>
+      <div class="help">Estas 4 no salen de ninguna fuente automática. Las guardas AQUÍ y viajan directo a tu Apps Script — los clientes las reciben en su próxima consulta, sin recompilar nada. Requiere internet al guardar.</div>
+      <div class="grid">
+        <div><label>ZELLE (CUP)</label><input id="mr-ZELLE" type="number"></div>
+        <div><label>CLA — Tarjeta Clásica (CUP)</label><input id="mr-CLA" type="number"></div>
+        <div><label>MXN (CUP)</label><input id="mr-MXN" type="number"></div>
+        <div><label>CAD (CUP)</label><input id="mr-CAD" type="number"></div>
+      </div>
+      <label>Token Dev (el mismo DEV_TOKEN de Codigo.gs — editable a mano)</label>
+      <div class="row">
+        <input id="mr-token" type="password" placeholder="Genera uno o escribe el actual" style="flex:1;min-width:180px">
+        <button class="btn mini" onclick="toggleTokenVisibility()" id="mr-eye" title="Mostrar/ocultar">👁</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn mini btn-gold" onclick="genDevToken()">🎲 Generar token nuevo</button>
+        <button class="btn mini" onclick="copyToken()">📋 Copiar</button>
+      </div>
+      <div class="muted" style="margin-top:6px">⚠️ Si generas uno nuevo: cópialo, pégalo en <b>DEV_TOKEN</b> de Codigo.gs y dale "Nueva versión" — ambos lados deben tener el MISMO token.</div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" onclick="loadManualRates()">⬇️ Cargar actuales</button>
+        <button class="btn btn-gold" onclick="saveManualRates()">☁️ Guardar en el servidor</button>
+        <button class="btn" onclick="checkLiveRates()">🔎 Ver tasas vivas</button>
+      </div>
+      <div id="mr-result" class="muted" style="margin-top:8px"></div>
     </div>
 
-    <div class="grid-2" style="margin-top: 1rem;">
-      <button class="btn btn-outline" onclick="closeModal('member-modal')">Cancelar</button>
-      <button class="btn btn-accent" onclick="saveMemberModal()">Guardar Miembro</button>
+    <div class="card">
+      <h3>🎨 Branding por Cafetería (logo, fondo y nombre online)</h3>
+      <div class="help">Elige una cafetería, sube su logo y fondo de login, y ajusta su nombre. Al exportar remote-config.json, cada terminal de esa cafetería descarga estos datos al abrir la app (como un juego online) y queda cacheado para funcionar offline.</div>
+      <label>Cafetería</label>
+      <select id="br-bizsel" onchange="renderBrandingForm()"></select>
+      <div id="br-form"></div>
     </div>
-  </div>
+
+    <div class="card">
+      <h3>📤 remote-config.json</h3>
+      <div class="muted" style="margin-bottom:8px">Sube este archivo a la raíz del repo <b>Sistema-Updates</b>. La app lo descarga al abrir, cada 2h y al reconectarse.</div>
+      <textarea id="rc-json" readonly></textarea>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" onclick="copyJson('rc-json','📋 JSON copiado')">📋 Copiar</button>
+        <button class="btn" onclick="downloadJson('rc-json','remote-config.json')">⬇️ Descargar</button>
+        <a class="btn btn-gold" href="https://github.com/JulioC9808-ops/Sistema-Updates/upload/main" target="_blank" rel="noreferrer">🚀 Subir a GitHub</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ BLOQUEOS & ESTADO ============ -->
+  <section id="tab-status" class="tab-content">
+    <div class="help"><b>Permitir nuevas activaciones:</b> si lo desactivas, ningún terminal NUEVO puede activarse (los ya activos siguen). <b>Bloquear terminal:</b> ese dispositivo ve su pantalla de suspensión con tu motivo. Tras cualquier cambio, re-subes license-status.json.</div>
+    <div class="card">
+      <h3>🎚️ Estado Global</h3>
+      <div class="row">
+        <span id="st-allow-pill"></span>
+        <button class="btn mini" onclick="toggleAllowNew()" id="st-allow-btn"></button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>🚫 Terminales Bloqueados</h3>
+      <div class="row" style="margin-bottom:8px">
+        <button class="btn btn-red mini" onclick="openBlockModal()">＋ Bloquear terminal</button>
+      </div>
+      <div id="st-blocked"></div>
+    </div>
+    <div class="card">
+      <h3>📜 Terminales Legacy (claves antiguas detectadas)</h3>
+      <div class="muted" style="margin-bottom:8px">Se llenan al importar reportes con método LEGACY, o marcándolos manualmente aquí.</div>
+      <div class="row" style="margin-bottom:8px">
+        <button class="btn mini" onclick="openLegacyModal()">＋ Marcar terminal como legacy</button>
+      </div>
+      <div id="st-legacy"></div>
+    </div>
+    <div class="card">
+      <h3>📤 license-status.json</h3>
+      <textarea id="ls-json" readonly></textarea>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" onclick="copyJson('ls-json','📋 JSON copiado')">📋 Copiar</button>
+        <button class="btn" onclick="downloadJson('ls-json','license-status.json')">⬇️ Descargar</button>
+        <a class="btn btn-gold" href="https://github.com/JulioC9808-ops/Sistema-Updates/upload/main" target="_blank" rel="noreferrer">🚀 Subir a GitHub</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ANUNCIOS ============ -->
+  <section id="tab-ann" class="tab-content">
+    <div class="help">El anuncio aparece dentro de la app a todos los usuarios (ventana al abrir, reconsulta cada 2h / al reconectar). Cambia el ID para que re-aparezca a todos.</div>
+    <div class="card">
+      <div class="grid">
+        <div><label>ID</label><input id="an-id" placeholder="anuncio-2026-09-24"></div>
+        <div><label>Activo</label><select id="an-active"><option value="true">Sí — mostrar</option><option value="false">No — ocultar</option></select></div>
+        <div><label>Tipo</label><select id="an-type"><option value="info">info</option><option value="warning">warning</option><option value="success">success</option><option value="destructive">destructive</option></select></div>
+        <div><label>Título</label><input id="an-title"></div>
+      </div>
+      <label>Mensaje</label>
+      <textarea id="an-msg" style="min-height:70px"></textarea>
+      <div class="grid">
+        <div><label>URL opcional (botón)</label><input id="an-url"></div>
+        <div><label>Texto del botón</label><input id="an-urllabel"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>📤 announcement.json</h3>
+      <textarea id="an-json" readonly></textarea>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" onclick="copyJson('an-json','📋 JSON copiado')">📋 Copiar</button>
+        <button class="btn" onclick="downloadJson('an-json','announcement.json')">⬇️ Descargar</button>
+        <a class="btn btn-gold" href="https://github.com/JulioC9808-ops/Sistema-Updates/upload/main" target="_blank" rel="noreferrer">🚀 Subir a GitHub</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ COMPROBANTES ============ -->
+  <section id="tab-payments" class="tab-content">
+    <div class="help"><b>¿Qué es esto?</b> Tu libro de cobros. El cliente paga por Transfermóvil y te manda su ID, negocio, plan y número de transacción. Lo apuntas aquí con "＋ Añadir" y al <b>Aprobar</b> se genera la clave GVLIC y se abre WhatsApp para enviársela. Un nº de transacción solo puede usarse una vez.</div>
+    <div class="row" style="margin-bottom:10px">
+      <button class="btn btn-green" onclick="openPaymentModal()">＋ Añadir comprobante</button>
+    </div>
+    <div id="pay-list"></div>
+  </section>
+
+  <!-- ============ REGISTRO PHONE-HOME ============ -->
+  <section id="tab-registry" class="tab-content">
+    <div class="card">
+      <h3>🛰️ Endpoint de Registro (Phone-Home)</h3>
+      <label>URL de Google Apps Script (/exec)</label>
+      <input id="rg-url" placeholder="https://script.google.com/macros/s/.../exec">
+      <div class="row" style="margin-top:10px">
+        <button class="btn btn-blue" onclick="saveRegistryUrl()">💾 Guardar URL</button>
+        <button class="btn" onclick="loadRegistry()">🔄 Consultar registros</button>
+      </div>
+      <div class="muted" style="margin-top:8px">Aquí aparecen los terminales que se activaron con internet. Esta URL también alimenta las tasas manuales y las tasas vivas.</div>
+    </div>
+    <div class="card" id="rg-result-card" style="display:none">
+      <h3>📋 Activaciones registradas</h3>
+      <div id="rg-table"></div>
+      <details style="margin-top:10px">
+        <summary class="muted" style="cursor:pointer">Fallback CORS: pegar respuesta manual</summary>
+        <label>Abre la URL en una pestaña nueva, copia el JSON y pégalo aquí</label>
+        <textarea id="rg-paste" placeholder='{"ok":true,"records":[...]}'></textarea>
+        <div class="row" style="margin-top:8px"><button class="btn mini" onclick="processPastedRegistryJson()">Procesar JSON pegado</button></div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ ACCESO DEV (OTP) ============ -->
+  <section id="tab-otp" class="tab-content">
+    <div class="help">Cuando inicies sesión como Dev en la app de un cliente, ella te muestra un código de desafío de 6 dígitos. Calcula aquí la respuesta (100% offline) y escríbela en la app.</div>
+    <div class="card">
+      <label>Código de desafío (6 dígitos que muestra la app)</label>
+      <input id="otp-challenge" inputmode="numeric" maxlength="6" placeholder="Ej: 482910">
+      <div class="row" style="margin-top:12px">
+        <button class="btn btn-gold" onclick="calcOtp()">⚡ Calcular OTP</button>
+        <button class="btn" onclick="copyFromInput('otp-result','otp-copy-btn')">📋 Copiar OTP</button>
+      </div>
+      <label style="margin-top:12px">Respuesta OTP</label>
+      <input id="otp-result" class="code" readonly onclick="this.select()">
+    </div>
+  </section>
+
+  <!-- ============ RESPALDO ============ -->
+  <section id="tab-backup" class="tab-content">
+    <div class="card">
+      <h3>💾 Copia de Seguridad de la Base Dev</h3>
+      <div class="muted" style="margin-bottom:10px">Exporta TODO: negocios, miembros, bloqueos, legacy, ofertas, branding y comprobantes.</div>
+      <div class="row">
+        <button class="btn btn-green" onclick="exportBackupJson()">⬇️ Exportar Respaldo JSON</button>
+        <label class="btn" style="margin:0">⬆️ Importar Respaldo JSON<input type="file" accept=".json" style="display:none" onchange="importBackupJson(this)"></label>
+      </div>
+    </div>
+    <div class="card">
+      <h3>🔗 Enlaces rápidos</h3>
+      <div class="row">
+        <a class="btn" href="https://github.com/JulioC9808-ops/Sistema-Updates/upload/main" target="_blank" rel="noreferrer">🚀 Sistema-Updates (subir JSON)</a>
+        <a class="btn" href="https://github.com/JulioC9808-ops/Gestion-de-ventas" target="_blank" rel="noreferrer">📦 Repo principal</a>
+      </div>
+    </div>
+  </section>
 </div>
 
-<!-- MODAL: BLOQUEAR TERMINAL CON MOTIVO -->
-<div id="block-modal" class="modal-backdrop">
-  <div class="modal-box">
-    <div class="modal-header">
-      <div class="modal-title" style="color: var(--danger);">🚫 Bloquear Terminal con Motivo</div>
-      <button class="close-modal" onclick="closeModal('block-modal')">&times;</button>
-    </div>
-    <input type="hidden" id="block-modal-device-id">
-    <div class="form-group">
-      <label>ID del Terminal</label>
-      <input type="text" id="block-modal-display-id" readonly style="background: rgba(0,0,0,0.5); font-family: monospace;">
-    </div>
-    <div class="form-group">
-      <label>Motivo Obligatorio de la Suspensión</label>
-      <textarea id="block-modal-reason" placeholder="Ej: Impago de suscripción mensual / Uso indebido..." required></textarea>
-    </div>
-    <div class="grid-2" style="margin-top: 1rem;">
-      <button class="btn btn-outline" onclick="closeModal('block-modal')">Cancelar</button>
-      <button class="btn btn-danger" onclick="confirmBlockTerminal()">Confirmar Bloqueo</button>
-    </div>
-  </div>
+<!-- Modal genérico -->
+<div id="modal-backdrop" class="modal-backdrop" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modal"></div>
 </div>
-
-<!-- MODAL: IMPORTAR REPORTE FIRMADO -->
-<div id="import-report-modal" class="modal-backdrop">
-  <div class="modal-box">
-    <div class="modal-header">
-      <div class="modal-title">📥 Importar Reporte Firmado de Terminal</div>
-      <button class="close-modal" onclick="closeModal('import-report-modal')">&times;</button>
-    </div>
-    <div class="form-group">
-      <label>Pega el JSON del Reporte Firmado</label>
-      <textarea id="import-report-json" rows="6" placeholder='{"version":"1.0","friendlyDeviceId":"GV-XXXX-XXXX",...}'></textarea>
-    </div>
-    <div class="grid-2" style="margin-top: 1rem;">
-      <button class="btn btn-outline" onclick="closeModal('import-report-modal')">Cancelar</button>
-      <button class="btn btn-accent" onclick="processImportReport()">Validar e Importar</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: FALLBACK CORS REGISTRO ONLINE -->
-<div id="cors-fallback-modal" class="modal-backdrop">
-  <div class="modal-box">
-    <div class="modal-header">
-      <div class="modal-title">📋 Procesar Registro Online Manual</div>
-      <button class="close-modal" onclick="closeModal('cors-fallback-modal')">&times;</button>
-    </div>
-    <p style="font-size: 0.78rem; color: var(--muted); margin-bottom: 0.75rem;">
-      Si el navegador bloquea la sincronización directa por CORS, abre la URL en otra pestaña y pega el contenido JSON aquí:
-    </p>
-    <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
-      <button class="btn btn-outline btn-sm" onclick="copyRegistryUrl()">📋 Copiar URL de Registro</button>
-      <button class="btn btn-gold btn-sm" onclick="openRegistryUrlTab()">🌐 Abrir en Nueva Pestaña</button>
-    </div>
-    <div class="form-group">
-      <label>Pega el JSON de Respuesta</label>
-      <textarea id="cors-pasted-json" rows="5" placeholder='{"ok":true,"records":[...]}'></textarea>
-    </div>
-    <div class="grid-2" style="margin-top: 1rem;">
-      <button class="btn btn-outline" onclick="closeModal('cors-fallback-modal')">Cancelar</button>
-      <button class="btn btn-accent" onclick="processPastedRegistryJson()">Procesar Registro</button>
-    </div>
-  </div>
-</div>
-
-<!-- TOAST -->
-<div id="toast" class="toast">Mensaje</div>
+<div id="toast" class="toast"></div>
 
 <script>
-// ============================================================================
-// CRIPTOGRAFÍA HMAC-SHA256 OFFLINE
-// ============================================================================
-const MASTER_CRYPTO_SALT = 'GV-JULIO-GE-2026-SECURE-KEY-ENGINE-8F92';
-const DEFAULT_REGISTRY_URL = 'https://script.google.com/macros/s/AKfycbwMVB6YPa3hCIG3fk6awwkuMz9sGMOoffWpBl5OJj7noYAkbSfs0ArsgGGvukwi4jBB9Q/exec';
-
+'use strict';
+// ===================== CRIPTO (idéntico a cryptoLicense.ts de la app) =====================
+var MASTER_CRYPTO_SALT = 'GV-JULIO-GE-2026-SECURE-KEY-ENGINE-8F92';
 function sha256(ascii) {
-  function rightRotate(value, amount) { return (value >>> amount) | (value << (32 - amount)); }
-  const mathPow = Math.pow;
-  const maxWord = mathPow(2, 32);
-  const lengthProperty = 'length';
-  let i = 0, j = 0, result = '';
-  const words = [];
-  const asciiBitLength = ascii[lengthProperty] * 8;
-  let hash = [], k = [], primeCounter = 0;
-  const isComposite = {};
-  for (let candidate = 2; primeCounter < 64; candidate++) {
-    if (!isComposite[candidate]) {
-      for (i = 0; i < 313; i += candidate) isComposite[i] = true;
-      hash[primeCounter] = (mathPow(candidate, 0.5) * maxWord) | 0;
-      k[primeCounter++] = (mathPow(candidate, 1 / 3) * maxWord) | 0;
+  function rr(v,a){return (v>>>a)|(v<<(32-a));}
+  var maxWord=Math.pow(2,32),result='',words=[],bitLen=ascii.length*8;
+  var hash=[],k=[],primeCounter=0,isComposite={};
+  for(var candidate=2;primeCounter<64;candidate++){
+    if(!isComposite[candidate]){
+      for(var i=0;i<313;i+=candidate)isComposite[i]=true;
+      hash[primeCounter]=(Math.pow(candidate,0.5)*maxWord)|0;
+      k[primeCounter++]=(Math.pow(candidate,1/3)*maxWord)|0;
     }
   }
-  ascii += '\x80';
-  while ((ascii[lengthProperty] % 64) - 56) ascii += '\x00';
-  for (i = 0; i < ascii[lengthProperty]; i++) {
-    j = ascii.charCodeAt(i);
-    if (j >> 8) return '';
-    words[i >> 2] |= j << (((3 - i) % 4) * 8);
-  }
-  words[words[lengthProperty]] = (asciiBitLength / maxWord) | 0;
-  words[words[lengthProperty]] = asciiBitLength;
-  for (j = 0; j < words[lengthProperty];) {
-    const w = words.slice(j, (j += 16));
-    const oldHash = hash;
-    hash = hash.slice(0, 8);
-    for (i = 0; i < 64; i++) {
-      const w15 = w[i - 15], w2 = w[i - 2];
-      const s0 = rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3);
-      const s1 = rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10);
-      const temp1 = (w[i] = (i < 16) ? w[i] : (w[i - 16] + s0 + w[i - 7] + s1) | 0);
-      const s0Hash = rightRotate(hash[0], 2) ^ rightRotate(hash[0], 13) ^ rightRotate(hash[0], 22);
-      const maj = (hash[0] & hash[1]) ^ (hash[0] & hash[2]) ^ (hash[1] & hash[2]);
-      const t2 = (s0Hash + maj) | 0;
-      const s1Hash = rightRotate(hash[4], 6) ^ rightRotate(hash[4], 11) ^ rightRotate(hash[4], 25);
-      const ch = (hash[4] & hash[5]) ^ (~hash[4] & hash[6]);
-      const t1 = (hash[7] + s1Hash + ch + k[i] + temp1) | 0;
-      hash = [(t1 + t2) | 0].concat(hash);
-      hash[4] = (hash[4] + t1) | 0;
+  ascii+='\x80';
+  while((ascii.length%64)-56)ascii+='\x00';
+  for(var j=0;j<ascii.length;j++){var c=ascii.charCodeAt(j);if(c>>8)return '';words[j>>2]|=c<<(((3-j)%4)*8);}
+  words[words.length]=(bitLen/maxWord)|0;words[words.length]=bitLen;
+  for(j=0;j<words.length;){
+    var w=words.slice(j,j+=16),oldHash=hash;hash=hash.slice(0,8);
+    for(var i2=0;i2<64;i2++){
+      var w15=w[i2-15],w2=w[i2-2];
+      var s0=rr(w15,7)^rr(w15,18)^(w15>>>3), s1=rr(w2,17)^rr(w2,19)^(w2>>>10);
+      var t1=(hash[7]+((hash[4]&hash[5])^(~hash[4]&hash[6]))+k[i2]+(w[i2]=(i2<16)?w[i2]:(w[i2-16]+s0+s1)|0)+((rr(hash[0],2)^rr(hash[0],13)^rr(hash[0],22))+((hash[0]&hash[1])^(hash[0]&hash[2])^(hash[1]&hash[2]))))|0;
+      var t2=(rr(hash[4],6)^rr(hash[4],11)^rr(hash[4],25))+((hash[4]&hash[5])^(~hash[4]&hash[6]));
+      hash=[(t1+t2)|0].concat(hash);hash[4]=(hash[4]+t1)|0;
     }
-    for (i = 0; i < 8; i++) hash[i] = (hash[i] + oldHash[i]) | 0;
+    for(var i3=0;i3<8;i3++)hash[i3]=(hash[i3]+oldHash[i3])|0;
   }
-  for (i = 0; i < 8; i++) {
-    for (j = 3; j >= 0; j--) {
-      const b = (hash[i] >> (8 * j)) & 255;
-      result += (b < 16 ? '0' : '') + b.toString(16);
-    }
-  }
+  for(var i4=0;i4<8;i4++)for(var j4=3;j4>=0;j4--){var b=(hash[i4]>>(8*j4))&255;result+=(b<16?'0':'')+b.toString(16);}
   return result;
 }
+function hmacSha256(key,message){
+  var blockSize=64;
+  if(key.length>blockSize)key=sha256(key);
+  while(key.length<blockSize)key+='\x00';
+  var oKeyPad='',iKeyPad='';
+  for(var i=0;i<blockSize;i++){oKeyPad+=String.fromCharCode(key.charCodeAt(i)^0x5c);iKeyPad+=String.fromCharCode(key.charCodeAt(i)^0x36);}
+  return sha256(oKeyPad+sha256(iKeyPad+message));
+}
+function formatFriendlyDeviceId(rawId){
+  if(!rawId||rawId==='web'||String(rawId).length<4)return 'GV-DEV-LOCAL';
+  var clean=String(rawId).replace(/[^a-zA-Z0-9]/g,'').toUpperCase();
+  var hash=sha256(clean).substring(0,8).toUpperCase();
+  return 'GV-'+hash.substring(0,4)+'-'+hash.substring(4,8);
+}
+function generateCryptographicLicense(deviceId,type){
+  var cleanDevice=String(deviceId).replace(/[^a-zA-Z0-9]/g,'').toUpperCase();
+  var ts=Math.floor(Date.now()/1000);
+  var payload='GVLIC:V1:'+cleanDevice+':'+type+':'+ts;
+  var sig=hmacSha256(MASTER_CRYPTO_SALT,payload).substring(0,12).toUpperCase();
+  return 'GVLIC-V1-'+cleanDevice+'-'+type+'-'+ts+'-'+sig;
+}
 
-function hmacSha256(key, message) {
-  const blockSize = 64;
-  if (key.length > blockSize) key = sha256(key);
-  while (key.length < blockSize) key += '\x00';
-  let oKeyPad = '', iKeyPad = '';
-  for (let i = 0; i < blockSize; i++) {
-    oKeyPad += String.fromCharCode(key.charCodeAt(i) ^ 0x5c);
-    iKeyPad += String.fromCharCode(key.charCodeAt(i) ^ 0x36);
+// ===================== STORAGE =====================
+var K_BIZ='gv_dev_businesses_v2', K_BLOCK='gv_dev_blocked_v2', K_LEGACY='gv_dev_legacy_v2',
+    K_OFFERS='gv_dev_offers_v1', K_BRAND='gv_dev_branding_v1', K_PAY='gv_submitted_payments_v1',
+    K_REGURL='gv_dev_registry_url', K_ALLOW='gv_dev_allow_new_v1', K_TOKEN='gv_dev_manual_token';
+function load(k,d){try{var r=localStorage.getItem(k);return r?JSON.parse(r):d;}catch(e){return d;}}
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){toast('⚠️ No se pudo guardar (almacenamiento lleno?)','err');}}
+function uid(){return 'id_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7);}
+function getBiz(){return load(K_BIZ,[]);}
+function getBlocked(){return load(K_BLOCK,[]);}
+function getLegacy(){return load(K_LEGACY,[]);}
+function getAllowNew(){return load(K_ALLOW,true);}
+
+var DEFAULT_OFFERS={currency:'CUP',cardNumber:'9204-1299-7834-5835',confirmPhone:'51616816',beneficiaryName:'Julio_GE (Desarrollador Oficial)',
+  plans:{monthly:{label:'Mensual (37 días)',price:1200,disc:{active:false,percent:0,label:''}},
+         quarterly:{label:'Trimestral (90 días)',price:3000,disc:{active:false,percent:0,label:''}},
+         annual:{label:'Anual (365 días)',price:10000,disc:{active:false,percent:0,label:''}},
+         lifetime:{label:'Permanente',price:25000,disc:{active:false,percent:0,label:''}}}};
+function getOffers(){var o=load(K_OFFERS,null);return o||JSON.parse(JSON.stringify(DEFAULT_OFFERS));}
+
+// ===================== UI BASE =====================
+var _toastTimer=null;
+function toast(msg,type){var t=document.getElementById('toast');t.textContent=msg;t.className='toast'+(type==='err'?' err':'');t.style.display='block';clearTimeout(_toastTimer);_toastTimer=setTimeout(function(){t.style.display='none';},3000);}
+function switchTab(id,btn){
+  document.querySelectorAll('.tab-content').forEach(function(s){s.style.display='none';});
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+  var target=document.getElementById(id); if(target)target.style.display='block';
+  if(btn)btn.classList.add('active');
+  if(id==='tab-clients')renderBusinesses();
+  if(id==='tab-offers'){renderOffers();fillSavedToken();}
+  if(id==='tab-status')renderStatus();
+  if(id==='tab-ann')renderAnnouncementJson();
+  if(id==='tab-payments')renderPayments();
+  if(id==='tab-registry')renderRegistryUrl();
+}
+function openModal(html){document.getElementById('modal').innerHTML=html;document.getElementById('modal-backdrop').style.display='flex';}
+function closeModal(){document.getElementById('modal-backdrop').style.display='none';}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];});}
+
+// ---- Portapapeles con fallback Android/file:// ----
+function copyText(text,okMsg){
+  var ok=false;
+  try{
+    var ta=document.createElement('textarea');
+    ta.value=text;ta.setAttribute('readonly','');ta.style.position='fixed';ta.style.opacity='0';ta.style.left='-9999px';
+    document.body.appendChild(ta);ta.focus();ta.select();ta.setSelectionRange(0,999999);
+    ok=document.execCommand('copy');document.body.removeChild(ta);
+  }catch(e){ok=false;}
+  if(!ok&&(navigator.clipboard&&navigator.clipboard.writeText)){
+    navigator.clipboard.writeText(text).then(function(){toast(okMsg||'✅ Copiado');},function(){toast('Mantén pulsado el campo y copia a mano','err');});
+    return;
   }
-  return sha256(oKeyPad + sha256(iKeyPad + message));
+  toast(ok?(okMsg||'✅ Copiado'):'No se pudo copiar automáticamente — mantén pulsado el campo');
+}
+function copyFromInput(inputId,btnId){
+  var el=document.getElementById(inputId);if(!el||!el.value){toast('Primero genera el código','err');return;}
+  el.select();
+  copyText(el.value,'✅ Copiado al portapapeles');
+  var btn=document.getElementById(btnId);
+  if(btn){var old=btn.textContent;btn.textContent='✓ ¡Copiado!';setTimeout(function(){btn.textContent=old;},2000);}
+}
+function copyJson(textareaId,msg){var el=document.getElementById(textareaId);el.select();copyText(el.value,msg);}
+function downloadJson(textareaId,name){
+  var blob=new Blob([document.getElementById(textareaId).value],{type:'application/json'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  toast('⬇️ Descargado: '+name);
 }
 
-function formatFriendlyDeviceId(rawId) {
-  if (!rawId || rawId === 'web' || rawId.length < 4) return 'GV-DEV-LOCAL';
-  const clean = rawId.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-  const hash = sha256(clean).substring(0, 8).toUpperCase();
-  return `GV-${hash.substring(0, 4)}-${hash.substring(4, 8)}`;
+// ===================== NEGOCIOS =====================
+function planLabel(plan,expiresAt){
+  if(plan==='PERM')return 'Permanente';
+  if(!expiresAt)return plan||'—';
+  var days=Math.ceil((expiresAt-Date.now())/86400000);
+  return (plan||'—')+' · '+(days>0?days+' d restantes':'VENCIDO');
 }
-
-function generateCryptographicLicense(deviceId, type) {
-  const cleanDevice = deviceId.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-  const ts = Math.floor(Date.now() / 1000);
-  const payload = `GVLIC:V1:${cleanDevice}:${type}:${ts}`;
-  const sig = hmacSha256(MASTER_CRYPTO_SALT, payload).substring(0, 12).toUpperCase();
-  return `GVLIC-V1-${cleanDevice}-${type}-${ts}-${sig}`;
-}
-
-// ============================================================================
-// BASE DE DATOS Y ESTADO LOCAL
-// ============================================================================
-const STORAGE_BIZ = 'gv_dev_businesses_v2';
-const STORAGE_BLOCKED = 'gv_dev_blocked_v2';
-const STORAGE_PAYMENTS = 'gv_submitted_payments_v1';
-const STORAGE_REG_URL = 'gv_dev_registry_url';
-
-function getBusinesses() {
-  try {
-    const raw = localStorage.getItem(STORAGE_BIZ);
-    return raw ? JSON.parse(raw) : [
-      {
-        id: 'biz_arboretum',
-        name: 'Cafetería el ARBORETUM',
-        phone: '51616816',
-        notes: 'Cliente principal',
-        members: [
-          { role: 'admin', name: 'JOSE', deviceId: 'GV-A89F-12B0', plan: 'T37', method: 'GVLIC', phone: '51616816' },
-          { role: 'employee', name: 'JUAN', deviceId: 'GV-E01A-99B1', plan: 'EMPLOYEE', method: 'QR_SYNC', phone: '' },
-          { role: 'employee', name: 'MARIA', deviceId: 'GV-E02B-88C2', plan: 'EMPLOYEE', method: 'QR_SYNC', phone: '' }
-        ]
-      },
-      {
-        id: 'biz_paladar',
-        name: 'Cafetería El Paladar',
-        phone: '',
-        notes: '',
-        members: [
-          { role: 'admin', name: 'JOSUE', deviceId: 'GV-C33D-55E6', plan: 'PERM', method: 'GVLIC', phone: '' },
-          { role: 'admin', name: 'ALBERTO', deviceId: 'GV-D44F-77G8', plan: 'PERM', method: 'GVLIC', phone: '' }
-        ]
-      }
-    ];
-  } catch {
-    return [];
-  }
-}
-
-function saveBusinesses(list) {
-  localStorage.setItem(STORAGE_BIZ, JSON.stringify(list));
-}
-
-function getBlockedList() {
-  try {
-    const raw = localStorage.getItem(STORAGE_BLOCKED);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.map(item => {
-      if (typeof item === 'string') {
-        return { deviceId: item, friendlyId: formatFriendlyDeviceId(item), reason: 'Suspensión administrativa', blockedAt: new Date().toISOString() };
-      }
-      return item;
+function renderBusinesses(){
+  var biz=getBiz(),html='';
+  if(!biz.length){html='<div class="card muted">Aún no hay cafeterías. Crea la primera con "＋ Nueva Cafetería".</div>';}
+  biz.forEach(function(b){
+    var members=b.members||[];
+    html+='<div class="biz"><div class="row"><b>🏪 '+esc(b.name)+'</b>'+
+      (b.phone?'<span class="muted">📞 '+esc(b.phone)+'</span>':'')+
+      '<span style="flex:1"></span>'+
+      '<button class="btn mini" onclick="openMemberModal(\''+b.id+'\',null)">＋ Miembro</button>'+
+      '<button class="btn mini" onclick="openBizModal(\''+b.id+'\')">✏️ Editar</button>'+
+      '<button class="btn mini btn-red" onclick="delBiz(\''+b.id+'\')">🗑</button></div>';
+    if(!members.length)html+='<div class="muted" style="padding:8px 0">Sin miembros todavía.</div>';
+    members.forEach(function(m){
+      var friendly=formatFriendlyDeviceId(m.deviceId);
+      var blocked=getBlocked().some(function(x){return formatFriendlyDeviceId(x.deviceId||x.friendlyId)===friendly;});
+      html+='<div class="member"><div class="info">'+
+        '<b>'+esc(m.name||'(sin nombre)')+'</b> '+
+        '<span class="pill '+(m.role==='admin'?'pill-blue':'')+'">'+esc(m.role||'employee')+'</span>'+
+        (blocked?'<span class="pill pill-red">BLOQUEADO</span>':'')+
+        '<span class="pill '+(m.method==='GVLIC'?'pill-ok':(m.method==='LEGACY'?'pill-warn':'pill-blue'))+'">'+esc(m.method||'—')+'</span>'+
+        '<div class="muted">'+esc(friendly)+' · '+esc(planLabel(m.plan,m.expiresAt))+'</div></div>'+
+        '<div class="row">'+
+        '<button class="btn mini" onclick="quickKey(\''+b.id+'\',\''+esc(m.deviceId)+'\',\''+esc(m.name||'')+'\')">🔑 Clave</button>'+
+        '<button class="btn mini" onclick="openMemberModal(\''+b.id+'\',\''+esc(m.deviceId)+'\')">⬆️ Plan</button>'+
+        '<button class="btn mini" onclick="blockDeviceFlow(\''+esc(m.deviceId)+'\',\''+esc(m.name||'')+'\')">🚫</button>'+
+        '<button class="btn mini btn-red" onclick="delMember(\''+b.id+'\',\''+esc(m.deviceId)+'\')">🗑</button>'+
+        '</div></div>';
     });
-  } catch {
-    return [];
-  }
-}
-
-function saveBlockedList(list) {
-  localStorage.setItem(STORAGE_BLOCKED, JSON.stringify(list));
-  updateLicenseStatusJson();
-}
-
-function getRegistryUrl() {
-  return localStorage.getItem(STORAGE_REG_URL) || DEFAULT_REGISTRY_URL;
-}
-
-// ============================================================================
-// UI TABS & NAVIGATION
-// ============================================================================
-function switchTab(tabId) {
-  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
-  
-  const target = document.getElementById(tabId);
-  if (target) target.style.display = 'block';
-
-  event.currentTarget.classList.add('active');
-
-  if (tabId === 'tab-clients') renderBusinesses();
-  if (tabId === 'tab-status') updateLicenseStatusJson();
-  if (tabId === 'tab-announcements') updateAnnouncementJson();
-  if (tabId === 'tab-payments') renderPayments();
-}
-
-function showToast(msg, type = 'success') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = `toast show ${type}`;
-  setTimeout(() => t.className = 'toast', 2500);
-}
-
-// ============================================================================
-// RENDERIZADO DE NEGOCIOS Y MIEMBROS
-// ============================================================================
-function renderBusinesses() {
-  const list = getBusinesses();
-  const blocked = getBlockedList();
-  const filter = (document.getElementById('search-input').value || '').trim().toLowerCase();
-  const container = document.getElementById('businesses-container');
-  container.innerHTML = '';
-
-  const filtered = list.filter(biz => {
-    if (!filter) return true;
-    const matchBiz = (biz.name || '').toLowerCase().includes(filter) || (biz.phone || '').includes(filter);
-    const matchMembers = (biz.members || []).some(m =>
-      (m.name || '').toLowerCase().includes(filter) ||
-      (m.deviceId || '').toLowerCase().includes(filter) ||
-      (m.method || '').toLowerCase().includes(filter)
-    );
-    return matchBiz || matchMembers;
+    html+='</div>';
   });
-
-  if (filtered.length === 0) {
-    container.innerHTML = `<div style="text-align: center; padding: 2rem; color: var(--muted); font-size: 0.85rem;">No se encontraron negocios ni miembros que coincidan con la búsqueda.</div>`;
-    return;
+  document.getElementById('biz-list').innerHTML=html;
+}
+function blockDeviceFlow(deviceId,name){
+  openModal('<h3>🚫 Bloquear terminal</h3>'+
+    '<div class="muted">'+esc(name?name+' · ':'')+esc(formatFriendlyDeviceId(deviceId))+'</div>'+
+    '<label>Motivo (lo verá el cliente en su pantalla)</label><input id="bl-reason" placeholder="Ej: Pago pendiente desde el 20/09">'+
+    '<div class="row" style="margin-top:12px"><button class="btn btn-red" onclick="confirmBlockDevice(\''+esc(deviceId)+'\')">🚫 Bloquear</button>'+
+    '<button class="btn" onclick="closeModal()">Cancelar</button></div>');
+}
+function confirmBlockDevice(deviceId){
+  var blocked=getBlocked();
+  blocked=blocked.filter(function(x){return formatFriendlyDeviceId(x.deviceId||x.friendlyId)!==formatFriendlyDeviceId(deviceId);});
+  blocked.push({deviceId:deviceId,friendlyId:formatFriendlyDeviceId(deviceId),reason:document.getElementById('bl-reason').value.trim()||'Terminal suspendido',blockedAt:new Date().toISOString()});
+  save(K_BLOCK,blocked);closeModal();renderBusinesses();renderStatusJson();
+  toast('🚫 Terminal bloqueado — re-suba license-status.json');
+}
+function openBizModal(bizId){
+  var b=bizId?getBiz().find(function(x){return x.id===bizId;}):null;
+  openModal('<h3>'+(b?'Editar cafetería':'Nueva cafetería')+'</h3>'+
+    '<label>Nombre</label><input id="m-biz-name" value="'+esc(b?b.name:'')+'">'+
+    '<label>Teléfono/WhatsApp</label><input id="m-biz-phone" value="'+esc(b?b.phone||'':'')+'">'+
+    '<label>Notas</label><input id="m-biz-notes" value="'+esc(b?b.notes||'':'')+'">'+
+    '<div class="row" style="margin-top:12px"><button class="btn btn-green" onclick="saveBizModal(\''+(bizId||'')+'\')">💾 Guardar</button>'+
+    '<button class="btn" onclick="closeModal()">Cancelar</button></div>');
+}
+function saveBizModal(bizId){
+  var name=document.getElementById('m-biz-name').value.trim();
+  if(!name){toast('Ponle un nombre','err');return;}
+  var biz=getBiz();
+  if(bizId){
+    var b=biz.find(function(x){return x.id===bizId;});
+    if(b){b.name=name;b.phone=document.getElementById('m-biz-phone').value.trim();b.notes=document.getElementById('m-biz-notes').value.trim();}
+  }else{
+    biz.push({id:uid(),name:name,phone:document.getElementById('m-biz-phone').value.trim(),notes:document.getElementById('m-biz-notes').value.trim(),members:[]});
   }
-
-  filtered.forEach(biz => {
-    const card = document.createElement('div');
-    card.className = 'business-card';
-
-    const admins = (biz.members || []).filter(m => m.role === 'admin');
-    const employees = (biz.members || []).filter(m => m.role !== 'admin');
-
-    let membersHtml = '';
-
-    // Render Admins
-    if (admins.length > 0) {
-      membersHtml += `<div style="font-size: 0.72rem; font-weight: 800; color: var(--gold); text-transform: uppercase; margin-bottom: 0.25rem;">👑 Administradores (${admins.length}):</div>`;
-      admins.forEach((m, idx) => {
-        membersHtml += renderMemberItem(biz.id, m, true);
-      });
-    }
-
-    // Render Employees
-    if (employees.length > 0) {
-      membersHtml += `<div style="font-size: 0.72rem; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-top: 0.5rem; margin-bottom: 0.25rem;">🧑 Empleados (${employees.length}):</div>`;
-      employees.forEach((m, idx) => {
-        membersHtml += renderMemberItem(biz.id, m, false);
-      });
-    }
-
-    if (biz.members?.length === 0) {
-      membersHtml = `<div style="padding: 0.75rem; text-align: center; color: var(--muted); font-size: 0.78rem;">Sin miembros asignados. Pulsa en "+ Administrador" o "+ Empleado".</div>`;
-    }
-
-    card.innerHTML = `
-      <div class="business-header">
-        <div class="business-title">
-          <span>☕ ${biz.name}</span>
-          <span style="font-size: 0.72rem; color: var(--muted); font-weight: 600;">(${biz.members?.length || 0} terminales)</span>
-        </div>
-        <div style="display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap;">
-          <button class="btn btn-outline btn-sm" onclick="openAddMemberModal('${biz.id}', 'admin')">+ Administrador</button>
-          <button class="btn btn-outline btn-sm" onclick="openAddMemberModal('${biz.id}', 'employee')">+ Empleado</button>
-          <button class="btn btn-outline btn-sm" style="color: #f87171;" onclick="deleteBusiness('${biz.id}')">🗑️</button>
-        </div>
-      </div>
-      <div class="members-list">
-        ${membersHtml}
-      </div>
-    `;
-    container.appendChild(card);
-  });
+  save(K_BIZ,biz);closeModal();renderBusinesses();toast('✅ Cafetería guardada');
 }
-
-function renderMemberItem(bizId, m, isAdmin) {
-  const friendly = formatFriendlyDeviceId(m.deviceId);
-  const blocked = getBlockedList().find(b => formatFriendlyDeviceId(b.deviceId || b.friendlyId) === friendly);
-  const isLegacy = m.method === 'LEGACY';
-
-  let planLabel = m.plan === 'PERM' ? 'Permanente' :
-                  m.plan === 'PROMO3M' ? 'Promo 3M' :
-                  m.plan === 'T37' ? 'Mensual (37d)' :
-                  m.plan === 'T30' ? 'Mensual (30d)' :
-                  m.plan === 'T365' ? 'Anual' :
-                  m.plan === 'EMPLOYEE' ? 'Empleado (QR)' : m.plan;
-
-  let methodTag = isLegacy
-    ? `<span class="tag tag-legacy">⚠️ LEGACY (CLAVE RETROCOMPAT)</span>`
-    : m.method === 'QR_SYNC'
-    ? `<span class="tag tag-qrsync">📱 QR SYNC</span>`
-    : `<span class="tag tag-gvlic">🔐 GVLIC</span>`;
-
-  return `
-    <div class="member-item ${isAdmin ? 'is-admin' : 'is-employee'} ${isLegacy ? 'is-legacy' : ''}">
-      <div class="member-top">
-        <div class="member-info">
-          <span class="member-name">${m.name}</span>
-          <span class="tag ${isAdmin ? 'tag-admin' : 'tag-emp'}">${isAdmin ? '👑 ADMIN' : '🧑 EMPLEADO'}</span>
-          <span class="member-id">${friendly}</span>
-          <span class="tag tag-gvlic">${planLabel}</span>
-          ${methodTag}
-          ${blocked ? `<span class="tag tag-blocked">🚫 SUSPENDIDO</span>` : ''}
-        </div>
-        <div class="member-actions">
-          <button class="btn btn-outline btn-sm" onclick="quickGenerateKey('${m.deviceId}', '${m.plan || 'T37'}')">🔑 Clave</button>
-          <button class="btn btn-outline btn-sm" style="background: rgba(16,185,129,0.15); color: #34d399;" onclick="quickPromo3M('${m.deviceId}', '${bizId}', '${m.name}')">🎁 Promo 3M</button>
-          <button class="btn btn-outline btn-sm" onclick="quickShareWhatsApp('${m.name}', '${m.deviceId}', '${m.plan || 'T37'}', '${m.phone || ''}')">💬 WA</button>
-          ${blocked 
-            ? `<button class="btn btn-outline btn-sm" style="color: #34d399;" onclick="unblockTerminal('${friendly}')">🟢 Desbloquear</button>`
-            : `<button class="btn btn-outline btn-sm" style="color: #f87171;" onclick="openBlockModal('${friendly}')">🚫 Bloquear</button>`
-          }
-          <button class="btn btn-outline btn-sm" style="color: #f87171;" onclick="deleteMember('${bizId}', '${m.deviceId}')">✕</button>
-        </div>
-      </div>
-      ${blocked ? `<div style="font-size: 0.72rem; color: #f87171; font-weight: 600;">Motivo: "${blocked.reason}" (${new Date(blocked.blockedAt).toLocaleDateString()})</div>` : ''}
-    </div>
-  `;
+function delBiz(bizId){
+  if(!confirm('¿Eliminar esta cafetería y todos sus miembros del registro local?'))return;
+  save(K_BIZ,getBiz().filter(function(x){return x.id!==bizId;}));
+  var br=getBrand();delete br[bizId];save(K_BRAND,br);
+  renderBusinesses();toast('🗑 Eliminada');
 }
-
-// ============================================================================
-// MODALES Y ACCIONES DE NEGOCIOS
-// ============================================================================
-function openNewBusinessModal() {
-  document.getElementById('modal-business-name').value = '';
-  document.getElementById('modal-business-phone').value = '';
-  document.getElementById('modal-business-notes').value = '';
-  document.getElementById('business-modal').style.display = 'flex';
+function openMemberModal(bizId,deviceId){
+  var b=getBiz().find(function(x){return x.id===bizId;});if(!b)return;
+  var m=deviceId?(b.members||[]).find(function(x){return x.deviceId===deviceId;}):null;
+  openModal('<h3>'+(m?'Editar miembro (⬆️ cambia/amplía su plan)':'Nuevo miembro')+' — '+esc(b.name)+'</h3>'+
+    '<label>ID del terminal (GV-XXXX-XXXX o hash)</label><input id="m-dev" value="'+esc(m?m.deviceId:'')+'" '+(m?'readonly':'')+'>'+
+    '<label>Nombre</label><input id="m-name" value="'+esc(m?m.name||'':'')+'">'+
+    '<label>Rol</label><select id="m-role"><option value="employee"'+(m&&m.role==='admin'?'':' selected')+'>Empleado</option><option value="admin"'+(m&&m.role==='admin'?' selected':'')+'>Administrador</option></select>'+
+    '<label>Plan</label><select id="m-plan">'+
+      ['PERM','T37','T30','PROMO3M','T180','T365'].map(function(p){return '<option value="'+p+'"'+(m&&m.plan===p?' selected':'')+'>'+p+'</option>';}).join('')+
+    '</select>'+
+    '<label>Método</label><select id="m-method">'+
+      ['GVLIC','QR_SYNC','LEGACY'].map(function(p){return '<option value="'+p+'"'+(m&&m.method===p?' selected':'')+'>'+p+'</option>';}).join('')+
+    '</select>'+
+    '<label>Vence (déjalo vacío si es PERM o no aplica)</label><input id="m-exp" type="date" value="'+(m&&m.expiresAt?new Date(m.expiresAt).toISOString().slice(0,10):'')+'">'+
+    '<label>Teléfono</label><input id="m-phone" value="'+esc(m?m.phone||'':'')+'">'+
+    '<div class="row" style="margin-top:12px"><button class="btn btn-green" onclick="saveMemberModal(\''+bizId+'\',\''+esc(deviceId||'')+'\')">💾 Guardar</button>'+
+    '<button class="btn" onclick="closeModal()">Cancelar</button></div>'+
+    (m?'<div class="muted" style="margin-top:8px">💡 Tras guardar, usa "🔑 Clave" para generar la clave del plan nuevo y enviársela.</div>':''));
 }
-
-function saveBusinessModal() {
-  const name = document.getElementById('modal-business-name').value.trim();
-  if (!name) {
-    showToast('Ingresa el nombre del negocio', 'error');
-    return;
-  }
-  const phone = document.getElementById('modal-business-phone').value.trim();
-  const notes = document.getElementById('modal-business-notes').value.trim();
-
-  const list = getBusinesses();
-  const newBiz = {
-    id: `biz_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-    name,
-    phone,
-    notes,
-    members: []
+function saveMemberModal(bizId,oldDev){
+  var b=getBiz().find(function(x){return x.id===bizId;});if(!b)return;
+  var dev=document.getElementById('m-dev').value.trim();
+  if(!dev){toast('Falta el ID del terminal','err');return;}
+  var expVal=document.getElementById('m-exp').value;
+  var member={
+    deviceId:dev,
+    name:document.getElementById('m-name').value.trim(),
+    role:document.getElementById('m-role').value,
+    plan:document.getElementById('m-plan').value,
+    method:document.getElementById('m-method').value,
+    expiresAt:expVal?new Date(expVal+'T12:00:00').getTime():null,
+    phone:document.getElementById('m-phone').value.trim(),
+    addedAt:Date.now()
   };
-  list.unshift(newBiz);
-  saveBusinesses(list);
-  closeModal('business-modal');
-  renderBusinesses();
-  showToast('Negocio creado correctamente');
+  b.members=b.members||[];
+  if(oldDev){var i=b.members.findIndex(function(x){return x.deviceId===oldDev;});if(i>=0)b.members[i]=member;}
+  else b.members.push(member);
+  save(K_BIZ,getBiz().map(function(x){return x.id===bizId?b:x;}));
+  closeModal();renderBusinesses();toast('✅ Miembro guardado');
 }
-
-function deleteBusiness(bizId) {
-  if (!confirm('¿Seguro que deseas eliminar este negocio y todos sus terminales?')) return;
-  const list = getBusinesses().filter(b => b.id !== bizId);
-  saveBusinesses(list);
-  renderBusinesses();
-  showToast('Negocio eliminado');
-}
-
-function openAddMemberModal(bizId, role = 'admin') {
-  document.getElementById('modal-member-biz-id').value = bizId;
-  document.getElementById('modal-member-role').value = role;
-  document.getElementById('modal-member-name').value = '';
-  document.getElementById('modal-member-device-id').value = '';
-  document.getElementById('modal-member-plan').value = role === 'admin' ? 'T37' : 'EMPLOYEE';
-  document.getElementById('modal-member-method').value = role === 'admin' ? 'GVLIC' : 'QR_SYNC';
-  document.getElementById('modal-member-phone').value = '';
-  document.getElementById('member-modal').style.display = 'flex';
-}
-
-function saveMemberModal() {
-  const bizId = document.getElementById('modal-member-biz-id').value;
-  const role = document.getElementById('modal-member-role').value;
-  const name = document.getElementById('modal-member-name').value.trim();
-  const deviceId = document.getElementById('modal-member-device-id').value.trim();
-  const plan = document.getElementById('modal-member-plan').value;
-  const method = document.getElementById('modal-member-method').value;
-  const phone = document.getElementById('modal-member-phone').value.trim();
-
-  if (!name || !deviceId) {
-    showToast('Ingresa el nombre y el ID del terminal', 'error');
-    return;
-  }
-
-  const list = getBusinesses();
-  const biz = list.find(b => b.id === bizId);
-  if (!biz) return;
-
-  if (!biz.members) biz.members = [];
-  const friendly = formatFriendlyDeviceId(deviceId);
-
-  // Reemplazar si ya existe o añadir
-  biz.members = biz.members.filter(m => formatFriendlyDeviceId(m.deviceId) !== friendly);
-  biz.members.push({ role, name, deviceId: friendly, plan, method, phone });
-
-  saveBusinesses(list);
-  closeModal('member-modal');
-  renderBusinesses();
-  showToast('Miembro guardado con éxito');
-}
-
-function deleteMember(bizId, deviceId) {
-  if (!confirm('¿Eliminar este terminal del negocio?')) return;
-  const list = getBusinesses();
-  const biz = list.find(b => b.id === bizId);
-  if (!biz) return;
-  const friendly = formatFriendlyDeviceId(deviceId);
-  biz.members = (biz.members || []).filter(m => formatFriendlyDeviceId(m.deviceId) !== friendly);
-  saveBusinesses(list);
-  renderBusinesses();
-  showToast('Terminal eliminado');
-}
-
-function closeModal(id) {
-  document.getElementById(id).style.display = 'none';
-}
-
-// ============================================================================
-// ACCIONES RÁPIDAS: CLAVE, PROMO 3M Y WHATSAPP
-// ============================================================================
-function quickGenerateKey(deviceId, plan) {
-  const code = generateCryptographicLicense(deviceId, plan === 'EMPLOYEE' ? 'T37' : plan);
-  navigator.clipboard.writeText(code).catch(() => {});
-  showToast(`Clave ${plan} generada y copiada al portapapeles: ${code}`);
-}
-
-function quickPromo3M(deviceId, bizId, name) {
-  const code = generateCryptographicLicense(deviceId, 'PROMO3M');
-  navigator.clipboard.writeText(code).catch(() => {});
-  showToast(`🎁 ¡Promo Trimestral (90d) generada para ${name}!`);
-}
-
-function quickShareWhatsApp(name, deviceId, plan, phone) {
-  const code = generateCryptographicLicense(deviceId, plan === 'EMPLOYEE' ? 'T37' : plan);
-  const friendly = formatFriendlyDeviceId(deviceId);
-  const msg = `¡Hola ${name}! Aquí tienes tu clave oficial de activación para tu terminal (${friendly}):\n\n🔑 *Clave*: \`${code}\`\n\nIngrésala en la pantalla de inicio del sistema para habilitar tu período. ¡Gracias por tu confianza!`;
-  const cleanPhone = (phone || '').replace(/[^0-9]/g, '');
-  const url = cleanPhone 
-    ? `https://api.whatsapp.com/send?phone=+53${cleanPhone}&text=${encodeURIComponent(msg)}`
-    : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
-  window.open(url, '_blank');
-}
-
-// ============================================================================
-// BLOQUEOS Y GENERADOR LICENSE-STATUS.JSON
-// ============================================================================
-function openBlockModal(friendlyId) {
-  document.getElementById('block-modal-device-id').value = friendlyId;
-  document.getElementById('block-modal-display-id').value = friendlyId;
-  document.getElementById('block-modal-reason').value = '';
-  document.getElementById('block-modal').style.display = 'flex';
-}
-
-function confirmBlockTerminal() {
-  const friendlyId = document.getElementById('block-modal-device-id').value;
-  const reason = document.getElementById('block-modal-reason').value.trim();
-  if (!reason) {
-    showToast('Debes escribir un motivo obligatorio de bloqueo', 'error');
-    return;
-  }
-
-  const list = getBlockedList();
-  const filtered = list.filter(b => formatFriendlyDeviceId(b.deviceId || b.friendlyId) !== friendlyId);
-  filtered.push({
-    deviceId: friendlyId,
-    friendlyId: friendlyId,
-    reason: reason,
-    blockedAt: new Date().toISOString(),
-  });
-
-  saveBlockedList(filtered);
-  closeModal('block-modal');
-  renderBusinesses();
-  showToast(`Terminal ${friendlyId} bloqueado: "${reason}"`);
-}
-
-function unblockTerminal(friendlyId) {
-  const list = getBlockedList();
-  const filtered = list.filter(b => formatFriendlyDeviceId(b.deviceId || b.friendlyId) !== friendlyId);
-  saveBlockedList(filtered);
-  renderBusinesses();
-  showToast(`Terminal ${friendlyId} desbloqueado`);
-}
-
-function updateLicenseStatusJson() {
-  const allowNew = document.getElementById('status-allow-new').checked;
-  const blocked = getBlockedList();
-  document.getElementById('blocked-count').textContent = blocked.length;
-
-  const container = document.getElementById('blocked-list-container');
-  if (blocked.length === 0) {
-    container.innerHTML = `<div style="font-size: 0.75rem; color: var(--muted);">No hay terminales bloqueados actualmente.</div>`;
-  } else {
-    container.innerHTML = blocked.map(b => `
-      <div style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 0.5rem; padding: 0.5rem 0.75rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.78rem;">
-        <div>
-          <span style="font-family: monospace; font-weight: 800; color: #f87171;">${b.friendlyId || b.deviceId}</span>
-          <span style="color: var(--muted); margin-left: 0.5rem;">"${b.reason}"</span>
-        </div>
-        <button class="btn btn-outline btn-sm" style="color: #34d399; padding: 0.2rem 0.5rem; font-size: 0.7rem;" onclick="unblockTerminal('${b.friendlyId || b.deviceId}')">Desbloquear</button>
-      </div>
-    `).join('');
-  }
-
-  // Recopilar terminales LEGACY para reporte
-  const businesses = getBusinesses();
-  const legacyTerminals = [];
-  businesses.forEach(biz => {
-    (biz.members || []).forEach(m => {
-      if (m.method === 'LEGACY') {
-        legacyTerminals.push({
-          deviceId: m.deviceId,
-          friendlyId: formatFriendlyDeviceId(m.deviceId),
-          reportedAt: new Date().toISOString()
-        });
-      }
-    });
-  });
-
-  const payload = {
-    updated: new Date().toISOString(),
-    masterSwitch: true,
-    allowNewActivations: allowNew,
-    blocked: blocked.map(b => ({
-      deviceId: b.deviceId || b.friendlyId,
-      friendlyId: b.friendlyId || b.deviceId,
-      reason: b.reason || 'Terminal suspendido',
-      blockedAt: b.blockedAt || new Date().toISOString()
-    })),
-    legacyTerminals: legacyTerminals
-  };
-
-  document.getElementById('license-status-preview').textContent = JSON.stringify(payload, null, 2);
-}
-
-function copyLicenseStatusJson() {
-  const text = document.getElementById('license-status-preview').textContent;
-  navigator.clipboard.writeText(text);
-  showToast('license-status.json copiado al portapapeles');
-}
-
-function downloadLicenseStatusJson() {
-  const text = document.getElementById('license-status-preview').textContent;
-  const blob = new Blob([text], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'license-status.json';
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('Descargando license-status.json...');
-}
-
-// ============================================================================
-// ANUNCIOS
-// ============================================================================
-function updateAnnouncementJson() {
-  const payload = {
-    id: document.getElementById('anc-id').value.trim() || `aviso_${Date.now()}`,
-    title: document.getElementById('anc-title').value.trim(),
-    message: document.getElementById('anc-message').value.trim(),
-    active: document.getElementById('anc-active').checked,
-    type: document.getElementById('anc-type').value,
-    url: document.getElementById('anc-url').value.trim() || undefined,
-    urlLabel: document.getElementById('anc-url-label').value.trim() || undefined
-  };
-  document.getElementById('anc-preview').textContent = JSON.stringify(payload, null, 2);
-}
-
-['anc-id', 'anc-title', 'anc-message', 'anc-type', 'anc-url', 'anc-url-label', 'anc-active'].forEach(id => {
-  const el = document.getElementById(id);
-  if (el) el.addEventListener('input', updateAnnouncementJson);
-});
-
-function copyAnnouncementJson() {
-  updateAnnouncementJson();
-  const text = document.getElementById('anc-preview').textContent;
-  navigator.clipboard.writeText(text);
-  showToast('announcement.json copiado al portapapeles');
-}
-
-function downloadAnnouncementJson() {
-  updateAnnouncementJson();
-  const text = document.getElementById('anc-preview').textContent;
-  const blob = new Blob([text], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'announcement.json';
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('Descargando announcement.json...');
-}
-
-// ============================================================================
-// COMPROBANTES DE PAGO
-// ============================================================================
-function renderPayments() {
-  let list = [];
-  try {
-    const raw = localStorage.getItem(STORAGE_PAYMENTS);
-    list = raw ? JSON.parse(raw) : [];
-  } catch {}
-
-  const container = document.getElementById('payments-container');
-  if (list.length === 0) {
-    container.innerHTML = `<div style="text-align: center; padding: 2rem; color: var(--muted); font-size: 0.85rem;">No hay comprobantes de pago registrados aún.</div>`;
-    return;
-  }
-
-  container.innerHTML = list.map(p => `
-    <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 0.65rem; padding: 0.85rem; margin-bottom: 0.75rem;">
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem;">
-        <span style="font-weight: 800; font-size: 0.9rem; color: #fff;">${p.businessName || 'Mi Negocio'}</span>
-        <span style="font-size: 0.72rem; color: var(--muted);">${new Date(p.createdAt).toLocaleString()}</span>
-      </div>
-      <div style="font-size: 0.78rem; color: var(--muted); line-height: 1.5;">
-        <div>Plan: <strong style="color: #60a5fa;">${p.planTitle}</strong> | Monto: <strong style="color: #34d399;">$${p.amount} ${p.currency}</strong></div>
-        <div>Terminal ID: <strong style="font-family: monospace; color: #fff;">${p.terminalId}</strong></div>
-        <div>Nº Transacción: <strong style="font-family: monospace; color: var(--gold);">${p.transactionNumber}</strong></div>
-      </div>
-      <div style="margin-top: 0.65rem; display: flex; gap: 0.5rem;">
-        <button class="btn btn-accent btn-sm" onclick="quickGenerateKey('${p.terminalId}', '${p.planId}')">🔑 Generar Clave</button>
-        <button class="btn btn-outline btn-sm" onclick="quickShareWhatsApp('${p.clientName || 'Cliente'}', '${p.terminalId}', '${p.planId}', '${p.clientPhone || ''}')">💬 Enviar WhatsApp</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-// ============================================================================
-// GENERADOR MANUAL DE CLAVE
-// ============================================================================
-function toggleCustomDays() {
-  const val = document.getElementById('kg-type').value;
-  document.getElementById('custom-days-group').style.display = val === 'CUSTOM' ? 'block' : 'none';
-}
-
-function generateKeyFromForm() {
-  const rawId = document.getElementById('kg-device-id').value.trim();
-  if (!rawId) {
-    showToast('Ingresa el ID del terminal', 'error');
-    return;
-  }
-  let type = document.getElementById('kg-type').value;
-  if (type === 'CUSTOM') {
-    const days = parseInt(document.getElementById('kg-custom-days').value, 10) || 30;
-    type = `T${days}`;
-  }
-  const code = generateCryptographicLicense(rawId, type);
-  document.getElementById('kg-generated-code').textContent = code;
-  document.getElementById('keygen-result').style.display = 'block';
-}
-
-function copyResultCode(displayId, btnId) {
-  const text = document.getElementById(displayId).textContent;
-  navigator.clipboard.writeText(text);
-  const btn = document.getElementById(btnId);
-  btn.classList.add('copied');
-  btn.textContent = '✓ ¡Copiado!';
-  setTimeout(() => {
-    btn.classList.remove('copied');
-    btn.textContent = '📋 Copiar Clave';
-  }, 2000);
-}
-
-function shareKeyWhatsApp() {
-  const code = document.getElementById('kg-generated-code').textContent;
-  const devId = document.getElementById('kg-device-id').value.trim();
-  const friendly = formatFriendlyDeviceId(devId);
-  const msg = `¡Hola! Aquí tienes tu clave oficial de activación para tu terminal (${friendly}):\n\n🔑 *Clave*: \`${code}\`\n\nIngrésala en la pantalla de activación de Gestión de Ventas.`;
-  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
-}
-
-// ============================================================================
-// ACCESO DEV OTP
-// ============================================================================
-function calcOtp() {
-  const raw = document.getElementById('otp-challenge').value.replace(/\s+/g, '').trim();
-  if (raw.length < 6) {
-    document.getElementById('otp-output').textContent = '------';
-    return;
-  }
-  const hash = hmacSha256(MASTER_CRYPTO_SALT, `DEV-CHALLENGE:${raw}`);
-  const subInt = parseInt(hash.substring(0, 8), 16);
-  const otp = String(subInt % 1000000).padStart(6, '0');
-  document.getElementById('otp-output').textContent = otp;
-}
-
-// ============================================================================
-// SINCRONIZACIÓN DEL REGISTRO REMOTO ONLINE (FUNCIÓN A & B)
-// ============================================================================
-async function syncOnlineRegistry() {
-  const url = getRegistryUrl();
-  const statusEl = document.getElementById('sync-status-text');
-  statusEl.textContent = 'Consultando endpoint...';
-
-  try {
-    const finalUrl = `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`;
-    const res = await fetch(finalUrl, { redirect: 'follow' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    if (data && data.records && Array.isArray(data.records)) {
-      mergeRecordsIntoBusinesses(data.records);
-      statusEl.textContent = `Actualizado: ${data.records.length} registros sincronizados`;
-      showToast(`¡${data.records.length} registros remotos sincronizados con éxito!`);
-    } else {
-      throw new Error('Respuesta de formato no válido');
-    }
-  } catch (err) {
-    console.warn('Fallo en sincronización GET directa:', err);
-    statusEl.textContent = 'Bloqueado por CORS (usa Pegar JSON)';
-    openCorsFallbackModal();
-  }
-}
-
-function mergeRecordsIntoBusinesses(records) {
-  const list = getBusinesses();
-
-  records.forEach(rec => {
-    if (!rec || !rec.friendlyDeviceId) return;
-    const bName = rec.businessName?.trim() || 'Negocio Registrado';
-    const friendly = formatFriendlyDeviceId(rec.friendlyDeviceId);
-    const method = rec.method || 'GVLIC';
-    const plan = rec.plan || 'T37';
-    const role = method === 'QR_SYNC' ? 'employee' : 'admin';
-
-    // Buscar negocio por nombre
-    let biz = list.find(b => b.name.toLowerCase() === bName.toLowerCase());
-    if (!biz) {
-      biz = {
-        id: `biz_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-        name: bName,
-        phone: '',
-        notes: `Registrado automáticamente vía Phone-Home (${new Date().toLocaleDateString()})`,
-        members: []
-      };
-      list.push(biz);
-    }
-
-    if (!biz.members) biz.members = [];
-
-    // Buscar miembro por friendly ID
-    let mem = biz.members.find(m => formatFriendlyDeviceId(m.deviceId) === friendly);
-    if (!mem) {
-      biz.members.push({
-        role,
-        name: friendly,
-        deviceId: friendly,
-        plan,
-        method,
-        phone: '',
-      });
-    } else {
-      mem.method = method;
-      mem.plan = plan;
-      if (!mem.name || mem.name.startsWith('GV-')) mem.name = friendly;
-    }
-  });
-
-  saveBusinesses(list);
-  renderBusinesses();
-}
-
-function openCorsFallbackModal() {
-  document.getElementById('cors-fallback-modal').style.display = 'flex';
-}
-
-function copyRegistryUrl() {
-  const url = getRegistryUrl();
-  navigator.clipboard.writeText(url);
-  showToast('URL de Registro copiada');
-}
-
-function openRegistryUrlTab() {
-  const url = getRegistryUrl();
-  window.open(url, '_blank');
-}
-
-function processPastedRegistryJson() {
-  const raw = document.getElementById('cors-pasted-json').value.trim();
-  if (!raw) {
-    showToast('Pega el contenido JSON de la hoja', 'error');
-    return;
-  }
-  try {
-    const data = JSON.parse(raw);
-    const records = data.records || (Array.isArray(data) ? data : []);
-    if (records.length === 0) {
-      showToast('No se encontraron registros válidos', 'error');
-      return;
-    }
-    mergeRecordsIntoBusinesses(records);
-    closeModal('cors-fallback-modal');
-    showToast(`¡${records.length} registros fusionados con éxito!`);
-  } catch (err) {
-    showToast('Error al parsear el JSON', 'error');
-  }
-}
-
-function openImportReportModal() {
-  document.getElementById('import-report-json').value = '';
-  document.getElementById('import-report-modal').style.display = 'flex';
-}
-
-function processImportReport() {
-  const raw = document.getElementById('import-report-json').value.trim();
-  if (!raw) return;
-  try {
-    const rep = JSON.parse(raw);
-    if (!rep.signature || !rep.friendlyDeviceId) {
-      showToast('Formato de reporte inválido', 'error');
-      return;
-    }
-
-    // Verificar firma HMAC
-    const payloadToSign = `REPORT:V1:${rep.friendlyDeviceId}:${rep.businessName}:${rep.method}:${rep.plan}:${rep.expiresAt ?? 'perm'}:${rep.timestamp}`;
-    const expected = hmacSha256(MASTER_CRYPTO_SALT, payloadToSign);
-
-    if (rep.signature !== expected) {
-      showToast('⚠️ Firma del reporte inválida o manipulada', 'error');
-      return;
-    }
-
-    mergeRecordsIntoBusinesses([{
-      friendlyDeviceId: rep.friendlyDeviceId,
-      businessName: rep.businessName,
-      method: rep.method,
-      plan: rep.plan,
-      issuedAt: rep.issuedAt,
-      expiresAt: rep.expiresAt,
-    }]);
-
-    closeModal('import-report-modal');
-    showToast(`✓ Reporte de ${rep.friendlyDeviceId} validado e importado con éxito`);
-  } catch (err) {
-    showToast('JSON de reporte no válido', 'error');
-  }
-}
-
-function saveRegistryUrl() {
-  const val = document.getElementById('cfg-registry-url').value.trim();
-  if (val) {
-    localStorage.setItem(STORAGE_REG_URL, val);
-    showToast('URL de Registro guardada');
-  }
-}
-
-// ============================================================================
-// RESPALDO COMPLETO
-// ============================================================================
-function exportBackupJson() {
-  const backup = {
-    version: '2.0',
-    exportedAt: new Date().toISOString(),
-    businesses: getBusinesses(),
-    blocked: getBlockedList(),
-    registryUrl: getRegistryUrl()
-  };
-  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `backup_master_dev_${new Date().toISOString().slice(0, 10)}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('Respaldo exportado correctamente');
-}
-
-function importBackupJson(event) {
-  const file = event.target.files?.[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      const data = JSON.parse(e.target.result);
-      if (data.businesses) saveBusinesses(data.businesses);
-      if (data.blocked) saveBlockedList(data.blocked);
-      if (data.registryUrl) localStorage.setItem(STORAGE_REG_URL, data.registryUrl);
-      renderBusinesses();
-      showToast('Respaldo importado y restaurado exitosamente');
-    } catch {
-      showToast('El archivo de respaldo no es válido', 'error');
-    }
-  };
-  reader.readAsText(file);
-}
-
-// ============================================================================
-// INICIALIZACIÓN AL CARGAR
-// ============================================================================
-window.addEventListener('DOMContentLoaded', () => {
-  renderBusinesses();
-  updateLicenseStatusJson();
-  updateAnnouncementJson();
-  calcOtp();
-});
-</script>
-
-</body>
-</html>
+function delMember(bizId,deviceId){
+  if(!confirm('¿Eliminar este miembro del registro?'))return;
+  var b=getBiz().find(function(x){return x.id===bizId;});if(!b)return;
+  b.members=(b.members||[]).filter(function
