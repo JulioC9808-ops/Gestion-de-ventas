@@ -89,6 +89,19 @@ class UpdateDialogHelper(private val activity: Activity) {
     }
 
     /**
+     * FIX recuadro blanco: Android 15 puede REAPLICAR el fondo del tema padre
+     * DESPUÉS de show(). Se fuerza la transparencia de nuevo tras mostrar.
+     */
+    private fun forceTransparentAfterShow(dialog: Dialog) {
+        dialog.window?.let { w ->
+            w.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            w.decorView.background = ColorDrawable(Color.TRANSPARENT)
+            w.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+            w.setDimAmount(0f)
+        }
+    }
+
+    /**
      * Muestra la notificación flotante de actualización disponible con botones "Sí" y "No".
      */
     fun showUpdateAvailableDialog(
@@ -100,8 +113,8 @@ class UpdateDialogHelper(private val activity: Activity) {
         if (activity.isFinishing || activity.isDestroyed) return
         val context = activity
         val dp = context.resources.displayMetrics.density
-        var dialogRef: Dialog? = null
 
+        var dialogRef: Dialog? = null
         val card = makeCard(context, "#3B82F6")
 
         // Fila superior: Icono + Títulos
@@ -113,21 +126,18 @@ class UpdateDialogHelper(private val activity: Activity) {
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
         }
-
         topRow.addView(appIcon(context, 38))
 
         val textCol = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
-
         textCol.addView(TextView(context).apply {
             text = "Hay una nueva versión disponible"
             textSize = 13.5f
             setTypeface(null, Typeface.BOLD)
             setTextColor(Color.parseColor("#FFFFFF"))
         })
-
         textCol.addView(TextView(context).apply {
             val versionStr = if (info.versionName.isNotBlank()) " (v${info.versionName})" else ""
             text = "¿Deseas descargarla?$versionStr"
@@ -135,7 +145,6 @@ class UpdateDialogHelper(private val activity: Activity) {
             setTextColor(Color.parseColor("#D1D5DB"))
             setPadding(0, (2 * dp).toInt(), 0, 0)
         })
-
         topRow.addView(textCol)
         card.addView(topRow)
 
@@ -189,7 +198,6 @@ class UpdateDialogHelper(private val activity: Activity) {
             onUpdateClicked()
         }
         buttonsRow.addView(btnYes)
-
         card.addView(buttonsRow)
 
         val root = FrameLayout(context).apply {
@@ -205,10 +213,10 @@ class UpdateDialogHelper(private val activity: Activity) {
         if (!info.mandatory) {
             dialog.setOnCancelListener { onPostponeClicked() }
         }
-
         setupFloatingWindow(dialog, context, maxWidthDp = 350, noDim = true)
         currentDialog = dialog
         dialog.show()
+        forceTransparentAfterShow(dialog)
     }
 
     /**
@@ -231,21 +239,18 @@ class UpdateDialogHelper(private val activity: Activity) {
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
         }
-
         topRow.addView(appIcon(context, 34))
 
         val col = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
-
         tvProgressStatus = TextView(context).apply {
             text = "Descargando actualización…"
             textSize = 13f
             setTypeface(null, Typeface.BOLD)
             setTextColor(Color.parseColor("#FFFFFF"))
         }
-
         progressBar = ProgressBar(context, null, android.R.attr.progressBarStyleHorizontal).apply {
             isIndeterminate = true
             max = 100
@@ -256,7 +261,6 @@ class UpdateDialogHelper(private val activity: Activity) {
                 topMargin = (6 * dp).toInt()
             }
         }
-
         val infoRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             layoutParams = LinearLayout.LayoutParams(
@@ -266,14 +270,12 @@ class UpdateDialogHelper(private val activity: Activity) {
                 topMargin = (4 * dp).toInt()
             }
         }
-
         tvProgressPercent = TextView(context).apply {
             text = "0%"
             textSize = 11.5f
             setTypeface(null, Typeface.BOLD)
             setTextColor(Color.parseColor("#60A5FA"))
         }
-
         tvProgressBytes = TextView(context).apply {
             text = "Preparando descarga…"
             textSize = 11f
@@ -281,14 +283,11 @@ class UpdateDialogHelper(private val activity: Activity) {
             gravity = Gravity.END
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
-
         infoRow.addView(tvProgressPercent)
         infoRow.addView(tvProgressBytes)
-
         col.addView(tvProgressStatus)
         col.addView(progressBar)
         col.addView(infoRow)
-
         topRow.addView(col)
         card.addView(topRow)
 
@@ -302,10 +301,10 @@ class UpdateDialogHelper(private val activity: Activity) {
         dialog.setCancelable(false)
         dialog.setCanceledOnTouchOutside(false)
         setupFloatingWindow(dialog, context, maxWidthDp = 340, noDim = true)
-
         progressDialog = dialog
         currentDialog = dialog
         dialog.show()
+        forceTransparentAfterShow(dialog)
     }
 
     /**
@@ -348,8 +347,8 @@ class UpdateDialogHelper(private val activity: Activity) {
         if (activity.isFinishing || activity.isDestroyed) return
         val context = activity
         val dp = context.resources.displayMetrics.density
-        var dialogRef: Dialog? = null
 
+        var dialogRef: Dialog? = null
         val card = makeCard(context, "#3B82F6")
 
         val title = TextView(context).apply {
@@ -358,14 +357,12 @@ class UpdateDialogHelper(private val activity: Activity) {
             setTypeface(null, Typeface.BOLD)
             setTextColor(Color.parseColor("#FFFFFF"))
         }
-
         val message = TextView(context).apply {
             text = "Para completar la actualización, permite que la aplicación instale archivos en los ajustes del sistema."
             textSize = 12.5f
             setTextColor(Color.parseColor("#D1D5DB"))
             setPadding(0, (4 * dp).toInt(), 0, 0)
         }
-
         val buttonsRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.END
@@ -376,7 +373,6 @@ class UpdateDialogHelper(private val activity: Activity) {
                 topMargin = (12 * dp).toInt()
             }
         }
-
         val btnCancel = TextView(context).apply {
             text = "Cancelar"
             textSize = 13f
@@ -387,7 +383,6 @@ class UpdateDialogHelper(private val activity: Activity) {
                 onCancel()
             }
         }
-
         val btnSettings = TextView(context).apply {
             text = "Abrir Ajustes"
             textSize = 13f
@@ -409,10 +404,8 @@ class UpdateDialogHelper(private val activity: Activity) {
                 onAuthorize()
             }
         }
-
         buttonsRow.addView(btnCancel)
         buttonsRow.addView(btnSettings)
-
         card.addView(title)
         card.addView(message)
         card.addView(buttonsRow)
@@ -429,6 +422,7 @@ class UpdateDialogHelper(private val activity: Activity) {
         setupFloatingWindow(dialog, context, maxWidthDp = 350, noDim = true)
         currentDialog = dialog
         dialog.show()
+        forceTransparentAfterShow(dialog)
     }
 
     /**
@@ -439,8 +433,8 @@ class UpdateDialogHelper(private val activity: Activity) {
         if (activity.isFinishing || activity.isDestroyed) return
         val context = activity
         val dp = context.resources.displayMetrics.density
-        var dialogRef: Dialog? = null
 
+        var dialogRef: Dialog? = null
         val card = makeCard(context, "#EF4444")
 
         val title = TextView(context).apply {
@@ -449,14 +443,12 @@ class UpdateDialogHelper(private val activity: Activity) {
             setTypeface(null, Typeface.BOLD)
             setTextColor(Color.parseColor("#F87171"))
         }
-
         val msg = TextView(context).apply {
             text = message
             textSize = 12f
             setTextColor(Color.parseColor("#D1D5DB"))
             setPadding(0, (4 * dp).toInt(), 0, 0)
         }
-
         val buttonsRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.END
@@ -467,7 +459,6 @@ class UpdateDialogHelper(private val activity: Activity) {
                 topMargin = (10 * dp).toInt()
             }
         }
-
         if (onRetry != null) {
             val btnRetry = TextView(context).apply {
                 text = "Reintentar"
@@ -482,7 +473,6 @@ class UpdateDialogHelper(private val activity: Activity) {
             }
             buttonsRow.addView(btnRetry)
         }
-
         val btnClose = TextView(context).apply {
             text = "Cerrar"
             textSize = 13f
@@ -492,9 +482,7 @@ class UpdateDialogHelper(private val activity: Activity) {
                 dialogRef?.dismiss()
             }
         }
-
         buttonsRow.addView(btnClose)
-
         card.addView(title)
         card.addView(msg)
         card.addView(buttonsRow)
@@ -511,6 +499,7 @@ class UpdateDialogHelper(private val activity: Activity) {
         setupFloatingWindow(dialog, context, maxWidthDp = 350, noDim = true)
         currentDialog = dialog
         dialog.show()
+        forceTransparentAfterShow(dialog)
     }
 
     /**
