@@ -15,8 +15,13 @@
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
-        <item name="colorSurface">#FFFFFF</item>
-        <item name="colorOnSurface">#1F2937</item>
+        <item name="colorSurface">#1F2937</item>
+        <item name="colorOnSurface">#F9FAFB</item>
+        <!-- Resaltado de selección de texto translúcido sin recuadros blancos detrás -->
+        <item name="android:textColorHighlight">#593B82F6</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:actionModeBackground">@android:color/transparent</item>
+        <item name="android:actionModeSplitBackground">@android:color/transparent</item>
         <!-- Android 15 (targetSdk 35) fuerza edge-to-edge: esto lo desactiva -->
         <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
     </style>

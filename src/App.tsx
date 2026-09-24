@@ -21,6 +21,7 @@ import { initRemoteRegistryQueue } from "@/lib/remoteRegistry";
 import { ShieldAlert, MessageCircle, AlertOctagon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { initRemoteBranding } from "@/lib/remoteBranding";
+import { initPinchZoom } from "@/lib/pinchZoom";
 
 const queryClient = new QueryClient();
 
@@ -106,6 +107,9 @@ const App = () => {
     initLicenseStatusChecker();
     initRemoteBranding();
 
+    // Iniciar gestor de escala táctil (pellizcar para aumentar/disminuir)
+    const cleanupPinchZoom = initPinchZoom();
+
     // Obtener ID de hardware y verificar estado inicial
     let alive = true;
     getDeviceId().then(d => {
@@ -143,6 +147,7 @@ const App = () => {
     return () => {
       alive = false;
       unsub();
+      cleanupPinchZoom();
     };
   }, []);
 

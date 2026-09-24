@@ -225,7 +225,20 @@ export default function UserManagement() {
                   )}
                   <td className="text-sm text-muted-foreground hidden sm:table-cell">{new Date(u.createdAt).toLocaleDateString()}</td>
                   <td className="text-right">
-                    <Button variant="ghost" size="sm" onClick={() => setQrUser(u)} title="QR de activación">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        if (u.role === 'admin') {
+                          toast.info('Sincronización entre Administradores', {
+                            description: 'Para transferir todos los datos del negocio a otro Administrador, ve a la sección "Sincronizar" en el menú principal.',
+                          });
+                        } else {
+                          setQrUser(u);
+                        }
+                      }}
+                      title={u.role === 'admin' ? 'Información de sincronización Admin' : 'QR de activación de Empleado'}
+                    >
                       <QrCode className="w-4 h-4" />
                     </Button>
                     <Button variant="ghost" size="sm" onClick={() => openEdit(u)}>

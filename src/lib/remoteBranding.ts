@@ -57,10 +57,11 @@ function writeCache(c: AppliedCache): void {
 }
 
 function validImage(data: unknown): string | null {
-  if (typeof data !== 'string' || !data) return null;
-  if (!data.startsWith('data:image/')) return null;
-  if (data.length > MAX_IMAGE_CHARS) return null;
-  return data;
+  if (typeof data !== 'string' || !data.trim()) return null;
+  const s = data.trim();
+  if (s.startsWith('data:image/') && s.length <= MAX_IMAGE_CHARS) return s;
+  if (s.startsWith('https://') || s.startsWith('http://') || s.startsWith('/')) return s;
+  return null;
 }
 
 /**

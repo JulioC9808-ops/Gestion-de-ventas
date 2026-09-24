@@ -231,6 +231,27 @@ export async function exportBackupFile(data: {
 }
 
 /**
+ * Descarga o comparte el archivo de respaldo seguro anterior (.old.gvbak).
+ */
+export function exportOldBackupFile(): boolean {
+  const oldRaw = localStorage.getItem(STORAGE_AUTO_BACKUP_OLD);
+  if (!oldRaw) return false;
+  const d = new Date();
+  const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const filename = `backup_gestion_ventas_${dateStr}.old.gvbak`;
+  const blob = new Blob([oldRaw], { type: 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  return true;
+}
+
+/**
  * Parsea, desofusca y valida el contenido de un archivo de respaldo.
  * Si fue editado o alterado manualmente, rechaza la restauración.
  */

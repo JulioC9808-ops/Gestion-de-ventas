@@ -11,6 +11,7 @@ export interface LoginResult {
 
 interface AuthContextType {
   currentUser: User | null;
+  user: User | null;
   login: (username: string, password: string) => boolean;
   loginDetailed: (username: string, password: string) => LoginResult;
   loginWithDevOtp: (challenge: string, otp: string, devUser?: User) => boolean;
@@ -92,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isRole = useCallback((role: UserRole) => currentUser?.role === role, [currentUser]);
 
   return (
-    <AuthContext.Provider value={{ currentUser, login, loginDetailed, loginWithDevOtp, logout, isRole }}>
+    <AuthContext.Provider value={{ currentUser, user: currentUser, login, loginDetailed, loginWithDevOtp, logout, isRole }}>
       {children}
     </AuthContext.Provider>
   );

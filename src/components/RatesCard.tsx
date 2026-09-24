@@ -31,76 +31,159 @@ const FLAG_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   SEK: SE, NOK: NO, DKK: DK, PLN: PL,
 };
 
-// ---- Iconos especiales dibujados en SVG (como el sitio de elTOQUE) ----
+// ---- Iconos especiales dibujados en SVG (fieles a elTOQUE y las tarjetas oficiales) ----
 
-/** MLC: tarjeta verde/gris */
+/** MLC: tarjeta verde/gris con chip bancario */
 function MlcCardIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 16" className={className || 'w-6'} style={{ aspectRatio: '3 / 2' }} aria-label="MLC">
-      <rect width="24" height="16" rx="2.5" fill="#8a9a8c" />
-      <rect y="10.5" width="24" height="5.5" rx="1.5" fill="#5c705e" />
-      <rect x="3" y="3.2" width="9" height="1.8" rx="0.9" fill="#ffffff" opacity="0.9" />
-      <rect x="3" y="6" width="6" height="1.8" rx="0.9" fill="#ffffff" opacity="0.65" />
-      <rect x="16.5" y="3" width="4.5" height="3.4" rx="0.8" fill="#3f7d4e" />
+      <rect width="24" height="16" rx="2.5" fill="#52796F" />
+      <rect y="10.5" width="24" height="5.5" rx="1.5" fill="#354F52" />
+      <rect x="2.8" y="3" width="5" height="4" rx="0.8" fill="#F4A261" />
+      <rect x="9" y="3.5" width="12" height="1.6" rx="0.8" fill="#ffffff" opacity="0.9" />
+      <rect x="9" y="6" width="8" height="1.6" rx="0.8" fill="#ffffff" opacity="0.65" />
     </svg>
   );
 }
 
-/** Zelle: cuadro morado con la Z blanca */
+/** Zelle: icono morado oficial con la Z y una sola raya vertical centrada que solo sobresale arriba y abajo */
 function ZelleIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className || 'w-6 h-6'} aria-label="Zelle">
-      <rect width="24" height="24" rx="5" fill="#5f22d9" />
-      <text
-        x="12" y="17.5" textAnchor="middle" fill="#ffffff"
-        fontSize="14" fontWeight="800" fontFamily="Arial, Helvetica, sans-serif"
-      >
-        Z
-      </text>
+      <rect width="24" height="24" rx="5.5" fill="#7414CA" />
+      {/* Punta vertical superior que sobresale arriba */}
+      <rect x="10.9" y="3.2" width="2.2" height="5" rx="1.1" fill="#ffffff" />
+      {/* Punta vertical inferior que sobresale abajo */}
+      <rect x="10.9" y="15.8" width="2.2" height="5" rx="1.1" fill="#ffffff" />
+      {/* Letra Z central limpia */}
+      <path
+        d="M6 6.8h12v2.4l-7.4 8h7.4v2.4H6v-2.4l7.4-8H6V6.8z"
+        fill="#ffffff"
+      />
     </svg>
   );
 }
 
-/** CLA: Tarjeta Clásica (azul oscuro con franjas) */
+/** CLA: Tarjeta Clásica (Fincimex USD - Fondo verde azulado/teal con ondas cian dinámicas, chip dorado y logo Clásica) */
 function ClasicaIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 16" className={className || 'w-6'} style={{ aspectRatio: '3 / 2' }} aria-label="CLA">
-      <rect width="24" height="16" rx="2.5" fill="#2b3a55" />
-      <rect y="2.5" width="24" height="1.6" fill="#c0392b" opacity="0.85" />
-      <rect x="3" y="6" width="7" height="1.8" rx="0.9" fill="#ffffff" opacity="0.9" />
-      <rect x="3" y="9" width="5" height="1.6" rx="0.8" fill="#ffffff" opacity="0.6" />
+    <svg
+      viewBox="0 0 36 24"
+      className={className || 'w-6'}
+      style={{ aspectRatio: '3 / 2' }}
+      aria-label="Tarjeta Clásica"
+    >
+      <defs>
+        {/* Fondo degradado verde azulado oscuro / teal */}
+        <linearGradient id="claBg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#042f2e" />
+          <stop offset="45%" stopColor="#0f514d" />
+          <stop offset="100%" stopColor="#022c2b" />
+        </linearGradient>
+
+        {/* Ondas cian brillantes de la tarjeta clásica */}
+        <linearGradient id="claCyanWave" x1="0%" y1="0%" x2="100%" y2="80%">
+          <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.95" />
+          <stop offset="50%" stopColor="#06b6d4" stopOpacity="0.75" />
+          <stop offset="100%" stopColor="#0284c7" stopOpacity="0.2" />
+        </linearGradient>
+
+        {/* Chip dorado */}
+        <linearGradient id="claGoldChip" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#fef08a" />
+          <stop offset="50%" stopColor="#eab308" />
+          <stop offset="100%" stopColor="#b45309" />
+        </linearGradient>
+      </defs>
+
+      {/* Tarjeta Base */}
+      <rect width="36" height="24" rx="3" fill="url(#claBg)" />
+
+      {/* Ondas dinámicas cian características de la Tarjeta Clásica */}
+      <path
+        d="M0,7 C12,4 20,16 36,9 L36,16 C22,23 10,13 0,16 Z"
+        fill="url(#claCyanWave)"
+      />
+      <path
+        d="M0,17 C10,13 22,22 36,13 L36,18 C24,25 12,18 0,22 Z"
+        fill="#38bdf8"
+        opacity="0.4"
+      />
+      <path
+        d="M6,0 C15,8 24,3 36,5 L36,1 C26,0 16,3 6,0 Z"
+        fill="#67e8f9"
+        opacity="0.3"
+      />
+
+      {/* Chip EMV Dorado Inteligente */}
+      <g transform="translate(4, 7.5)">
+        <rect width="6.5" height="5" rx="1" fill="url(#claGoldChip)" />
+        <rect x="0.8" y="0.8" width="4.9" height="3.4" rx="0.5" fill="none" stroke="#78350f" strokeWidth="0.3" opacity="0.6" />
+        <line x1="0.8" y1="2.5" x2="5.7" y2="2.5" stroke="#78350f" strokeWidth="0.3" opacity="0.6" />
+        <line x1="3.25" y1="0.8" x2="3.25" y2="4.2" stroke="#78350f" strokeWidth="0.3" opacity="0.6" />
+      </g>
+
+      {/* Símbolo Contactless */}
+      <g transform="translate(12, 8.5)" stroke="#67e8f9" strokeWidth="0.5" fill="none" opacity="0.8" strokeLinecap="round">
+        <path d="M0,1.5 A2,2 0 0,1 0,3.5" />
+        <path d="M1,0.8 A3.5,3.5 0 0,1 1,4.2" />
+        <path d="M2,0.1 A5,5 0 0,1 2,4.9" />
+      </g>
+
+      {/* Texto de la Marca "Clásica" en tipografía dorada/blanca estilizada */}
       <text
-        x="17" y="12.8" textAnchor="middle" fill="#ffffff" opacity="0.95"
-        fontSize="4.6" fontWeight="700" fontFamily="Arial, Helvetica, sans-serif"
+        x="24.5"
+        y="10.5"
+        textAnchor="middle"
+        fill="#fef08a"
+        fontSize="3.8"
+        fontFamily="Georgia, 'Times New Roman', serif"
+        fontStyle="italic"
+        fontWeight="bold"
+        letterSpacing="0.2"
       >
-        CLA
+        Clásica
+      </text>
+
+      {/* Indicador USD */}
+      <text
+        x="24.5"
+        y="14.5"
+        textAnchor="middle"
+        fill="#ffffff"
+        opacity="0.85"
+        fontSize="2.1"
+        fontFamily="system-ui, -apple-system, sans-serif"
+        fontWeight="800"
+        letterSpacing="0.6"
+      >
+        USD
       </text>
     </svg>
   );
 }
 
-/** USDT / cripto: emoji de respaldo */
-function CryptoIcon({ code, className }: { code: string; className?: string }) {
-  const emoji = code === 'USDT' ? '💵' : code === 'BTC' ? '₿' : code === 'ETH' ? 'Ξ' : code === 'TRX' ? '⚡' : '💱';
+/** Icono de respaldo genérico para divisas sin bandera */
+function CurrencyFallbackIcon({ code, className }: { code: string; className?: string }) {
   return (
-    <span className={`inline-flex shrink-0 items-center justify-center align-middle ${className || 'w-6'}`}>
-      {emoji}
+    <span
+      className={`inline-flex shrink-0 items-center justify-center rounded-[3px] bg-muted text-[10px] font-mono font-bold text-foreground ring-1 ring-black/10 align-middle ${className || 'w-6'}`}
+      style={{ aspectRatio: '3 / 2' }}
+    >
+      {code.slice(0, 3)}
     </span>
   );
 }
 
 /**
  * Icono de la moneda, con prioridad:
- * 1) SVG especial (MLC, ZELLE, CLA)  2) Bandera de país SVG  3) Emoji cripto
+ * 1) SVG especial (MLC, ZELLE, CLA)  2) Bandera de país SVG oficial  3) Respaldo
  */
 function CurrencyFlag({ code, className }: { code: string; className?: string }) {
   const upper = code.toUpperCase();
-  if (upper === 'MLC' || upper === 'CUP') {
-    // MLC y CUP usan el ícono de tarjeta cubana; CUP además tiene bandera 🇨🇺 si prefieres
-    if (upper === 'MLC') return <MlcCardIcon className={className} />;
-  }
+  if (upper === 'MLC') return <MlcCardIcon className={className} />;
   if (upper === 'ZELLE') return <ZelleIcon className={className} />;
-  if (upper === 'CLA') return <ClasicaIcon className={className} />;
+  if (upper === 'CLA' || upper === 'CLASICA') return <ClasicaIcon className={className} />;
   const Flag = FLAG_MAP[upper];
   if (Flag) {
     return (
@@ -108,25 +191,68 @@ function CurrencyFlag({ code, className }: { code: string; className?: string })
         className={`inline-flex shrink-0 overflow-hidden rounded-[3px] shadow-sm ring-1 ring-black/10 align-middle ${className || 'w-6'}`}
         style={{ aspectRatio: '3 / 2' }}
       >
-        <Flag className="h-full w-full" />
+        <Flag className="h-full w-full object-cover" />
       </span>
     );
   }
-  return <CryptoIcon code={upper} className={className} />;
+  return <CurrencyFallbackIcon code={upper} className={className} />;
 }
 
-/** Chip ▲/▼ estilo elTOQUE: rojo al subir, verde al bajar */
+/** Formatea números de variación permitiendo decimales (ej. 3.5, 43.3) */
+function formatDeltaNumber(val: number): string {
+  const abs = Math.abs(val);
+  if (Number.isInteger(abs)) return String(abs);
+  const rounded = Math.round(abs * 100) / 100;
+  return rounded.toString();
+}
+
+/** Formatea números de tasas permitiendo decimales cuando existan */
+function formatRateNumber(val?: number | null): string {
+  if (val == null || !isFinite(val)) return '0';
+  if (Number.isInteger(val)) {
+    return val.toLocaleString('es-ES');
+  }
+  return val.toLocaleString('es-ES', {
+    minimumFractionDigits: Number.isInteger(val * 10) ? 1 : 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+/** Chip ▲/▼ estilo elTOQUE: verde al subir con flecha arriba, rojo al bajar con flecha abajo, gris sin flecha al mantenerse igual */
 function DeltaChip({ delta, big }: { delta?: RateDelta | null; big?: boolean }) {
-  if (!delta) return null;
-  const up = delta.direction === 'up';
-  const value = Math.abs(delta.diff);
-  const text = value % 1 === 0 ? String(value) : value.toFixed(2);
+  const d = delta || { diff: 0, direction: 'equal' };
+
+  if (d.direction === 'up' && d.diff > 0) {
+    const text = formatDeltaNumber(d.diff);
+    return (
+      <span
+        className={`inline-flex items-center gap-0.5 font-bold font-mono whitespace-nowrap text-emerald-600 dark:text-emerald-400 ${big ? 'text-xs' : 'text-[11px]'}`}
+        title={`Aumento de ${text} CUP`}
+      >
+        ▲ +{text}
+      </span>
+    );
+  }
+
+  if (d.direction === 'down' && d.diff > 0) {
+    const text = formatDeltaNumber(d.diff);
+    return (
+      <span
+        className={`inline-flex items-center gap-0.5 font-bold font-mono whitespace-nowrap text-rose-600 dark:text-rose-400 ${big ? 'text-xs' : 'text-[11px]'}`}
+        title={`Descenso de ${text} CUP`}
+      >
+        ▼ -{text}
+      </span>
+    );
+  }
+
+  // Se mantiene igual -> en gris sin flecha
   return (
     <span
-      className={`inline-flex items-center gap-0.5 font-bold whitespace-nowrap ${big ? 'text-[11px]' : 'text-[10px]'}`}
-      style={{ color: up ? '#dc2626' : '#16a34a' }}
+      className={`inline-flex items-center font-bold font-mono whitespace-nowrap text-muted-foreground/75 ${big ? 'text-xs' : 'text-[11px]'}`}
+      title="Sin cambio respecto al valor anterior"
     >
-      {up ? '▲' : '▼'} {up ? '+' : '-'}{text}
+      0
     </span>
   );
 }
@@ -185,10 +311,24 @@ function timeAgo(iso: string): string {
   return `hace ${days} d`;
 }
 
-/** Fila estilo elTOQUE: "1 USD [icono] ... 720.00 CUP ▲ +3" */
+/** Fila estilo elTOQUE: "1 USD [icono] ... 720.00 CUP ▲ +3" con números que cambian de color según aumento/descenso */
 function RateRow({
   rate, accent, big, delta,
 }: { rate: CurrencyRate; accent?: string; big?: boolean; delta?: RateDelta | null }) {
+  const d = delta || { diff: 0, direction: 'equal' };
+
+  const isUp = d.direction === 'up' && d.diff > 0;
+  const isDown = d.direction === 'down' && d.diff > 0;
+
+  // Clase de color según variación para el número de precio (verde si subió, rojo si bajó)
+  const priceColorClass = isUp
+    ? 'text-emerald-600 dark:text-emerald-400'
+    : isDown
+    ? 'text-rose-600 dark:text-rose-400'
+    : '';
+
+  const fallbackStyle = !priceColorClass && accent ? { color: accent } : undefined;
+
   return (
     <div className="flex items-center justify-between py-3 border-b border-border/40 last:border-b-0">
       <div className="flex items-center gap-2.5 min-w-0">
@@ -201,16 +341,20 @@ function RateRow({
         {rate.buy != null && rate.sell != null ? (
           <div className={big ? 'text-sm' : 'text-xs'}>
             <span className="text-[10px] text-muted-foreground mr-1">C:</span>
-            <span className="font-bold text-foreground">${rate.buy.toLocaleString()}</span>
+            <span className={`font-bold ${priceColorClass || 'text-foreground'}`}>
+              ${formatRateNumber(rate.buy)}
+            </span>
             <span className="text-[10px] text-muted-foreground mx-1">/</span>
             <span className="text-[10px] text-muted-foreground mr-1">V:</span>
-            <span className="font-bold" style={{ color: accent }}>{`${rate.sell.toLocaleString()} CUP`}</span>
+            <span className={`font-bold ${priceColorClass || ''}`} style={fallbackStyle}>
+              {`${formatRateNumber(rate.sell)} CUP`}
+            </span>
             <span className="ml-1.5"><DeltaChip delta={delta} big={big} /></span>
           </div>
         ) : (
           <div className="flex items-center gap-1.5 justify-end">
-            <span className={`font-bold ${big ? 'text-base' : 'text-sm'}`} style={{ color: accent }}>
-              {`${rate.value.toLocaleString()} CUP`}
+            <span className={`font-bold ${big ? 'text-base' : 'text-sm'} ${priceColorClass || ''}`} style={fallbackStyle}>
+              {`${formatRateNumber(rate.value)} CUP`}
             </span>
             <DeltaChip delta={delta} big={big} />
           </div>
@@ -364,7 +508,7 @@ export default function RatesCard() {
           <div className="relative px-3 pt-3 pb-1 shrink-0 bg-background">
             <Search className="absolute left-6 top-1/2 -translate-y-1/3 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar moneda (ej: USD, EUR, Zelle, MXN)..."
+              placeholder="Buscar"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="pl-9 h-9 text-xs bg-background/60"

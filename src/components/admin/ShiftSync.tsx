@@ -21,7 +21,7 @@ import {
 
 export default function ShiftSync() {
   const { products, stock, movements, users, reports, settings, addReport, applyBackup } = useData();
-  const { user } = useAuth();
+  const { currentUser, user } = useAuth();
 
   const [activeTab, setActiveTab] = useState<'shift' | 'admin'>('shift');
 
@@ -45,15 +45,13 @@ export default function ShiftSync() {
   }, []);
 
   // ---- Verificación de privilegios para la sincronización ENTRE ADMINS ----
-  // Regla: sesión de Administrador (o dev) abierta Y dispositivo con licencia activa.
-  // La pantalla de licencia JAMÁS puede usar estos paquetes (ver LicenseGate).
+  // Regla: sesión de Administrador (o dev) abierta.
+  // Transfiere los datos de la cafetería (productos, inventario, precios y tasas) a otro administrador.
+  // NO transfiere licencias (cada terminal debe estar licenciado de forma independiente).
   const canUseAdminSync = (): boolean => {
-    if (user?.role !== 'admin' && user?.role !== 'dev') {
-      toast.error('Solo una cuenta con sesión de Administrador puede usar esta sincronización.');
-      return false;
-    }
-    if (!isDeviceLicensed()) {
-      toast.error('Este dispositivo no tiene licencia activa. La sincronización entre administradores requiere la app licenciada.');
+    const activeRole = currentUser?.role || user?.role;
+    if (activeRole !== 'admin' && activeRole !== 'dev') {
+      toast.error('Solo una cuenta con sesión de Administrador puede emitir esta sincronización.');
       return false;
     }
     return true;

@@ -67,7 +67,7 @@ public class MainActivity extends BridgeActivity {
             }
             if (getBridge() != null && getBridge().getWebView() != null) {
                 WebView webView = getBridge().getWebView();
-                webView.setBackgroundColor(android.graphics.Color.WHITE);
+                webView.setBackgroundColor(android.graphics.Color.TRANSPARENT);
                 WebSettings s = webView.getSettings();
                 s.setSupportZoom(true);
                 s.setBuiltInZoomControls(true);

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { HardDriveDownload, Upload, Download, FileCheck, RefreshCw, Shield, FolderSearch, History, Clock } from 'lucide-react';
 import { toast } from 'sonner';
-import { exportBackupFile, parseBackupFile, getAutoBackupInfo, type FullBackupData } from '@/lib/backupUtils';
+import { exportBackupFile, exportOldBackupFile, parseBackupFile, getAutoBackupInfo, type FullBackupData } from '@/lib/backupUtils';
 
 export default function CompactBackupControl() {
   const { products, stock, movements, users, reports, settings, applyBackup } = useData();
@@ -159,16 +159,33 @@ export default function CompactBackupControl() {
         </div>
 
         {autoInfo.hasOld && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setRestoreOldDialogOpen(true)}
-            className="h-6 text-[11px] px-2 text-primary hover:bg-primary/10"
-          >
-            <History className="w-3 h-3 mr-1" />
-            Restaurar Backup.old
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                const ok = exportOldBackupFile();
+                if (ok) toast.success('Archivo .old.gvbak descargado con éxito');
+                else toast.error('No hay copia anterior disponible para descargar.');
+              }}
+              className="h-6 text-[11px] px-2 text-muted-foreground hover:text-foreground"
+              title="Descargar archivo .old.gvbak"
+            >
+              <Download className="w-3 h-3 mr-1" />
+              Descargar .old
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setRestoreOldDialogOpen(true)}
+              className="h-6 text-[11px] px-2 text-primary hover:bg-primary/10"
+            >
+              <History className="w-3 h-3 mr-1" />
+              Restaurar Backup.old
+            </Button>
+          </div>
         )}
       </div>
 

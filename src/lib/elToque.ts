@@ -1,10 +1,10 @@
 /**
  * Módulo de Tasas de cambio elTOQUE para PC y Android.
  * - FUENTE: proxy del dev (Apps Script action=rates) → JSON con NÚMEROS.
- * - El proxy mapea ECU→EUR; aquí se re-normaliza también la CACHÉ vieja.
- * - Cripto ocultas por decisión del dev: BTC, TRX, USDT_TRC20 (añade más
- *   códigos a HIDDEN_CURRENCIES si quieres ocultar ETH o USDT).
- * - Sin tasas inventadas: sin datos → aviso, nunca números falsos.
+ * - El proxy mapea ECU→EUR; aquí se normaliza también la CACHÉ local.
+ * - Criptomonedas 100% retiradas por decisión del dev: BTC, TRX, USDT, USDT_TRC20, ETH, etc.
+ * - Soporte nativo para divisas fiat y tarjetas: USD, EUR, MLC, ZELLE, CLA (Tarjeta Clásica), CAD, MXN, BRL, CHF, GBP, etc.
+ * - Sin tasas inventadas: sin datos → aviso honesto, nunca números falsos.
  */
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { REMOTE_REGISTRY_URL } from './remoteRegistry';
@@ -16,8 +16,10 @@ export const ELTOQUE_SCHEDULE_KEY = 'eltoque_rates_schedule';
 const PROXY_URL = REMOTE_REGISTRY_URL;
 const FETCH_TIMEOUT_MS = 20000;
 
-/** Monedas que NO se muestran (cripto retiradas a petición del dev) */
-const HIDDEN_CURRENCIES: string[] = ['BTC', 'TRX', 'USDT_TRC20'];
+/** Monedas cripto que NO se muestran en ningún lugar de la app */
+const HIDDEN_CURRENCIES: string[] = [
+  'BTC', 'TRX', 'USDT', 'USDT_TRC20', 'ETH', 'BNB', 'SOL', 'XRP', 'DOGE', 'ADA', 'LTC'
+];
 
 export interface CurrencyRate {
   code: string;
@@ -25,6 +27,7 @@ export interface CurrencyRate {
   buy?: number;
   sell?: number;
   value: number;
+  change?: number;
 }
 
 export interface ElToqueSnapshot {
@@ -42,7 +45,7 @@ export interface ElToqueFetchResult {
 
 export interface RateDelta {
   diff: number;
-  direction: 'up' | 'down';
+  direction: 'up' | 'down' | 'equal';
 }
 
 export const CURRENCY_NAMES: Record<string, string> = {
@@ -50,17 +53,33 @@ export const CURRENCY_NAMES: Record<string, string> = {
   EUR: 'Euro',
   MLC: 'Moneda Libremente Convertible',
   ZELLE: 'Dólar Zelle',
-  CLA: 'Tarjeta Clásica',
-  USDT: 'Tether USD',
-  MXN: 'Peso mexicano',
-  CHF: 'Franco suizo',
+  CLA: 'Tarjeta Clásica (USD)',
   CAD: 'Dólar canadiense',
-  GBP: 'Libra esterlina',
+  MXN: 'Peso mexicano',
   BRL: 'Real brasileño',
+  CHF: 'Franco suizo',
+  GBP: 'Libra esterlina',
   COP: 'Peso colombiano',
   CLP: 'Peso chileno',
+  ARS: 'Peso argentino',
+  VES: 'Bolívar venezolano',
+  PEN: 'Sol peruano',
+  DOP: 'Peso dominicano',
+  PAB: 'Balboa panameño',
+  CRC: 'Colón costarricense',
+  GTQ: 'Quetzal guatemalteco',
+  HNL: 'Lempira hondureña',
+  NIO: 'Córdoba nicaragüense',
+  PYG: 'Guaraní paraguayo',
+  UYU: 'Peso uruguayo',
+  BOB: 'Boliviano',
+  JPY: 'Yen japonés',
+  CNY: 'Yuan chino',
+  KRW: 'Won surcoreano',
+  RUB: 'Rublo ruso',
+  TRY: 'Lira turca',
+  INR: 'Rupia india',
   CUP: 'Peso cubano',
-  ETH: 'Ethereum',
 };
 
 export const CURRENCY_COUNTRY_CODES: Record<string, string> = {
@@ -75,7 +94,10 @@ export const CURRENCY_COUNTRY_CODES: Record<string, string> = {
 
 /** Normaliza códigos: elTOQUE llama al Euro "ECU" */
 function normalizeCode(code: string): string {
-  return code.toUpperCase() === 'ECU' ? 'EUR' : code.toUpperCase();
+  const c = code.trim().toUpperCase();
+  if (c === 'ECU') return 'EUR';
+  if (c === 'CLASICA' || c === 'TARJETA_CLASICA' || c === 'TARJETA_USD') return 'CLA';
+  return c;
 }
 
 /** @deprecated La key ya no se usa en la app (vive en el proxy). Compatibilidad. */
@@ -97,7 +119,6 @@ function readSnapshotFrom(key: string): ElToqueSnapshot | null {
       typeof (parsed as ElToqueSnapshot).fetchedAt === 'string'
     ) {
       const snap = parsed as ElToqueSnapshot;
-      // Normaliza ECU→EUR y oculta cripto retiradas también en la caché vieja
       snap.data = snap.data
         .map(r => {
           const code = normalizeCode(r.code);
@@ -126,11 +147,12 @@ export function saveRatesToCache(snapshot: ElToqueSnapshot): void {
     const current = loadCachedRates();
     if (
       current &&
-      current.source === 'elTOQUE' &&
-      snapshot.source === 'elTOQUE' &&
       current.fetchedAt !== snapshot.fetchedAt
     ) {
       localStorage.setItem(ELTOQUE_PREVIOUS_KEY, JSON.stringify(current));
+    } else if (!localStorage.getItem(ELTOQUE_PREVIOUS_KEY)) {
+      // Guardar una referencia inicial para que los deltas no queden indefinidos
+      localStorage.setItem(ELTOQUE_PREVIOUS_KEY, JSON.stringify(snapshot));
     }
     localStorage.setItem(ELTOQUE_CACHE_KEY, JSON.stringify(snapshot));
   } catch {
@@ -138,19 +160,35 @@ export function saveRatesToCache(snapshot: ElToqueSnapshot): void {
   }
 }
 
-export function getRateDelta(code: string, current: ElToqueSnapshot): RateDelta | null {
-  if (current.source !== 'elTOQUE') return null;
-  const prev = loadPreviousRates();
-  if (!prev || prev.source !== 'elTOQUE') return null;
+export function getRateDelta(code: string, current: ElToqueSnapshot): RateDelta {
   const r = current.data.find(x => x.code === code);
-  const p = prev.data.find(x => x.code === code);
-  if (!r || !p) return null;
-  const a = r.sell ?? r.value;
-  const b = p.sell ?? p.value;
-  if (typeof a !== 'number' || typeof b !== 'number') return null;
-  const diff = Math.round((a - b) * 100) / 100;
-  if (!isFinite(diff) || diff === 0) return null;
-  return { diff, direction: diff > 0 ? 'up' : 'down' };
+  
+  // 1. Si la tasa trae directamente el cambio/delta del servidor
+  if (r && typeof r.change === 'number' && isFinite(r.change)) {
+    const rounded = Math.round(r.change * 100) / 100;
+    if (rounded > 0) return { diff: rounded, direction: 'up' };
+    if (rounded < 0) return { diff: Math.abs(rounded), direction: 'down' };
+    return { diff: 0, direction: 'equal' };
+  }
+
+  // 2. Si hay snapshot previo guardado
+  const prev = loadPreviousRates();
+  if (prev && Array.isArray(prev.data)) {
+    const p = prev.data.find(x => x.code === code);
+    if (r && p) {
+      const a = r.sell ?? r.value;
+      const b = p.sell ?? p.value;
+      if (typeof a === 'number' && typeof b === 'number' && isFinite(a) && isFinite(b)) {
+        const diff = Math.round((a - b) * 100) / 100;
+        if (diff > 0) return { diff, direction: 'up' };
+        if (diff < 0) return { diff: Math.abs(diff), direction: 'down' };
+        return { diff: 0, direction: 'equal' };
+      }
+    }
+  }
+
+  // 3. Si no hay variación registrada, se mantiene igual (0 en gris sin flecha)
+  return { diff: 0, direction: 'equal' };
 }
 
 function parseApiResponse(json: unknown): CurrencyRate[] {
@@ -162,20 +200,38 @@ function parseApiResponse(json: unknown): CurrencyRate[] {
     throw new Error('Formato de respuesta inválido');
   }
   const payload = json as Record<string, unknown>;
-  const ratesObj = (
-    payload.tasas ||
-    payload.trmi ||
-    payload.trm ||
-    payload.rates ||
-    payload.data ||
-    payload
-  ) as Record<string, unknown>;
+
+  const ratesObj: Record<string, unknown> = {};
+
+  // Unifica todos los posibles contenedores de tasas (automáticas y manuales)
+  const candidateKeys = [
+    'tasas', 'trmi', 'trm', 'rates', 'data', 'manual_rates', 'manual', 'custom', 'custom_rates', 'tasas_manuales'
+  ];
+  for (const k of candidateKeys) {
+    const sub = payload[k];
+    if (sub && typeof sub === 'object' && !Array.isArray(sub)) {
+      Object.assign(ratesObj, sub);
+    }
+  }
+
+  // Si la respuesta trae campos directos en la raíz
+  for (const [key, val] of Object.entries(payload)) {
+    if (
+      !candidateKeys.includes(key) &&
+      !['date', 'fecha', 'timestamp', 'last_update', 'ok', 'status', 'error', 'source'].includes(key)
+    ) {
+      if (typeof val === 'number' || (val && typeof val === 'object')) {
+        ratesObj[key] = val;
+      }
+    }
+  }
 
   const list: CurrencyRate[] = [];
   for (const [key, val] of Object.entries(ratesObj)) {
-    if (key === 'date' || key === 'fecha' || key === 'timestamp' || key === 'last_update') continue;
+    if (['date', 'fecha', 'timestamp', 'last_update', 'ok', 'status'].includes(key)) continue;
     const code = normalizeCode(key);
     if (HIDDEN_CURRENCIES.includes(code)) continue;
+
     if (typeof val === 'number') {
       if (isFinite(val) && val > 0) {
         list.push({ code, name: CURRENCY_NAMES[code] || code, value: val, sell: val });
@@ -189,6 +245,11 @@ function parseApiResponse(json: unknown): CurrencyRate[] {
       const validBuy = buy !== undefined && isFinite(buy) && buy > 0 ? buy : undefined;
       const validSell = sell !== undefined && isFinite(sell) && sell > 0 ? sell : undefined;
       const value = validSell ?? validBuy;
+
+      const changeRaw = o.change ?? o.delta ?? o.diff ?? o.var ?? o.variacion ?? o.dif;
+      const change = typeof changeRaw === 'number' ? changeRaw : typeof changeRaw === 'string' ? parseFloat(changeRaw) : undefined;
+      const validChange = change !== undefined && isFinite(change) ? change : undefined;
+
       if (value !== undefined) {
         list.push({
           code,
@@ -196,22 +257,30 @@ function parseApiResponse(json: unknown): CurrencyRate[] {
           buy: validBuy,
           sell: validSell,
           value,
+          change: validChange,
         });
       }
     }
   }
+
   if (list.length === 0) {
     throw new Error('No se encontraron tasas de cambio en la respuesta');
   }
-  const priority = ['USD', 'EUR', 'MLC', 'ZELLE', 'CLA', 'CAD', 'MXN', 'CHF', 'GBP', 'BRL', 'COP', 'CLP'];
-  const cryptoLast = ['USDT', 'ETH'];
+
+  // Orden prioritario: primero fiat y tarjetas populares en Cuba, luego resto de países
+  const priority = [
+    'USD', 'EUR', 'MLC', 'ZELLE', 'CLA',
+    'CAD', 'MXN', 'BRL', 'CHF', 'GBP',
+    'COP', 'CLP', 'ARS', 'VES', 'PEN',
+    'DOP', 'PAB', 'CRC', 'GTQ', 'HNL',
+    'NIO', 'UYU', 'BOB', 'JPY', 'CNY', 'CUP'
+  ];
+
   list.sort((a, b) => {
     const idxA = priority.indexOf(a.code);
     const idxB = priority.indexOf(b.code);
-    const cryA = cryptoLast.indexOf(a.code);
-    const cryB = cryptoLast.indexOf(b.code);
-    const rankA = idxA !== -1 ? idxA : cryA !== -1 ? 100 + cryA : 50;
-    const rankB = idxB !== -1 ? idxB : cryB !== -1 ? 100 + cryB : 50;
+    const rankA = idxA !== -1 ? idxA : 100;
+    const rankB = idxB !== -1 ? idxB : 100;
     if (rankA !== rankB) return rankA - rankB;
     return a.code.localeCompare(b.code);
   });

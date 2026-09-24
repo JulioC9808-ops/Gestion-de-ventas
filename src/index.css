@@ -66,6 +66,46 @@
 @layer base {
   * {
     @apply border-border;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  /* Resaltado de selección sin recuadros blancos en Android y navegadores */
+  ::selection {
+    background-color: rgba(59, 130, 246, 0.35) !important;
+    color: inherit !important;
+    text-shadow: none !important;
+  }
+
+  ::-moz-selection {
+    background-color: rgba(59, 130, 246, 0.35) !important;
+    color: inherit !important;
+    text-shadow: none !important;
+  }
+
+  /* Desplazamiento horizontal fluido en Android para tablas y ventanas */
+  [role="dialog"],
+  [data-radix-popper-content-wrapper],
+  .modal-content,
+  .overflow-touch-x {
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  @media (max-width: 768px) {
+    [role="dialog"] {
+      max-width: 95vw !important;
+      max-height: 92vh !important;
+      overflow-x: auto !important;
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+      display: block;
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
   }
 
   /* Que los inputs nativos (date, number, time, color) hereden el esquema del tema */
