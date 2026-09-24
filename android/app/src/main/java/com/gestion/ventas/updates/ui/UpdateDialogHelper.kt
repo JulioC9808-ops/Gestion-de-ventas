@@ -1,5 +1,6 @@
 package com.gestion.ventas.updates.ui
 
+import android.app.Activity
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -55,22 +56,18 @@ class UpdateDialogHelper(private val activity: Activity) {
             when (intent.action) {
                 ACTION_UPDATE_YES -> {
                     cancel(NOTIF_ID_AVAILABLE)
-                    val cb = onUpdateClicked
-                    cb?.invoke()
+                    onUpdateClicked?.invoke()
                 }
                 ACTION_UPDATE_NO -> {
                     cancel(NOTIF_ID_AVAILABLE)
-                    val cb = onPostponeClicked
-                    cb?.invoke()
+                    onPostponeClicked?.invoke()
                 }
                 ACTION_UPDATE_RETRY -> {
                     cancel(NOTIF_ID_ERROR)
-                    val cb = onRetryClicked
-                    cb?.invoke()
+                    onRetryClicked?.invoke()
                 }
                 ACTION_UPDATE_GRANT_INSTALL -> {
-                    val cb = onGrantInstallClicked
-                    cb?.invoke()
+                    onGrantInstallClicked?.invoke()
                 }
             }
         }
@@ -127,8 +124,8 @@ class UpdateDialogHelper(private val activity: Activity) {
 
     /** Actualiza % y MB en la notificación de progreso. */
     fun updateDownloadProgress(progress: Int, currentBytes: Long, totalBytes: Long) {
-        val builder = progressBuilder ?: run { showDownloadingDialog(); progressBuilder }
-        builder ?: return
+        if (progressBuilder == null) showDownloadingDialog()
+        val builder = progressBuilder ?: return
         val currentMb = currentBytes / (1024.0 * 1024.0)
         val text = if (totalBytes > 0) {
             String.format(java.util.Locale.getDefault(), "%d%% · %.1f / %.1f MB", progress, currentMb, totalBytes / (1024.0 * 1024.0))
@@ -154,10 +151,10 @@ class UpdateDialogHelper(private val activity: Activity) {
     fun showUnknownSourcesPermissionDialog(onAuthorize: () -> Unit, onCancel: () -> Unit) {
         this.onGrantInstallClicked = onAuthorize
         if (!canPostNotifications()) {
-            // Sin notificaciones posibles, cae al Toast para no perder el flujo
+            // Sin notificaciones posibles, aviso en pantalla para no perder el flujo
             android.widget.Toast.makeText(
                 activity,
-                "Toca la notificación o abre la app para permitir la instalación",
+                "Permite las notificaciones para recibir avisos de actualización",
                 android.widget.Toast.LENGTH_LONG
             ).show()
             return
