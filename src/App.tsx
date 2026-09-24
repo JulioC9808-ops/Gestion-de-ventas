@@ -20,6 +20,7 @@ import { getLicenseStatus, initLicenseStatusChecker, subscribeLicenseStatus } fr
 import { initRemoteRegistryQueue } from "@/lib/remoteRegistry";
 import { ShieldAlert, MessageCircle, AlertOctagon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { initRemoteBranding } from "@/lib/remoteBranding";
 
 const queryClient = new QueryClient();
 
@@ -103,6 +104,7 @@ const App = () => {
 
     // Iniciar chequeo remoto de licencias y bloqueos
     initLicenseStatusChecker();
+    initRemoteBranding();
 
     // Obtener ID de hardware y verificar estado inicial
     let alive = true;
