@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import AppLayout from '@/components/AppLayout';
-import { Settings, Key, RotateCcw, Image, Send, UserCog, Megaphone, CheckCircle2, RefreshCw, ShieldCheck, Sparkles, Clock, Infinity as InfinityIcon, Eye, EyeOff, AlertTriangle, Trash2, KeyRound } from 'lucide-react';
+import { Settings, Key, RotateCcw, Image, Send, UserCog, Megaphone, CheckCircle2, RefreshCw, ShieldCheck, Sparkles, Clock, Infinity as InfinityIcon, Eye, EyeOff, AlertTriangle, Trash2, KeyRound, Ban, Download, Upload } from 'lucide-react';
 import { useData, GITHUB_UPDATES_URL, DEFAULT_ANNOUNCEMENT_URL } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -40,6 +40,8 @@ export default function DevPanel() {
   const [resetAdminDialogOpen, setResetAdminDialogOpen] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const bgInputRef = useRef<HTMLInputElement>(null);
+  const importFileInputRef = useRef<HTMLInputElement>(null);
+
 
   const refreshLicense = () => {
     setLicenseState(getLicenseInfo());
@@ -109,6 +111,33 @@ export default function DevPanel() {
       toast.error('Error al procesar la imagen');
     }
   };
+const handleExportTerminals = () => {
+  const terminals = settings.registeredTerminals || [];
+  const blob = new Blob([JSON.stringify(terminals, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'terminales-registrados.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  toast.success(`${terminals.length} terminal(es) exportados`);
+};
+
+const handleImportTerminals = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    if (!Array.isArray(parsed)) throw new Error('El archivo no es una lista de terminales');
+    updateSettings({ registeredTerminals: parsed });
+    toast.success(`${parsed.length} terminal(es) importados`);
+  } catch (err) {
+    toast.error('Error al importar: ' + (err instanceof Error ? err.message : String(err)));
+  } finally {
+    e.target.value = '';
+  }
+};
 
   return (
     <AppLayout nav={NAV} activeKey={active} onNav={setActive}>
