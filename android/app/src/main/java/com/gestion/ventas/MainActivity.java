@@ -28,7 +28,7 @@ import java.security.MessageDigest;
 
 public class MainActivity extends BridgeActivity {
 
-    private static final int CAMERA_REQUEST_CODE = 8021;
+    private static final int PERMISSIONS_REQUEST_CODE = 8021;
     private static final String CRASH_FILE = "crash_log.txt";
 
     // Archivo de versión remoto para actualizaciones automáticas
@@ -36,7 +36,6 @@ public class MainActivity extends BridgeActivity {
             "https://raw.githubusercontent.com/JulioC9808-ops/Sistema-Updates/main/android-version.json";
 
     // Anti-repackaging: SHA-256 del certificado de firma original.
-    // Si alguien modifica el APK debe re-firmarlo con otra clave -> el hash cambia -> la app se bloquea.
     private static final String EXPECTED_SIG = "8F9343F18A4AB91098AE352544B9A253822C0A20A4920A39A7F956E3BC91A612";
 
     private UpdateManager updateManager;
@@ -51,16 +50,15 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(LocalSyncPlugin.class);
         registerPlugin(com.gestion.ventas.WiFiDirectPlugin.class);
         registerPlugin(com.gestion.ventas.updates.AppUpdatePlugin.class);
-
         super.onCreate(savedInstanceState);
 
-        // 1.1) Verificación anti-repackaging: el APK debe estar firmado con la clave original
+        // 1.1) Verificación anti-repackaging
         verifyApkIntegrity();
 
         // 2) Si la última vez la app se cerró por un error, muéstralo AHORA
         showCrashLogIfAny();
 
-        requestCameraPermissionIfNeeded();
+        requestEssentialPermissionsIfNeeded();
 
         // --- Configuración del WebView ---
         try {
@@ -82,7 +80,7 @@ public class MainActivity extends BridgeActivity {
             // WebView customization fallback
         }
 
-        // Sistema de actualizaciones in-app con descarga streaming, barra de progreso y SHA-256
+        // Sistema de actualizaciones (notificaciones nativas de Android)
         try {
             updateManager = UpdateManager.Companion.init(this, VERSION_URL, 12L);
         } catch (Throwable t) {
@@ -182,14 +180,28 @@ public class MainActivity extends BridgeActivity {
     }
     // =====================================================
 
-    private void requestCameraPermissionIfNeeded() {
+    /**
+     * Pide en un solo diálogo: CÁMARA y (Android 13+) permiso de NOTIFICACIONES,
+     * necesario para que el sistema de actualización muestre sus notificaciones.
+     */
+    private void requestEssentialPermissionsIfNeeded() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return;
+
+        java.util.List<String> needed = new java.util.ArrayList<>();
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
+            needed.add(Manifest.permission.CAMERA);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            needed.add(Manifest.permission.POST_NOTIFICATIONS);
+        }
+        if (!needed.isEmpty()) {
             ActivityCompat.requestPermissions(
                     this,
-                    new String[]{Manifest.permission.CAMERA},
-                    CAMERA_REQUEST_CODE
+                    needed.toArray(new String[0]),
+                    PERMISSIONS_REQUEST_CODE
             );
         }
     }
