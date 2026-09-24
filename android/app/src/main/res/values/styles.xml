@@ -27,9 +27,10 @@
         <item name="android:windowBackground">@color/splashBackground</item>
     </style>
 
-    <!-- Ventana transparente para las tarjetas de actualización:
-         SOLO se ve la tarjeta flotante, sin recuadro blanco detrás ni bordes de ventana -->
-    <style name="UpdateCardDialog" parent="Theme.AppCompat.Light.Dialog">
+    <!-- Ventana transparente para las tarjetas de actualización.
+         IMPORTANTE: el padre es el tema NATIVO Material (no AppCompat Light),
+         que es el que repintaba el contenedor blanco en Android 15. -->
+    <style name="UpdateCardDialog" parent="@android:style/Theme.Material.Dialog.NoActionBar">
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:colorBackground">@android:color/transparent</item>
         <item name="android:windowIsFloating">true</item>
