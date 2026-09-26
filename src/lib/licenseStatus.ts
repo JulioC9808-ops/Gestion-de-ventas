@@ -1,8 +1,10 @@
 import { formatFriendlyDeviceId } from '@/lib/cryptoLicense';
+import { Capacitor, CapacitorHttp } from '@capacitor/core';
 
 export interface BlockedTerminalEntry {
   deviceId?: string;
   friendlyId?: string;
+  terminalId?: string;
   id?: string;
   reason?: string;
   blockedAt?: string;
@@ -13,7 +15,7 @@ export interface LicenseStatusPayload {
   updated?: string;
   masterSwitch?: boolean;
   allowNewActivations?: boolean;
-  blocked?: BlockedTerminalEntry[];
+  blocked?: Array<BlockedTerminalEntry | string> | Record<string, BlockedTerminalEntry | string | boolean>;
   legacyTerminals?: Array<{ deviceId?: string; friendlyId?: string; reportedAt?: string }>;
 }
 
@@ -21,7 +23,7 @@ export const DEFAULT_LICENSE_STATUS_URL =
   'https://raw.githubusercontent.com/JulioC9808-ops/Sistema-Updates/main/license-status.json';
 
 const STORAGE_KEY_STATUS_CACHE = 'gv_remote_license_status_cache_v1';
-const CHECK_INTERVAL_MS = 2 * 60 * 60 * 1000; // cada 2 horas
+const CHECK_INTERVAL_MS = 30 * 60 * 1000; // cada 30 minutos
 
 type StatusListener = (payload: LicenseStatusPayload | null) => void;
 const listeners = new Set<StatusListener>();
@@ -53,9 +55,25 @@ export function saveCachedLicenseStatus(payload: LicenseStatusPayload) {
 export async function fetchLicenseStatus(url = DEFAULT_LICENSE_STATUS_URL): Promise<LicenseStatusPayload | null> {
   try {
     const finalUrl = `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`;
-    const res = await fetch(finalUrl, { cache: 'no-store' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = (await res.json()) as LicenseStatusPayload;
+    let data: LicenseStatusPayload | null = null;
+
+    if (Capacitor.isNativePlatform()) {
+      const resp = await CapacitorHttp.get({
+        url: finalUrl,
+        headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' },
+        connectTimeout: 10000,
+        readTimeout: 10000,
+      });
+      if (resp.status >= 200 && resp.status < 300) {
+        data = typeof resp.data === 'string' ? JSON.parse(resp.data) : resp.data;
+      }
+    } else {
+      const res = await fetch(finalUrl, { cache: 'no-store' });
+      if (res.ok) {
+        data = (await res.json()) as LicenseStatusPayload;
+      }
+    }
+
     if (data && typeof data === 'object') {
       saveCachedLicenseStatus(data);
       listeners.forEach(fn => {
@@ -89,7 +107,11 @@ export function getLicenseStatus(deviceId: string | null | undefined): {
   const masterSwitch = cached?.masterSwitch !== false;
   const allowNewActivations = masterSwitch && cached?.allowNewActivations !== false;
 
-  if (!deviceId || !cached?.blocked || !Array.isArray(cached.blocked)) {
+  const rawBlocked =
+    cached?.blocked ||
+    (cached ? ((cached as unknown as Record<string, unknown>).blockedDevices as LicenseStatusPayload['blocked']) : undefined);
+
+  if (!deviceId || !rawBlocked) {
     return {
       isBlocked: false,
       blockedReason: null,
@@ -101,13 +123,36 @@ export function getLicenseStatus(deviceId: string | null | undefined): {
   const friendly = formatFriendlyDeviceId(deviceId).toUpperCase();
   const clean = deviceId.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
 
-  const found = cached.blocked.find(b => {
-    if (!b) return false;
-    const targetId = b.friendlyId || b.id || b.deviceId || '';
-    if (!targetId) return false;
-    const bFriendly = formatFriendlyDeviceId(targetId).toUpperCase();
-    const bClean = targetId.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-    return bFriendly === friendly || bClean === clean;
+  // Convertir cached.blocked a lista uniforme
+  let blockedList: Array<{ id: string; reason?: string }> = [];
+  if (Array.isArray(rawBlocked)) {
+    blockedList = rawBlocked.map(b => {
+      if (typeof b === 'string') return { id: b, reason: 'Terminal suspendido' };
+      if (b && typeof b === 'object') {
+        const id = b.friendlyId || b.deviceId || b.terminalId || b.id || '';
+        return { id, reason: b.reason };
+      }
+      return { id: '' };
+    });
+  } else if (typeof rawBlocked === 'object') {
+    blockedList = Object.entries(rawBlocked).map(([key, val]) => {
+      if (typeof val === 'string') return { id: key, reason: val };
+      if (val && typeof val === 'object') return { id: key, reason: (val as BlockedTerminalEntry).reason };
+      return { id: key, reason: 'Terminal suspendido' };
+    });
+  }
+
+  const found = blockedList.find(b => {
+    if (!b || !b.id) return false;
+    const target = b.id.trim();
+    const bFriendly = formatFriendlyDeviceId(target).toUpperCase();
+    const bClean = target.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    return (
+      bFriendly === friendly ||
+      bClean === clean ||
+      target.toUpperCase() === friendly ||
+      target.toUpperCase() === clean
+    );
   });
 
   if (found) {

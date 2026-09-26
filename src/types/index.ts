@@ -151,6 +151,7 @@ export interface AppSettings {
   announcementUrl?: string | null;
   eulaText?: string | null; // texto EULA que se muestra la primera vez
   salesChartResetAt?: string | null; // ISO date: solo cuentan reportes con date >= a esta
+  animatedLoginEnabled?: boolean; // Activar login animado con mascota por hora del día (por defecto apagado)
   welcomeGreetingsEnabled?: boolean; // mostrar saludo y frase motivacional diaria del turno
   soundEffectsEnabled?: boolean; // reproducir efectos de sonido (bienvenida, confirmación, papelera)
   quoteLanguages?: string[]; // idiomas de las frases motivacionales: ['es'], ['en'], ['pt'], etc.

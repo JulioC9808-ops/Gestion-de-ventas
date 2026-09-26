@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import Tutorial from '@/components/Tutorial';
 import EmployeeLicenseBanner from '@/components/EmployeeLicenseBanner';
 import RenewalOfferBanner from '@/components/RenewalOfferBanner';
+import ZoomLupitaButton from '@/components/ZoomLupitaButton';
 
 interface NavItem {
   label: string;
@@ -55,7 +56,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
 
   if (isTop) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-background text-foreground">
         {/* Top navbar */}
         <header className="bg-sidebar text-sidebar-foreground border-b border-sidebar-border">
           <div className="flex items-center justify-between px-6 py-3">
@@ -106,6 +107,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
             </nav>
 
             <div className="flex items-center gap-3">
+              <ZoomLupitaButton />
               <div className="flex items-center gap-2.5">
                 {currentUser?.avatarUrl ? (
                   <img
@@ -147,7 +149,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
   const drawer = isMobile;
 
   return (
-    <div className={`flex min-h-screen w-full ${onRight ? 'flex-row-reverse' : ''}`}>
+    <div className={`flex min-h-screen w-full bg-background text-foreground ${onRight ? 'flex-row-reverse' : ''}`}>
       <aside
         className={`sidebar-nav flex flex-col shrink-0 transition-all duration-200 ${
           drawer
@@ -294,6 +296,11 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
         <RenewalOfferBanner />
         {children}
       </main>
+
+      {/* Lupita de Zoom accesible en todas las pestañas */}
+      <div className="fixed bottom-3 right-3 z-30 sm:bottom-4 sm:right-4 print:hidden">
+        <ZoomLupitaButton className="shadow-lg backdrop-blur-md bg-card/90 border-primary/30" />
+      </div>
 
       <Tutorial />
     </div>

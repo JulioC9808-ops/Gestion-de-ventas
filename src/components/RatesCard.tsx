@@ -218,7 +218,7 @@ function formatRateNumber(val?: number | null): string {
   });
 }
 
-/** Chip ▲/▼ estilo elTOQUE: verde al subir con flecha arriba, rojo al bajar con flecha abajo, gris sin flecha al mantenerse igual */
+/** Chip ▲/▼ estilo elTOQUE: rojo al subir el precio, verde al bajar, gris sin flecha al mantenerse igual */
 function DeltaChip({ delta, big }: { delta?: RateDelta | null; big?: boolean }) {
   const d = delta || { diff: 0, direction: 'equal' };
 
@@ -226,7 +226,7 @@ function DeltaChip({ delta, big }: { delta?: RateDelta | null; big?: boolean }) 
     const text = formatDeltaNumber(d.diff);
     return (
       <span
-        className={`inline-flex items-center gap-0.5 font-bold font-mono whitespace-nowrap text-emerald-600 dark:text-emerald-400 ${big ? 'text-xs' : 'text-[11px]'}`}
+        className={`inline-flex items-center gap-0.5 font-bold font-mono whitespace-nowrap text-rose-600 dark:text-rose-400 ${big ? 'text-xs' : 'text-[11px]'}`}
         title={`Aumento de ${text} CUP`}
       >
         ▲ +{text}
@@ -238,7 +238,7 @@ function DeltaChip({ delta, big }: { delta?: RateDelta | null; big?: boolean }) 
     const text = formatDeltaNumber(d.diff);
     return (
       <span
-        className={`inline-flex items-center gap-0.5 font-bold font-mono whitespace-nowrap text-rose-600 dark:text-rose-400 ${big ? 'text-xs' : 'text-[11px]'}`}
+        className={`inline-flex items-center gap-0.5 font-bold font-mono whitespace-nowrap text-emerald-600 dark:text-emerald-400 ${big ? 'text-xs' : 'text-[11px]'}`}
         title={`Descenso de ${text} CUP`}
       >
         ▼ -{text}
@@ -320,11 +320,11 @@ function RateRow({
   const isUp = d.direction === 'up' && d.diff > 0;
   const isDown = d.direction === 'down' && d.diff > 0;
 
-  // Clase de color según variación para el número de precio (verde si subió, rojo si bajó)
+  // Clase de color según variación para el número de precio (rojo si subió precio, verde si bajó)
   const priceColorClass = isUp
-    ? 'text-emerald-600 dark:text-emerald-400'
-    : isDown
     ? 'text-rose-600 dark:text-rose-400'
+    : isDown
+    ? 'text-emerald-600 dark:text-emerald-400'
     : '';
 
   const fallbackStyle = !priceColorClass && accent ? { color: accent } : undefined;

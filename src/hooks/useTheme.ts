@@ -48,30 +48,30 @@ const THEMES: Record<string, ThemeVars> = {
   white: WHITE,
   // NEGRO PURO — todo oscuro, letras claras (incluye tarjetas, popovers, sidebar)
   black: buildTheme({
-    '--background': '0 0% 6%',
+    '--background': '0 0% 3%',
     '--foreground': '0 0% 98%',
-    '--card': '0 0% 10%',
+    '--card': '0 0% 8%',
     '--card-foreground': '0 0% 98%',
-    '--popover': '0 0% 10%',
+    '--popover': '0 0% 8%',
     '--popover-foreground': '0 0% 98%',
     '--primary': '0 0% 98%',
-    '--primary-foreground': '0 0% 8%',
-    '--secondary': '0 0% 15%',
+    '--primary-foreground': '0 0% 5%',
+    '--secondary': '0 0% 12%',
     '--secondary-foreground': '0 0% 98%',
-    '--muted': '0 0% 14%',
+    '--muted': '0 0% 11%',
     '--muted-foreground': '0 0% 70%',
-    '--accent': '0 0% 20%',
+    '--accent': '0 0% 16%',
     '--accent-foreground': '0 0% 98%',
-    '--border': '0 0% 22%',
-    '--input': '0 0% 22%',
+    '--border': '0 0% 16%',
+    '--input': '0 0% 14%',
     '--ring': '0 0% 98%',
-    '--sidebar-background': '0 0% 4%',
+    '--sidebar-background': '0 0% 2%',
     '--sidebar-foreground': '0 0% 95%',
     '--sidebar-primary': '0 0% 98%',
-    '--sidebar-primary-foreground': '0 0% 8%',
-    '--sidebar-accent': '0 0% 12%',
+    '--sidebar-primary-foreground': '0 0% 5%',
+    '--sidebar-accent': '0 0% 9%',
     '--sidebar-accent-foreground': '0 0% 95%',
-    '--sidebar-border': '0 0% 18%',
+    '--sidebar-border': '0 0% 14%',
     '--sidebar-ring': '0 0% 98%',
   }),
   // Atardecer: cálido, tonos naranja/durazno en todo el fondo
@@ -241,14 +241,32 @@ export function useThemeApplier() {
       root.style.setProperty(key, value);
     });
 
-    // 2) color-scheme para inputs nativos
+    // 2) color-scheme y clase .dark para Tailwind y componentes
     const bgLightness = parseInt(vars['--background'].split(' ')[2] || '100', 10);
-    root.style.colorScheme = bgLightness < 50 ? 'dark' : 'light';
+    const isDark = bgLightness < 50;
+    root.style.colorScheme = isDark ? 'dark' : 'light';
+    root.classList.toggle('dark', isDark);
+    document.body.classList.toggle('dark', isDark);
 
-    // 3) Si hay fontColor personalizado, sobrescribe TODOS los textos
+    // 3) Si hay fontColor personalizado, sobrescribe textos con contraste garantizado
     if (settings.fontColor) {
       const hsl = hexToHsl(settings.fontColor);
-      if (hsl) TEXT_VARS.forEach(k => root.style.setProperty(k, hsl));
+      if (hsl) {
+        root.style.setProperty('--foreground', hsl);
+        root.style.setProperty('--card-foreground', hsl);
+        root.style.setProperty('--popover-foreground', hsl);
+        root.style.setProperty('--secondary-foreground', hsl);
+        root.style.setProperty('--sidebar-foreground', hsl);
+        root.style.setProperty('--sidebar-accent-foreground', hsl);
+
+        // Muted foreground: mantener contraste relativo para que etiquetas y subtítulos sean legibles
+        const parts = hsl.split(' ');
+        if (parts.length === 3) {
+          const lNum = parseInt(parts[2], 10);
+          const mutedL = isDark ? Math.max(lNum - 26, 68) : Math.min(lNum + 28, 42);
+          root.style.setProperty('--muted-foreground', `${parts[0]} ${parts[1]} ${mutedL}%`);
+        }
+      }
     }
 
     // 4) Aplicar el color de fondo al <body> como fallback duro

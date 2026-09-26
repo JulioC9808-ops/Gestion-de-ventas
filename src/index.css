@@ -606,3 +606,58 @@ input[type="password"] {
   }
 }
 
+/* ================= LOGIN ANIMADO: 3D FLIP, NEÓN Y MASCOTA ================= */
+.perspective-1000 {
+  perspective: 1000px;
+}
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(-8deg) translateX(-4px); }
+  40% { transform: rotate(8deg) translateX(4px); }
+  60% { transform: rotate(-5deg) translateX(-2px); }
+  80% { transform: rotate(5deg) translateX(2px); }
+}
+
+.animate-wiggle {
+  animation: wiggle 0.5s ease-in-out;
+}
+
+@keyframes neon-border-pulse {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(217, 119, 6, 0.35), inset 0 0 15px rgba(217, 119, 6, 0.15);
+    border-color: rgba(245, 158, 11, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(245, 158, 11, 0.65), 0 0 50px rgba(217, 119, 6, 0.3), inset 0 0 25px rgba(245, 158, 11, 0.3);
+    border-color: rgba(251, 191, 36, 0.95);
+  }
+}
+
+.neon-card-glow {
+  animation: neon-border-pulse 3s infinite ease-in-out;
+}
+
+@keyframes liquid-gradient-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.liquid-gradient-border {
+  background: linear-gradient(60deg, #f59e0b, #d97706, #b45309, #f59e0b);
+  background-size: 300% 300%;
+  animation: liquid-gradient-flow 6s ease infinite;
+}
+
+

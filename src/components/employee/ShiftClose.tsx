@@ -14,6 +14,7 @@ import { getPendingShift, setPendingShift, clearPendingShift } from '@/lib/syncS
 import { startShiftShare, stopShiftShare } from '@/lib/syncTransport';
 import QrDisplay from '@/components/QrDisplay';
 import QrScannerModal from '@/components/QrScannerModal';
+import { triggerHaptic } from '@/lib/haptics';
 
 const DENOMINATIONS = [20000, 10000, 5000, 2000, 1000, 500, 200, 100, 50, 20, 10, 5, 3, 1];
 
@@ -70,6 +71,7 @@ export default function ShiftClose() {
 
   // Step 3: final report
   const [finalReport, setFinalReport] = useState<ShiftReport | null>(null);
+
 
   // Calculate sold items
   const saleItems: SaleItem[] = useMemo(() =>
@@ -398,7 +400,7 @@ export default function ShiftClose() {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-header flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <h1 className="page-title">Cierre de Turno</h1>
           <HelpTip>Registra lo que queda de cada producto para calcular lo vendido, luego desglosa los pagos recibidos. El turno solo se cierra si los montos cuadran.</HelpTip>
@@ -412,8 +414,9 @@ export default function ShiftClose() {
 
       {step === 1 && (
         <div className="glass-card p-6 animate-fade-in-up">
-          <h2 className="text-lg font-display font-bold mb-4">Paso 1: Rebajar Productos</h2>
+          <h2 className="text-lg font-display font-bold mb-2">Paso 1: Rebajar Productos</h2>
           <p className="text-sm text-muted-foreground mb-4">Ingresa la cantidad que <strong>entregas/queda</strong> de cada producto. Stock - Entregado = Total Vendido.</p>
+
           <table className="data-table">
             <thead>
               <tr><th>Producto</th><th>Stock Inicial</th><th>Entregas</th><th>Vendidos</th><th>Subtotal</th></tr>
@@ -502,7 +505,9 @@ export default function ShiftClose() {
 
           {/* Transfers */}
           <div className="mb-6">
-            <h3 className="font-semibold mb-3">💳 Transferencias</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold">💳 Transferencias</h3>
+            </div>
             <div className="flex gap-2 mb-2">
               <Input placeholder="Monto *" type="number" value={newTransfer.amount} onChange={e => setNewTransfer(prev => ({ ...prev, amount: e.target.value }))} className="w-28" />
               <Input placeholder="ID (opcional)" value={newTransfer.code} onChange={e => setNewTransfer(prev => ({ ...prev, code: e.target.value }))} />
@@ -606,6 +611,7 @@ export default function ShiftClose() {
           </div>
         </div>
       )}
+
     </div>
   );
 }

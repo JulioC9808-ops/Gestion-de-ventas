@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { User as UserType } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
-import { Coffee, Lock, User, MessageCircle, HelpCircle, Sparkles, Eye, EyeOff, Wrench, ShieldAlert, KeyRound, Copy, Check } from 'lucide-react';
+import {
+  Coffee, Lock, User, MessageCircle, HelpCircle, Sparkles, Eye, EyeOff,
+  Sun, Moon, Sunrise, RotateCw, Delete, Check, KeyRound, Copy
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -12,10 +15,19 @@ import PrivacyPolicyDialog from '@/components/PrivacyPolicyDialog';
 import { getShiftGreeting, fetchOnlineQuote } from '@/lib/greeting';
 import { playLoginSound } from '@/lib/soundUtils';
 import { generateDevChallenge } from '@/lib/cryptoLicense';
+import { triggerHaptic } from '@/lib/haptics';
+import AnimatedMascot from '@/components/login/AnimatedMascot';
 import { toast } from 'sonner';
 
 const DEV_WHATSAPP = '+5351616816';
 const DEV_PHONE_TEL = 'tel:+5351616816';
+
+function getSystemLoginTheme(): 'morning' | 'afternoon' | 'night' {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 12) return 'morning';
+  if (h >= 12 && h < 19) return 'afternoon';
+  return 'night';
+}
 
 export default function Login() {
   const { loginDetailed, loginWithDevOtp } = useAuth();
@@ -27,6 +39,37 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showQr, setShowQr] = useState(false);
+
+  // Estados interactivos para las animaciones
+  const [isUserFocused, setIsUserFocused] = useState(false);
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [isCardFlipped, setIsCardFlipped] = useState(false);
+
+  // Tema automático estricto según la hora del día (sin selectores manuales en el Login)
+  const [activeTheme, setActiveTheme] = useState<'morning' | 'afternoon' | 'night'>(() => getSystemLoginTheme());
+
+  useEffect(() => {
+    const updateTheme = () => setActiveTheme(getSystemLoginTheme());
+    updateTheme();
+    const interval = setInterval(updateTheme, 60 * 1000); // comprobar cada minuto
+    return () => clearInterval(interval);
+  }, []);
+
+  // Teclado táctil en Modo Tarde
+  const handleKeypadPress = (val: string) => {
+    triggerHaptic('light');
+    setError('');
+    if (val === 'backspace') {
+      setPassword(prev => prev.slice(0, -1));
+    } else if (val === 'clear') {
+      setPassword('');
+    } else {
+      if (password.length < 20) {
+        setPassword(prev => prev + val);
+      }
+    }
+  };
 
   // Acceso Técnico / Dev Challenge-Response 2FA (100% Offline)
   const [devOtpOpen, setDevOtpOpen] = useState(false);
@@ -87,12 +130,16 @@ export default function Login() {
       }
 
       if (!result.ok) {
+        setIsSuccess(false);
+        triggerHaptic('error');
         setError(
           result.reason === 'employee-only'
             ? 'Este dispositivo está configurado exclusivamente para uso de personal autorizado.'
             : 'Credenciales no válidas. Verifica tu usuario y contraseña.',
         );
       } else {
+        setIsSuccess(true);
+        triggerHaptic('success');
         const foundUser = users.find(u => u.username === username.trim());
         const greetingData = getShiftGreeting(foundUser?.name || username.trim(), settings.quoteLanguages);
         const h = new Date().getHours();
@@ -130,166 +177,364 @@ export default function Login() {
     );
   };
 
+  const isAnimated = settings.animatedLoginEnabled !== false;
+
   const bgStyle = settings.backgroundUrl
     ? { backgroundImage: `url(${settings.backgroundUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
     : {};
 
   return (
-    <div className="login-container relative overflow-hidden" style={bgStyle}>
-      {!settings.backgroundUrl && (
-        <div className="absolute inset-0 opacity-10">
+    <div
+      className={`login-container relative overflow-hidden transition-colors duration-700 ${
+        isAnimated && activeTheme === 'night' ? 'bg-gradient-to-br from-zinc-950 via-neutral-900 to-amber-950/40 text-foreground' : ''
+      }`}
+      style={bgStyle}
+    >
+      {/* Partículas / halos de luz solo cuando el login animado está activo */}
+      {isAnimated && !settings.backgroundUrl && activeTheme === 'night' && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute top-10 left-10 w-96 h-96 rounded-full bg-amber-500/15 blur-3xl animate-pulse" style={{ animationDuration: '4s' }} />
+          <div className="absolute bottom-10 right-10 w-80 h-80 rounded-full bg-indigo-500/15 blur-3xl animate-pulse" style={{ animationDuration: '6s', animationDelay: '1s' }} />
+        </div>
+      )}
+
+      {isAnimated && !settings.backgroundUrl && activeTheme !== 'night' && (
+        <div className="absolute inset-0 opacity-10 pointer-events-none">
           <div className="absolute top-20 left-10 w-72 h-72 rounded-full bg-accent blur-3xl" />
           <div className="absolute bottom-20 right-10 w-96 h-96 rounded-full bg-primary-foreground blur-3xl" />
         </div>
       )}
-      {settings.backgroundUrl && <div className="absolute inset-0 bg-black/20" />}
+      {settings.backgroundUrl && <div className="absolute inset-0 bg-black/25 pointer-events-none" />}
 
-      <div className="relative z-10 w-full max-w-md mx-4 animate-fade-in-up">
-        <div className="glass-card-translucent p-8 sm:p-10 shadow-2xl border border-border/70">
-          <div className="flex flex-col items-center mb-8">
-            {settings.logoUrl ? (
-              <img src={settings.logoUrl} alt="Logo" className="w-16 h-16 rounded-2xl object-cover mb-4 ring-2 ring-primary/30" />
-            ) : (
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center mb-4 shadow-lg">
-                <Coffee className="w-8 h-8 text-primary-foreground" />
+      {/* Contenedor principal del Login con soporte para 3D Flip */}
+      <div className="relative z-10 w-full max-w-md mx-4 perspective-1000 py-6">
+        <div
+          className={`w-full transition-transform duration-700 transform-style-3d ${
+            isAnimated && activeTheme === 'afternoon' && isCardFlipped ? 'rotate-y-180' : ''
+          }`}
+        >
+          {/* ================= CARA FRONTAL (Formulario Standard / Mascota / Neón) ================= */}
+          <div
+            className={`w-full ${isAnimated && activeTheme === 'afternoon' ? 'backface-hidden' : ''} ${
+              isAnimated && activeTheme === 'night'
+                ? 'liquid-gradient-border p-[2px] rounded-3xl shadow-2xl neon-card-glow'
+                : ''
+            }`}
+          >
+            <div
+              className={`glass-card-translucent p-8 sm:p-10 shadow-2xl border border-border/70 ${
+                isAnimated && activeTheme === 'night' ? 'bg-zinc-950/85 backdrop-blur-xl rounded-[22px]' : ''
+              }`}
+            >
+              {/* Mascota Barista Interactiva adaptada a la hora del día (si está habilitada en Ajustes) */}
+              {isAnimated && (
+                <div className="w-full flex justify-center -mt-2 mb-2">
+                  <AnimatedMascot
+                    variant={activeTheme}
+                    isUserFocused={isUserFocused}
+                    isPasswordFocused={isPasswordFocused || (Boolean(password) && !showPassword)}
+                    isSuccess={isSuccess}
+                    hasError={Boolean(error)}
+                    characterLength={username.length}
+                  />
+                </div>
+              )}
+
+              {/* Encabezado Logo y Nombre de Cafetería */}
+              <div className="flex flex-col items-center mb-6">
+                {settings.logoUrl ? (
+                  <img
+                    src={settings.logoUrl}
+                    alt="Logo"
+                    className={`w-14 h-14 rounded-2xl object-cover mb-2 ring-2 shadow-md ${
+                      isAnimated && activeTheme === 'night' ? 'ring-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.35)]' : 'ring-primary/20'
+                    }`}
+                  />
+                ) : !isAnimated ? (
+                  <div className="w-14 h-14 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center mb-2 shadow-md">
+                    <Coffee className="w-7 h-7" />
+                  </div>
+                ) : null}
+                <h1 className="text-2xl font-bold font-display text-center text-foreground">
+                  {settings.businessName}
+                </h1>
+                <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground font-medium">
+                  {isAnimated && activeTheme === 'morning' && <span>🌅 Buenos días •</span>}
+                  {isAnimated && activeTheme === 'afternoon' && <span>☀️ Buenas tardes •</span>}
+                  {isAnimated && activeTheme === 'night' && <span>🌙 Buenas noches •</span>}
+                  <span>Acceso al Sistema</span>
+                </div>
               </div>
-            )}
-            <h1 className="text-2xl font-bold text-gradient font-display text-center">
-              {settings.businessName}
-            </h1>
-            <p className="text-muted-foreground text-sm mt-1">Acceso al Sistema de Ventas</p>
-          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5" autoComplete="off">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                Usuario
-                <HelpTip>Ingresa el nombre de usuario asignado.</HelpTip>
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                <Input
-                  type="text"
-                  name="sys_user_field"
-                  id="sys_user_field"
-                  value={username}
-                  onChange={e => setUsername(e.target.value)}
-                  placeholder="Ingresa tu usuario"
-                  className={`pl-10 ${username.toUpperCase().startsWith('DEV') ? 'pr-10' : ''} h-11 ${
-                    !showUsername && username && username.toUpperCase().startsWith('DEV') ? 'threads-obfuscated' : 'threads-revealed'
-                  }`}
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  autoComplete="off"
-                  spellCheck={false}
-                  data-lpignore="true"
-                  data-1p-ignore="true"
-                  data-form-type="other"
-                  required
-                />
-                {username.toUpperCase().startsWith('DEV') && (
+              {/* Botón rápido en Modo Tarde para girar la tarjeta al teclado 3D (solo en modo animado) */}
+              {isAnimated && activeTheme === 'afternoon' && (
+                <div className="mb-4 flex items-center justify-between p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs">
+                  <span className="font-semibold text-amber-700 dark:text-amber-300">
+                    Modo Tarde Táctil
+                  </span>
                   <button
                     type="button"
-                    tabIndex={-1}
-                    aria-label={showUsername ? 'Ocultar usuario DEV' : 'Ver usuario DEV'}
-                    onClick={() => setShowUsername(prev => !prev)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors p-1"
+                    onClick={() => {
+                      triggerHaptic('selection');
+                      setIsCardFlipped(true);
+                    }}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500 text-white font-bold text-[11px] shadow-xs hover:bg-amber-600 transition-all"
                   >
-                    {showUsername ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    <RotateCw className="w-3 h-3 mr-0.5" />
+                    Girar a Teclado 3D
                   </button>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                    Usuario
+                    <HelpTip>Ingresa el nombre de usuario asignado.</HelpTip>
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                    <Input
+                      type="text"
+                      name="sys_user_field"
+                      id="sys_user_field"
+                      value={username}
+                      onChange={e => setUsername(e.target.value)}
+                      onFocus={() => setIsUserFocused(true)}
+                      onBlur={() => setIsUserFocused(false)}
+                      placeholder="Ingresa tu usuario"
+                      className={`pl-10 ${username.toUpperCase().startsWith('DEV') ? 'pr-10' : ''} h-11 transition-all ${
+                        isAnimated && activeTheme === 'night' ? 'bg-zinc-900/60 border-amber-500/30 focus:border-amber-500' : ''
+                      } ${!showUsername && username && username.toUpperCase().startsWith('DEV') ? 'threads-obfuscated' : 'threads-revealed'}`}
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      autoComplete="off"
+                      spellCheck={false}
+                      data-lpignore="true"
+                      data-1p-ignore="true"
+                      data-form-type="other"
+                      required
+                    />
+                    {username.toUpperCase().startsWith('DEV') && (
+                      <button
+                        type="button"
+                        tabIndex={-1}
+                        aria-label={showUsername ? 'Ocultar usuario DEV' : 'Ver usuario DEV'}
+                        onClick={() => setShowUsername(prev => !prev)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors p-1"
+                      >
+                        {showUsername ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                    Contraseña / PIN
+                    <HelpTip>Tu clave de acceso.</HelpTip>
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                    <Input
+                      type="text"
+                      name="sys_code_field"
+                      id="sys_code_field"
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      onFocus={() => setIsPasswordFocused(true)}
+                      onBlur={() => setIsPasswordFocused(false)}
+                      placeholder="Ingresa tu contraseña"
+                      className={`pl-10 pr-10 h-11 transition-all ${
+                        isAnimated && activeTheme === 'night' ? 'bg-zinc-900/60 border-amber-500/30 focus:border-amber-500' : ''
+                      } ${!showPassword && password ? 'threads-obfuscated' : 'threads-revealed'}`}
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      autoComplete="off"
+                      spellCheck={false}
+                      data-lpignore="true"
+                      data-1p-ignore="true"
+                      data-form-type="other"
+                      required
+                    />
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                      onClick={() => setShowPassword(prev => !prev)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors p-1"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg text-center border border-destructive/30 animate-wiggle">
+                    {error}
+                  </div>
                 )}
-              </div>
-            </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                Contraseña
-                <HelpTip>Tu contraseña distingue entre mayúsculas y minúsculas.</HelpTip>
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                <Input
-                  type="text"
-                  name="sys_code_field"
-                  id="sys_code_field"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="Ingresa tu contraseña"
-                  className={`pl-10 pr-10 h-11 ${
-                    !showPassword && password ? 'threads-obfuscated' : 'threads-revealed'
+                <Button
+                  type="submit"
+                  className={`w-full h-11 font-semibold text-base shadow-sm transition-all ${
+                    isAnimated && activeTheme === 'night'
+                      ? 'bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 text-white shadow-[0_0_20px_rgba(245,158,11,0.4)] hover:brightness-110'
+                      : ''
                   }`}
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  autoComplete="off"
-                  spellCheck={false}
-                  data-lpignore="true"
-                  data-1p-ignore="true"
-                  data-form-type="other"
-                  required
-                />
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
-                  onClick={() => setShowPassword(prev => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors p-1"
+                  disabled={loading}
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+                  {loading ? 'Verificando...' : 'Iniciar Sesión'}
+                </Button>
+              </form>
+
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full mt-2 text-sm text-muted-foreground hover:text-foreground"
+                onClick={() => { setForgotResult(null); setForgotUser(username); setForgotOpen(true); }}
+              >
+                <HelpCircle className="w-4 h-4 mr-2" />
+                ¿Olvidaste tu contraseña?
+              </Button>
+
+              <div className="mt-4 flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 text-xs sm:text-sm"
+                  onClick={() => setShowQr(true)}
+                >
+                  <MessageCircle className="w-4 h-4 mr-2 text-primary" />
+                  Soporte y Asistencia
+                </Button>
+                <HelpTip>Canal directo de asistencia técnica y resolución de dudas.</HelpTip>
+              </div>
+
+              <div className="mt-4 flex justify-center">
+                <PrivacyPolicyDialog />
+              </div>
+
+              <div className="mt-5 text-center space-y-1">
+                <p className="text-xs text-muted-foreground font-medium">
+                  © 2026 Gestión de Ventas. Todos los derechos reservados.
+                </p>
+                <div>
+                  <span className="gold-signature-shimmer text-xs tracking-wider">
+                    ( Desarrollado por Julio_GE )
+                  </span>
+                </div>
               </div>
             </div>
+          </div>
 
-            {error && (
-              <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg text-center border border-destructive/30 animate-fade-in-up">
-                {error}
+          {/* ================= CARA POSTERIOR (3D FLIP: TECLADO TÁCTIL MODO TARDE) ================= */}
+          {isAnimated && activeTheme === 'afternoon' && (
+            <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180">
+              <div className="glass-card-translucent p-6 sm:p-8 shadow-2xl border border-border/80 flex flex-col justify-between h-full rounded-2xl bg-card">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h2 className="text-base font-bold font-display text-foreground">Teclado Táctil 3D</h2>
+                      <p className="text-xs text-muted-foreground">Escribe tu PIN de forma rápida</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic('selection');
+                        setIsCardFlipped(false);
+                      }}
+                      className="px-2.5 py-1 text-xs rounded-lg border border-border bg-background hover:bg-muted font-semibold transition-colors flex items-center gap-1"
+                    >
+                      <RotateCw className="w-3 h-3" />
+                      Volver
+                    </button>
+                  </div>
+
+                  {/* Selector rápido de usuario */}
+                  <div className="mb-4">
+                    <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block mb-1.5">
+                      Seleccionar Usuario:
+                    </label>
+                    <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto pr-1">
+                      {users.map(u => (
+                        <button
+                          key={u.id}
+                          type="button"
+                          onClick={() => {
+                            triggerHaptic('selection');
+                            setUsername(u.username);
+                          }}
+                          className={`text-xs px-2.5 py-1 rounded-lg border font-semibold transition-all ${
+                            username.toLowerCase() === u.username.toLowerCase()
+                              ? 'border-amber-500 bg-amber-500/15 text-amber-700 dark:text-amber-300'
+                              : 'border-border bg-background/80 text-muted-foreground hover:bg-muted'
+                          }`}
+                        >
+                          {u.name || u.username}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Indicador de PIN con puntos iluminados */}
+                  <div className="py-2.5 px-3 rounded-xl bg-muted/40 border border-border flex items-center justify-between mb-4">
+                    <span className="text-xs font-semibold text-muted-foreground">
+                      PIN ({username || 'Sin usuario'}):
+                    </span>
+                    <div className="flex items-center gap-2">
+                      {Array.from({ length: Math.max(password.length, 4) }).map((_, i) => (
+                        <span
+                          key={i}
+                          className={`w-3 h-3 rounded-full transition-all duration-200 ${
+                            i < password.length
+                              ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)] scale-110'
+                              : 'bg-border'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Teclado numérico táctil */}
+                <div className="grid grid-cols-3 gap-2 my-2">
+                  {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'backspace'].map(key => {
+                    const isAction = key === 'clear' || key === 'backspace';
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => handleKeypadPress(key)}
+                        className={`h-12 rounded-xl text-base font-bold font-mono flex items-center justify-center transition-all active:scale-95 ${
+                          isAction
+                            ? 'bg-muted/70 text-foreground border border-border text-xs font-sans'
+                            : 'bg-card border border-border/80 text-foreground hover:border-amber-500/50 shadow-xs hover:bg-amber-500/5'
+                        }`}
+                      >
+                        {key === 'backspace' ? <Delete className="w-4 h-4" /> : key === 'clear' ? 'Borrar' : key}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {error && (
+                  <div className="bg-destructive/10 text-destructive text-xs p-2 rounded-lg text-center border border-destructive/30 my-1 animate-wiggle">
+                    {error}
+                  </div>
+                )}
+
+                <Button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={loading || !username || !password}
+                  className="w-full h-10 mt-2 font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-md text-xs"
+                >
+                  <Check className="w-4 h-4 mr-1.5" />
+                  {loading ? 'Entrando...' : 'Entrar con PIN'}
+                </Button>
               </div>
-            )}
-
-            <Button
-              type="submit"
-              className="w-full h-11 font-semibold text-base shadow-sm hover:shadow transition-all"
-              disabled={loading}
-            >
-              {loading ? 'Verificando...' : 'Iniciar Sesión'}
-            </Button>
-          </form>
-
-          <Button
-            type="button"
-            variant="ghost"
-            className="w-full mt-2 text-sm text-muted-foreground hover:text-foreground"
-            onClick={() => { setForgotResult(null); setForgotUser(username); setForgotOpen(true); }}
-          >
-            <HelpCircle className="w-4 h-4 mr-2" />
-            ¿Olvidaste tu contraseña?
-          </Button>
-
-          <div className="mt-4 flex items-center gap-2">
-            <Button
-              variant="outline"
-              className="flex-1 text-xs sm:text-sm"
-              onClick={() => setShowQr(true)}
-            >
-              <MessageCircle className="w-4 h-4 mr-2 text-primary" />
-              Soporte y Asistencia
-            </Button>
-            <HelpTip>Canal directo de asistencia técnica y resolución de dudas.</HelpTip>
-          </div>
-
-          <div className="mt-4 flex justify-center">
-            <PrivacyPolicyDialog />
-          </div>
-
-          <div className="mt-5 text-center space-y-1.5">
-            <p className="text-xs text-muted-foreground font-medium">
-              © 2026 Gestión de Ventas. Todos los derechos reservados.
-            </p>
-            <div>
-              <span className="gold-signature-shimmer text-xs tracking-wider">
-                ( Desarrollado por Julio_GE )
-              </span>
             </div>
-          </div>
+          )}
         </div>
       </div>
 

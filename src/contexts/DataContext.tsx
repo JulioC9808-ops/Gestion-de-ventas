@@ -120,6 +120,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   announcementUrl: DEFAULT_ANNOUNCEMENT_URL,
   welcomeGreetingsEnabled: true,
   soundEffectsEnabled: true,
+  animatedLoginEnabled: true,
   quoteLanguages: ['es'],
 };
 
@@ -201,6 +202,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
     if (!loaded.announcementUrl || loaded.announcementUrl.includes('Gestion-de-ventas-PC')) {
       loaded.announcementUrl = DEFAULT_ANNOUNCEMENT_URL;
+      dirty = true;
+    }
+    // Si animatedLoginEnabled no está definido en el almacenamiento, activarlo por defecto
+    if (loaded.animatedLoginEnabled === undefined) {
+      loaded.animatedLoginEnabled = true;
       dirty = true;
     }
     if (dirty) save('settings', loaded);

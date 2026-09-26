@@ -116,7 +116,10 @@
   <header class="header">
     <div class="badge-top"><span class="badge-dot"></span> DEV PANEL REMOTO • JULIO_GE</div>
     <h1>Suite de Control Central</h1>
-    <div class="sub">Licencias Criptográficas HMAC-SHA256 • Branding y Precios Online • Tasas elTOQUE • Bloqueos Remotos • Phone-Home</div>
+    <div class="sub">Licencias Criptográficas HMAC-SHA256 • Branding y Precios Online • Tasas elTOQUE • Bloqueos Remotos • Commit Automático</div>
+    <div style="margin-top: 10px; display: flex; justify-content: flex-end; gap: 8px;">
+      <button class="btn btn-sm btn-gold" onclick="openGitHubConfigModal()">⚙️ GitHub Token (Commit Automático)</button>
+    </div>
   </header>
 
   <nav class="tabs">
@@ -127,7 +130,6 @@
     <button class="tab-btn" id="btn-tab-status" onclick="switchTab('tab-status',this)">🛡️ Bloqueos & Estado</button>
     <button class="tab-btn" id="btn-tab-ann" onclick="switchTab('tab-ann',this)">📢 Anuncios</button>
     <button class="tab-btn emerald" id="btn-tab-payments" onclick="switchTab('tab-payments',this)">💳 Comprobantes</button>
-    <button class="tab-btn" id="btn-tab-registry" onclick="switchTab('tab-registry',this)">🛰️ Phone-Home</button>
     <button class="tab-btn" id="btn-tab-otp" onclick="switchTab('tab-otp',this)">⚡ Acceso OTP</button>
     <button class="tab-btn" id="btn-tab-backup" onclick="switchTab('tab-backup',this)">💾 Respaldo</button>
   </nav>
@@ -246,12 +248,12 @@
 
     <div class="card">
       <h3>📤 Generador de remote-config.json</h3>
-      <div class="muted" style="margin-bottom:8px">Sube este archivo a la raíz de tu repositorio <b>Sistema-Updates</b> en GitHub.</div>
+      <div class="muted" style="margin-bottom:8px">Guarda y actualiza los precios y branding en la nube con un solo clic.</div>
       <textarea id="rc-json" readonly></textarea>
       <div class="row" style="margin-top:10px">
         <button class="btn" onclick="copyJson('rc-json','📋 JSON copiado al portapapeles')">📋 Copiar JSON</button>
-        <button class="btn btn-gold" onclick="downloadJson('rc-json','remote-config.json')">⬇️ Descargar remote-config.json</button>
-        <a class="btn btn-blue" href="https://github.com/JulioC9808-ops/Sistema-Updates/upload/main" target="_blank" rel="noreferrer">🚀 Subir a GitHub</a>
+        <button class="btn btn-gold" onclick="downloadJson('rc-json','remote-config.json')">⬇️ Descargar</button>
+        <button class="btn btn-blue" onclick="uploadRemoteConfigAuto(this)">🚀 Subir a GitHub (Commit Automático)</button>
       </div>
     </div>
   </section>
@@ -294,11 +296,12 @@
 
     <div class="card">
       <h3>📤 Generador de license-status.json</h3>
+      <div class="muted" style="margin-bottom:8px">Aplica bloqueos y suspensiones a terminales al instante en GitHub.</div>
       <textarea id="ls-json" readonly></textarea>
       <div class="row" style="margin-top:10px">
         <button class="btn" onclick="copyJson('ls-json','📋 JSON copiado')">📋 Copiar JSON</button>
-        <button class="btn btn-gold" onclick="downloadJson('ls-json','license-status.json')">⬇️ Descargar license-status.json</button>
-        <a class="btn btn-blue" href="https://github.com/JulioC9808-ops/Sistema-Updates/upload/main" target="_blank" rel="noreferrer">🚀 Subir a GitHub</a>
+        <button class="btn btn-gold" onclick="downloadJson('ls-json','license-status.json')">⬇️ Descargar</button>
+        <button class="btn btn-blue" onclick="uploadLicenseStatusAuto(this)">🚀 Subir Bloqueos a GitHub (Commit Automático)</button>
       </div>
     </div>
   </section>
@@ -327,11 +330,12 @@
 
     <div class="card">
       <h3>📤 Generador de announcement.json</h3>
+      <div class="muted" style="margin-bottom:8px">Publica el comunicado en GitHub directamente con un solo clic.</div>
       <textarea id="an-json" readonly></textarea>
       <div class="row" style="margin-top:10px">
         <button class="btn" onclick="copyJson('an-json','📋 JSON copiado')">📋 Copiar JSON</button>
-        <button class="btn btn-gold" onclick="downloadJson('an-json','announcement.json')">⬇️ Descargar announcement.json</button>
-        <a class="btn btn-blue" href="https://github.com/JulioC9808-ops/Sistema-Updates/upload/main" target="_blank" rel="noreferrer">🚀 Subir a GitHub</a>
+        <button class="btn btn-gold" onclick="downloadJson('an-json','announcement.json')">⬇️ Descargar</button>
+        <button class="btn btn-blue" onclick="uploadAnnouncementAuto(this)">🚀 Subir Anuncio a GitHub (Commit Automático)</button>
       </div>
     </div>
   </section>
@@ -347,33 +351,7 @@
     <div id="pay-list"></div>
   </section>
 
-  <!-- ==================== 8. REGISTRO PHONE-HOME ==================== -->
-  <section id="tab-registry" class="tab-content">
-    <div class="help">
-      <b>Historial Remoto de Activaciones (Google Apps Script):</b> Muestra en tiempo real los terminales que se han activado online.
-    </div>
-    <div class="card">
-      <h3>🛰️ Endpoint de Registro (/exec)</h3>
-      <label>URL de Apps Script WebApp</label>
-      <input id="rg-url" spellcheck="false">
-      <div class="row" style="margin-top:10px">
-        <button class="btn btn-blue" onclick="saveRegistryUrl()">💾 Guardar URL</button>
-        <button class="btn btn-green" onclick="loadRegistry()">🔄 Consultar Terminales Registrados</button>
-      </div>
-    </div>
-
-    <div class="card" id="rg-result-card" style="display:none">
-      <h3>📋 Terminales Registrados en la Nube</h3>
-      <div id="rg-table"></div>
-      <details style="margin-top:12px">
-        <summary class="muted" style="cursor:pointer">💡 Fallback CORS: Pegar JSON manualmente si tu navegador bloquea la consulta directa</summary>
-        <textarea id="rg-paste" placeholder='{"ok":true,"records":[...]}' style="margin-top:8px"></textarea>
-        <div class="row" style="margin-top:8px"><button class="btn mini" onclick="processPastedRegistryJson()">Procesar JSON Pegado</button></div>
-      </details>
-    </div>
-  </section>
-
-  <!-- ==================== 9. ACCESO DEV OTP ==================== -->
+  <!-- ==================== 8. ACCESO DEV OTP ==================== -->
   <section id="tab-otp" class="tab-content">
     <div class="help">
       <b>Calculadora de Desafío OTP (100% Offline):</b> Cuando necesitas acceder al panel dev de un cliente, la aplicación te muestra un código de 6 dígitos. Escríbelo aquí para obtener la respuesta instantáneamente.
@@ -527,7 +505,6 @@ function switchTab(id,btn){
   if(id==='tab-status')renderStatus();
   if(id==='tab-ann')renderAnnouncementJson();
   if(id==='tab-payments')renderPayments();
-  if(id==='tab-registry')renderRegistryUrl();
 }
 
 function openModal(html){document.getElementById('modal').innerHTML=html;document.getElementById('modal-backdrop').style.display='flex';}
@@ -1023,43 +1000,72 @@ function renderBrandingForm(){
   if(!bId){document.getElementById('br-form').innerHTML='<div class="muted">No hay cafeterías seleccionadas.</div>';return;}
   var br=getBrand()[bId]||{};
   var b=getBiz().find(function(x){return x.id===bId;});
+  var memberIds=(b&&b.members?b.members:[]).map(function(m){return formatFriendlyDeviceId(m.deviceId);}).filter(Boolean);
+  var currentTerminals=br.terminals!=null?br.terminals:memberIds.join(', ');
+
   document.getElementById('br-form').innerHTML=
     '<label>Nombre de la Cafetería (Online)</label><input id="br-name" value="'+esc(br.name||(b?b.name:''))+'">'+
-    '<label>Logo del Negocio (URL web o sube archivo)</label>'+
-    '<div class="row"><input id="br-logo" value="'+esc(br.logoUrl||'')+'" placeholder="https://... o data:image/..." style="flex:1">'+
-    '<label class="btn mini" style="margin:0; cursor:pointer">📁 Subir Logo<input type="file" accept="image/*" style="display:none" onchange="handleImageUpload(this,\'br-logo\',\'br-logo-prev\')"></label></div>'+
+    '<label style="margin-top:10px">Terminales Vinculados a esta Cafetería (IDs que recibirán este branding)</label>'+
+    '<input id="br-terminals" value="'+esc(currentTerminals)+'" placeholder="Ej: GV-A89F-12B0, GV-E01A-99B1">'+
+    '<div class="muted" style="font-size:11.5px; margin-top:2px">Separados por coma. Cada terminal con este ID adoptará automáticamente este nombre, logo y fondo.</div>'+
+    '<label style="margin-top:10px">Logo del Negocio (Optimizado automáticamente)</label>'+
+    '<div class="row"><input id="br-logo" value="'+esc(br.logoUrl||'')+'" placeholder="https://... o imagen comprimida" style="flex:1">'+
+    '<label class="btn mini" style="margin:0; cursor:pointer">📁 Subir Logo<input type="file" accept="image/*" style="display:none" onchange="handleImageUpload(this,\'br-logo\',\'br-logo-prev\',400,160,0.85)"></label></div>'+
     (br.logoUrl?'<img src="'+esc(br.logoUrl)+'" id="br-logo-prev" class="preview-img">':'<img id="br-logo-prev" class="preview-img" style="display:none">')+
-    '<label style="margin-top:10px">Fondo de Pantalla (URL web o sube archivo)</label>'+
-    '<div class="row"><input id="br-bg" value="'+esc(br.loginBgUrl||'')+'" placeholder="https://... o data:image/..." style="flex:1">'+
-    '<label class="btn mini" style="margin:0; cursor:pointer">📁 Subir Fondo<input type="file" accept="image/*" style="display:none" onchange="handleImageUpload(this,\'br-bg\',\'br-bg-prev\')"></label></div>'+
+    '<label style="margin-top:10px">Fondo de Pantalla de Login (Optimizado automáticamente)</label>'+
+    '<div class="row"><input id="br-bg" value="'+esc(br.loginBgUrl||'')+'" placeholder="https://... o imagen comprimida" style="flex:1">'+
+    '<label class="btn mini" style="margin:0; cursor:pointer">📁 Subir Fondo<input type="file" accept="image/*" style="display:none" onchange="handleImageUpload(this,\'br-bg\',\'br-bg-prev\',1280,720,0.75)"></label></div>'+
     (br.loginBgUrl?'<img src="'+esc(br.loginBgUrl)+'" id="br-bg-prev" class="preview-img">':'<img id="br-bg-prev" class="preview-img" style="display:none">')+
-    '<div class="row" style="margin-top:14px"><button class="btn btn-green" onclick="saveBranding(\''+bId+'\')">💾 Guardar y Aplicar Branding Online</button></div>';
+    '<div class="row" style="margin-top:14px"><button class="btn btn-green" onclick="saveBranding(\''+bId+'\')">💾 Guardar y Aplicar Branding a Cafetería</button></div>';
 }
 
-function handleImageUpload(input,inputId,prevId){
+function handleImageUpload(input,inputId,prevId,maxW,maxH,quality){
   var file=input.files[0];if(!file)return;
+  toast('⏳ Comprimiendo y optimizando imagen...');
   var reader=new FileReader();
   reader.onload=function(e){
-    var base64=e.target.result;
-    document.getElementById(inputId).value=base64;
-    var prev=document.getElementById(prevId);
-    if(prev){prev.src=base64;prev.style.display='block';}
-    toast('✅ Imagen cargada');
+    var img=new Image();
+    img.onload=function(){
+      var w=img.width, h=img.height;
+      var targetW=maxW||800, targetH=maxH||600;
+      if(w>targetW||h>targetH){
+        var ratio=Math.min(targetW/w, targetH/h);
+        w=Math.round(w*ratio);
+        h=Math.round(h*ratio);
+      }
+      var canvas=document.createElement('canvas');
+      canvas.width=w; canvas.height=h;
+      var ctx=canvas.getContext('2d');
+      ctx.drawImage(img,0,0,w,h);
+      var q=quality||0.8;
+      var compressed=canvas.toDataURL('image/jpeg',q);
+      document.getElementById(inputId).value=compressed;
+      var prev=document.getElementById(prevId);
+      if(prev){prev.src=compressed;prev.style.display='block';}
+      var kb=Math.round(compressed.length/1024);
+      toast('✅ Imagen optimizada ('+kb+' KB)');
+    };
+    img.onerror=function(){
+      toast('Error al leer la imagen','err');
+    };
+    img.src=e.target.result;
   };
   reader.readAsDataURL(file);
 }
 
 function saveBranding(bId){
   var br=getBrand();
+  var rawTerminals=document.getElementById('br-terminals').value;
   br[bId]={
     name:document.getElementById('br-name').value.trim(),
+    terminals:rawTerminals.trim(),
     logoUrl:document.getElementById('br-logo').value.trim(),
     loginBgUrl:document.getElementById('br-bg').value.trim(),
     updatedAt:Date.now()
   };
   save(K_BRAND,br);
   renderRemoteConfigJson();
-  toast('🎨 Branding de cafetería guardado');
+  toast('🎨 Branding de cafetería guardado y mapeado');
 }
 
 function renderRemoteConfigJson(){
@@ -1072,14 +1078,29 @@ function renderRemoteConfigJson(){
   getBiz().forEach(function(b){
     var custom=brandStore[b.id];
     if(custom){
+      var tList=[];
+      // Terminales especificados manualmente
+      if(custom.terminals){
+        custom.terminals.split(',').forEach(function(t){
+          var cl=t.trim(); if(cl)tList.push(cl);
+        });
+      }
+      // Miembros asociados
       (b.members||[]).forEach(function(m){
-        var friendly=formatFriendlyDeviceId(m.deviceId);
-        brMap[friendly]={
-          businessName:custom.name||b.name,
-          logoData:custom.logoUrl||undefined,
-          backgroundData:custom.loginBgUrl||undefined,
-          updatedAt:custom.updatedAt||now
-        };
+        if(m.deviceId)tList.push(m.deviceId);
+      });
+
+      // Normalizar y mapear
+      tList.forEach(function(tId){
+        var friendly=formatFriendlyDeviceId(tId);
+        if(friendly){
+          brMap[friendly]={
+            businessName:custom.name||b.name,
+            logoData:custom.logoUrl||undefined,
+            backgroundData:custom.loginBgUrl||undefined,
+            updatedAt:custom.updatedAt||now
+          };
+        }
       });
     }
   });
@@ -1097,7 +1118,8 @@ function renderRemoteConfigJson(){
       confirmPhone:o.confirmPhone||'51616816',
       beneficiaryName:o.beneficiaryName||'Julio_GE (Desarrollador Oficial)'
     },
-    branding:brMap
+    branding:brMap,
+    _brandingTerminals:Object.keys(brMap).length
   };
   document.getElementById('rc-json').value=JSON.stringify(config,null,2);
 }
@@ -1171,11 +1193,34 @@ function confirmLegacyModal(){
 }
 
 function renderStatusJson(){
+  var blList = getBlocked().map(function(x){
+    var fId = formatFriendlyDeviceId(x.deviceId || x.friendlyId);
+    return {
+      deviceId: x.deviceId || fId,
+      friendlyId: fId,
+      id: fId,
+      reason: x.reason || 'Terminal suspendido por el desarrollador',
+      blockedAt: x.blockedAt || new Date().toISOString()
+    };
+  });
+  var legList = getLegacy().map(function(x){
+    var fId = formatFriendlyDeviceId(x.deviceId || x.friendlyId);
+    return {
+      deviceId: x.deviceId || fId,
+      friendlyId: fId,
+      id: fId,
+      label: x.label || ''
+    };
+  });
   var statusObj={
-    allowNewActivations:getAllowNew(),
-    blockedDevices:getBlocked().map(function(x){return {deviceId:x.deviceId,friendlyId:x.friendlyId||formatFriendlyDeviceId(x.deviceId),reason:x.reason||'Terminal suspendido'};}),
-    legacyDevices:getLegacy().map(function(x){return {deviceId:x.deviceId,friendlyId:x.friendlyId||formatFriendlyDeviceId(x.deviceId),label:x.label||''};}),
-    updatedAt:new Date().toISOString()
+    version: 1,
+    updated: new Date().toISOString(),
+    masterSwitch: true,
+    allowNewActivations: getAllowNew(),
+    blocked: blList,
+    blockedDevices: blList,
+    legacyTerminals: legList,
+    legacyDevices: legList
   };
   document.getElementById('ls-json').value=JSON.stringify(statusObj,null,2);
 }
@@ -1371,6 +1416,148 @@ function importBackupJson(input){
     }
   };
   reader.readAsText(file);
+}
+
+// ===================== GITHUB API AUTO COMMIT =====================
+var K_GH_TOKEN = 'gv_gh_token';
+var K_GH_REPO = 'gv_gh_repo';
+var K_GH_BRANCH = 'gv_gh_branch';
+
+function getGitHubConfig() {
+  return {
+    token: localStorage.getItem(K_GH_TOKEN) || '',
+    repo: localStorage.getItem(K_GH_REPO) || 'JulioC9808-ops/Sistema-Updates',
+    branch: localStorage.getItem(K_GH_BRANCH) || 'main'
+  };
+}
+
+function openGitHubConfigModal() {
+  var cfg = getGitHubConfig();
+  var html =
+    '<h3>⚙️ Configuración de GitHub (Commits Automáticos)</h3>' +
+    '<div class="help">Permite que al tocar <b>Subir a GitHub</b>, el archivo se actualice automáticamente en tu repositorio mediante la API oficial de GitHub sin tener que descargarlo ni entrar a la web.</div>' +
+    '<label>GitHub Personal Access Token (PAT)</label>' +
+    '<input type="password" id="gh-modal-token" value="' + esc(cfg.token) + '" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">' +
+    '<div class="muted" style="margin-top:4px; font-size:12px">Token de GitHub (Classic con permiso <code>repo</code> o Fine-grained con permiso <code>Contents: Read and write</code>). Se guarda solo en tu navegador.</div>' +
+    '<label style="margin-top:10px">Repositorio (Owner/Repo)</label>' +
+    '<input id="gh-modal-repo" value="' + esc(cfg.repo) + '" placeholder="JulioC9808-ops/Sistema-Updates">' +
+    '<label style="margin-top:10px">Rama (Branch)</label>' +
+    '<input id="gh-modal-branch" value="' + esc(cfg.branch) + '" placeholder="main">' +
+    '<div class="row" style="margin-top:16px; justify-content:flex-end; gap:8px;">' +
+    '<button class="btn" onclick="closeModal()">Cancelar</button>' +
+    '<button class="btn btn-green" onclick="saveGitHubConfig()">💾 Guardar Configuración</button>' +
+    '</div>';
+  openModal(html);
+}
+
+function saveGitHubConfig() {
+  var token = document.getElementById('gh-modal-token').value.trim();
+  var repo = document.getElementById('gh-modal-repo').value.trim() || 'JulioC9808-ops/Sistema-Updates';
+  var branch = document.getElementById('gh-modal-branch').value.trim() || 'main';
+  localStorage.setItem(K_GH_TOKEN, token);
+  localStorage.setItem(K_GH_REPO, repo);
+  localStorage.setItem(K_GH_BRANCH, branch);
+  closeModal();
+  toast('✅ Configuración de GitHub guardada');
+}
+
+async function uploadFileToGithubDirect(filename, contentText, commitMessage, btnElement) {
+  var cfg = getGitHubConfig();
+  var token = cfg.token;
+  if (!token) {
+    openGitHubConfigModal();
+    toast('Configura tu GitHub Token para activar los commits automáticos', 'err');
+    return;
+  }
+
+  var origText = btnElement ? btnElement.innerHTML : '';
+  if (btnElement) {
+    btnElement.disabled = true;
+    btnElement.innerHTML = '⏳ Subiendo commit...';
+  }
+
+  toast('🚀 Conectando con GitHub API...');
+
+  try {
+    // 1. Obtener sha actual si ya existe
+    var sha = '';
+    var getUrl = 'https://api.github.com/repos/' + cfg.repo + '/contents/' + filename + '?ref=' + encodeURIComponent(cfg.branch) + '&t=' + Date.now();
+    var getRes = await fetch(getUrl, {
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    });
+
+    if (getRes.status === 401 || getRes.status === 403) {
+      throw new Error('Token no autorizado o expirado. Haz clic en ⚙️ GitHub Token para corregirlo.');
+    }
+
+    if (getRes.ok) {
+      var fileInfo = await getRes.json();
+      sha = fileInfo.sha;
+    }
+
+    // 2. Codificar a base64 UTF-8
+    var b64 = btoa(unescape(encodeURIComponent(contentText)));
+
+    // 3. PUT commit
+    var putUrl = 'https://api.github.com/repos/' + cfg.repo + '/contents/' + filename;
+    var body = {
+      message: commitMessage || ('Actualización de ' + filename + ' desde Suite Central'),
+      content: b64,
+      branch: cfg.branch
+    };
+    if (sha) body.sha = sha;
+
+    var putRes = await fetch(putUrl, {
+      method: 'PUT',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!putRes.ok) {
+      var errJson = await putRes.json().catch(function() { return {}; });
+      throw new Error(errJson.message || ('Error HTTP ' + putRes.status));
+    }
+
+    toast('✅ ¡' + filename + ' subido a GitHub exitosamente con commit automático!');
+    if (btnElement) {
+      btnElement.innerHTML = '✅ ¡Commit Exitoso!';
+      setTimeout(function() {
+        btnElement.innerHTML = origText;
+        btnElement.disabled = false;
+      }, 3000);
+    }
+  } catch (err) {
+    toast('❌ Error al subir: ' + (err.message || err), 'err');
+    if (btnElement) {
+      btnElement.innerHTML = origText;
+      btnElement.disabled = false;
+    }
+  }
+}
+
+function uploadRemoteConfigAuto(btn) {
+  var content = document.getElementById('rc-json').value;
+  if (!content) { toast('Genera primero la configuración', 'err'); return; }
+  uploadFileToGithubDirect('remote-config.json', content, 'Actualizar remote-config.json (Branding y Precios)', btn);
+}
+
+function uploadLicenseStatusAuto(btn) {
+  var content = document.getElementById('ls-json').value;
+  if (!content) { toast('No hay datos de estado generados', 'err'); return; }
+  uploadFileToGithubDirect('license-status.json', content, 'Actualizar license-status.json (Bloqueos y Suspensiones)', btn);
+}
+
+function uploadAnnouncementAuto(btn) {
+  var content = document.getElementById('an-json').value;
+  if (!content) { toast('Configura primero el anuncio', 'err'); return; }
+  uploadFileToGithubDirect('announcement.json', content, 'Publicar announcement.json (Anuncio Remoto)', btn);
 }
 
 // ===================== INICIALIZACIÓN =====================

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { isMobileDevice } from '@/lib/platform';
+import { setPinchZoomActive } from '@/lib/pinchZoom';
 import splashCup from '@/assets/splash-cup.png';
 
 /**
@@ -20,22 +21,41 @@ export default function IntroPlayer() {
     }
   });
 
-  // Quita el splash estático del index.html (evita el parpadeo al arrancar)
+  // Quita el splash estático del index.html y habilita el zoom a partir del login
   const hideBootSplash = () => {
     const el = document.getElementById('boot-splash');
     if (el) el.remove();
+
+    // Habilitar pellizcar / zoom una vez que termina la pantalla de carga (en login y app)
+    const meta = document.getElementById('viewport-meta');
+    if (meta) {
+      meta.setAttribute(
+        'content',
+        'width=device-width, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0, user-scalable=yes, viewport-fit=cover'
+      );
+    }
+  };
+
+  const closeIntro = () => {
+    hideBootSplash();
+    setPinchZoomActive(true);
+    setShow(false);
   };
 
   useEffect(() => {
     if (!show) {
       hideBootSplash();
+      setPinchZoomActive(true);
       return;
     }
+
+    // Mientras la intro esté activa, asegurar zoom 1.0 absoluto sin distorsiones
+    setPinchZoomActive(false);
+
     if (mobile) hideBootSplash();
     // Cierre de seguridad: móvil 2.6s, PC máx 12s (por si el video no dispara "ended")
     const t = setTimeout(() => {
-      hideBootSplash();
-      setShow(false);
+      closeIntro();
     }, mobile ? 2600 : 12000);
     return () => clearTimeout(t);
   }, [show, mobile]);
@@ -45,8 +65,7 @@ export default function IntroPlayer() {
     if (!show) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' || e.key === ' ' || e.key === 'Enter') {
-        hideBootSplash();
-        setShow(false);
+        closeIntro();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -60,11 +79,11 @@ export default function IntroPlayer() {
   return (
     <div
       id="app-intro-overlay"
-      className="fixed inset-0 z-[9999] w-screen h-screen overflow-hidden bg-black flex items-center justify-center select-none cursor-pointer transition-opacity duration-300"
-      onClick={() => {
-        hideBootSplash();
-        setShow(false);
+      className="fixed inset-0 z-[9999] w-screen h-screen overflow-hidden bg-black flex items-center justify-center select-none cursor-pointer transition-opacity duration-300 touch-none"
+      onTouchMove={e => {
+        if (e.touches.length > 1) e.preventDefault();
       }}
+      onClick={closeIntro}
       title="Haz clic o presiona Esc para continuar"
     >
       {mobile ? (
@@ -92,8 +111,8 @@ export default function IntroPlayer() {
             className="w-full h-full object-cover select-none pointer-events-none"
             onCanPlay={hideBootSplash}
             onPlaying={hideBootSplash}
-            onEnded={() => { hideBootSplash(); setShow(false); }}
-            onError={() => { hideBootSplash(); setShow(false); }}
+            onEnded={closeIntro}
+            onError={closeIntro}
           />
           <div className="absolute bottom-4 right-4 z-10 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-white/70 hover:text-white text-xs border border-white/10 transition-colors pointer-events-auto">
             Saltar presentación ✕

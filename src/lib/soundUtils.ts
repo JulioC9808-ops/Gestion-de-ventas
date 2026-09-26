@@ -285,3 +285,36 @@ export function playShiftCloseSound(shiftPeriod?: 'morning' | 'afternoon' | 'nig
     // Silencio seguro
   }
 }
+
+/**
+ * Sonido "BIP" profesional de escáner de código de barras / QR (Honeywell/Zebra style)
+ * Respeta el interruptor de sonido general: si el sistema está silenciado, no suena.
+ */
+export function playQrBeepSound() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  try {
+    const now = ctx.currentTime;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    // Frecuencia clásica de confirmación de escáner (2400 Hz)
+    osc.frequency.setValueAtTime(2400, now);
+
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.28, now + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.075);
+  } catch {
+    // Silencio seguro
+  }
+}
+

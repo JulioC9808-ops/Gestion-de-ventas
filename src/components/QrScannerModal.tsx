@@ -3,6 +3,8 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { playQrBeepSound } from '@/lib/soundUtils';
+import { triggerHaptic } from '@/lib/haptics';
 
 interface Props {
   open: boolean;
@@ -89,6 +91,8 @@ export default function QrScannerModal({ open, onClose, onScan, title = 'Escanea
           { fps: 12, qrbox: { width: 240, height: 240 } },
           (decoded) => {
             if (cancelled) return;
+            playQrBeepSound();
+            triggerHaptic('success');
             onScanRef.current(decoded);
             if (!keepOpen) stop();
           },

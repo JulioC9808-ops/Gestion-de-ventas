@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import FontSizeSelector from '@/components/FontSizeSelector';
 import HelpTip from '@/components/HelpTip';
-import { Sliders, ShieldCheck, Volume2, VolumeX, MessageSquare, RefreshCw, Globe } from 'lucide-react';
+import { Sliders, ShieldCheck, Volume2, VolumeX, MessageSquare, RefreshCw, Globe, Smartphone, Vibrate } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import PrivacyPolicyDialog from '@/components/PrivacyPolicyDialog';
 import { Button } from '@/components/ui/button';
 import { getShiftGreeting, fetchOnlineQuote, SUPPORTED_LANGUAGES, getQuoteLanguages, setQuoteLanguages } from '@/lib/greeting';
 import { areSoundsEnabled, setSoundsEnabled } from '@/lib/soundUtils';
+import { isHapticsEnabled, setHapticsEnabled, triggerHaptic } from '@/lib/haptics';
 import { toast } from 'sonner';
 
 export default function EmployeeSettings() {
   const { currentUser } = useAuth();
   const [soundsOn, setSoundsOn] = useState(() => areSoundsEnabled());
+  const [hapticsOn, setHapticsOn] = useState(() => isHapticsEnabled());
   const [welcomeOn, setWelcomeOn] = useState(() => {
     try {
       return localStorage.getItem('pos_welcome_greetings_enabled') !== 'false';
@@ -27,6 +29,13 @@ export default function EmployeeSettings() {
     setSoundsOn(enabled);
     setSoundsEnabled(enabled);
     toast.success(enabled ? 'Efectos de sonido activados' : 'Efectos de sonido desactivados');
+  };
+
+  const handleToggleHaptics = (enabled: boolean) => {
+    setHapticsOn(enabled);
+    setHapticsEnabled(enabled);
+    if (enabled) triggerHaptic('selection');
+    toast.success(enabled ? 'Vibración táctil activada' : 'Vibración táctil desactivada');
   };
 
   const handleToggleWelcome = (enabled: boolean) => {
@@ -134,7 +143,7 @@ export default function EmployeeSettings() {
               <div>
                 <p className="text-sm font-semibold text-foreground">Efectos de Sonido</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Reproduce tonos suaves al iniciar sesión, cerrar turno y eliminar elementos.
+                  Reproduce tonos suaves al iniciar sesión, cerrar turno, escanear QR y eliminar elementos.
                 </p>
               </div>
             </div>
@@ -142,6 +151,26 @@ export default function EmployeeSettings() {
               type="checkbox"
               checked={soundsOn}
               onChange={e => handleToggleSounds(e.target.checked)}
+              className="w-5 h-5 accent-primary cursor-pointer shrink-0"
+            />
+          </label>
+
+          <label className="flex items-center justify-between gap-3 p-3 rounded-xl border border-border bg-card/60 hover:bg-card cursor-pointer transition-all">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0 mt-0.5">
+                <Vibrate className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Vibración Táctil (Respuesta Háptica)</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Vibración sutil al escribir en campos de texto, pulsar botones y confirmar acciones.
+                </p>
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              checked={hapticsOn}
+              onChange={e => handleToggleHaptics(e.target.checked)}
               className="w-5 h-5 accent-primary cursor-pointer shrink-0"
             />
           </label>

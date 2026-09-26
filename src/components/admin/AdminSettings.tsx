@@ -5,7 +5,7 @@ import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Palette, Type, Layout, DollarSign, Users as UsersIcon, Info, Settings as SettingsIcon, ShieldCheck, DownloadCloud, Sparkles, MessageCircle, HelpCircle, HardDriveDownload, Lock, CheckCircle2, UserPlus, Volume2, VolumeX, MessageSquare, RefreshCw, Globe, FileText, Copy, Check } from 'lucide-react';
+import { Palette, Type, Layout, DollarSign, Users as UsersIcon, Info, Settings as SettingsIcon, ShieldCheck, DownloadCloud, Sparkles, MessageCircle, HelpCircle, HardDriveDownload, Lock, CheckCircle2, UserPlus, Volume2, VolumeX, MessageSquare, RefreshCw, Globe, FileText, Copy, Check, Vibrate } from 'lucide-react';
 import { toast } from 'sonner';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import UserManagement from '@/components/admin/UserManagement';
@@ -17,6 +17,7 @@ import { checkPCUpdates } from '@/lib/updates';
 import { GITHUB_UPDATES_URL } from '@/contexts/DataContext';
 import { getShiftGreeting, fetchOnlineQuote, SUPPORTED_LANGUAGES, setQuoteLanguages } from '@/lib/greeting';
 import { areSoundsEnabled, setSoundsEnabled } from '@/lib/soundUtils';
+import { isHapticsEnabled, setHapticsEnabled, triggerHaptic } from '@/lib/haptics';
 
 interface AppUpdatePluginInterface {
   checkForUpdate(): Promise<{ status: string }>;
@@ -34,12 +35,16 @@ const THEMES = [
 ];
 
 const FONTS = [
-  { value: 'Source Sans 3', label: 'Source Sans 3' },
-  { value: 'Arial', label: 'Arial' },
-  { value: 'Georgia', label: 'Georgia' },
-  { value: 'Verdana', label: 'Verdana' },
-  { value: 'Times New Roman', label: 'Times New Roman' },
-  { value: 'Courier New', label: 'Courier New' },
+  { value: 'Source Sans 3', label: 'Source Sans 3 (Moderno)' },
+  { value: 'Arial', label: 'Arial (Limpio)' },
+  { value: 'Georgia', label: 'Georgia (Elegante)' },
+  { value: 'Playfair Display', label: 'Playfair Display (Premium)' },
+  { value: 'Verdana', label: 'Verdana (Legible)' },
+  { value: 'Trebuchet MS', label: 'Trebuchet MS (Dinámico)' },
+  { value: 'Times New Roman', label: 'Times New Roman (Clásico)' },
+  { value: 'Courier New', label: 'Courier New (Ticket / Mono)' },
+  { value: 'Lucida Console', label: 'Lucida Console (Técnico)' },
+  { value: 'Impact', label: 'Impact (Fuerte)' },
 ];
 
 const FONT_COLORS = [
@@ -223,10 +228,13 @@ function GeneralSettings() {
   const [defaultSalary, setDefaultSalary] = useState(String(settings.defaultSalaryPercent || 2));
   const [selectedTheme, setSelectedTheme] = useState(settings.theme);
   const [selectedFont, setSelectedFont] = useState(settings.font);
+  const [showAllFonts, setShowAllFonts] = useState(false);
   const [fontColor, setFontColor] = useState<string | null>(settings.fontColor ?? null);
   const [salaryByPercentEnabled, setSalaryByPercentEnabled] = useState(!!settings.salaryByPercentEnabled);
+  const [animatedLoginEnabled, setAnimatedLoginEnabled] = useState(Boolean(settings.animatedLoginEnabled));
   const [welcomeGreetingsEnabled, setWelcomeGreetingsEnabledState] = useState(settings.welcomeGreetingsEnabled !== false);
   const [soundEffectsEnabled, setSoundEffectsEnabledState] = useState(settings.soundEffectsEnabled !== false);
+  const [hapticsEnabled, setHapticsEnabledState] = useState(() => isHapticsEnabled());
   const [quoteLanguages, setQuoteLanguagesState] = useState<string[]>(() =>
     settings.quoteLanguages && settings.quoteLanguages.length > 0 ? settings.quoteLanguages : ['es'],
   );
@@ -271,6 +279,8 @@ function GeneralSettings() {
 
   const handleSave = () => {
     setSoundsEnabled(soundEffectsEnabled);
+    setHapticsEnabled(hapticsEnabled);
+    if (hapticsEnabled) triggerHaptic('selection');
     setQuoteLanguages(quoteLanguages);
     updateSettings({
       navPosition: mobile && navPosition === 'top' ? 'side' : navPosition,
@@ -279,6 +289,7 @@ function GeneralSettings() {
       font: selectedFont,
       fontColor,
       salaryByPercentEnabled,
+      animatedLoginEnabled,
       welcomeGreetingsEnabled,
       soundEffectsEnabled,
       quoteLanguages,
@@ -316,12 +327,17 @@ function GeneralSettings() {
       </div>
 
       <div className="glass-card p-4 sm:p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Type className="w-5 h-5 text-primary" />
-          <h3 className="font-display font-bold text-base sm:text-lg">Tipo de Letra (Fuente)</h3>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Type className="w-5 h-5 text-primary" />
+            <h3 className="font-display font-bold text-base sm:text-lg">Tipo de Letra (Fuente)</h3>
+          </div>
+          <span className="text-xs text-muted-foreground">
+            {showAllFonts ? `${FONTS.length} fuentes` : '3 fuentes principales'}
+          </span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
-          {FONTS.map(f => (
+          {(showAllFonts ? FONTS : FONTS.slice(0, 3)).map(f => (
             <button
               key={f.value}
               type="button"
@@ -336,6 +352,44 @@ function GeneralSettings() {
             </button>
           ))}
         </div>
+        <button
+          type="button"
+          onClick={() => setShowAllFonts(!showAllFonts)}
+          className="mt-3 text-xs font-semibold text-primary hover:underline flex items-center gap-1.5 transition-colors"
+        >
+          {showAllFonts ? '▲ Ver menos fuentes' : `▼ Ver más fuentes (+${FONTS.length - 3} disponibles)`}
+        </button>
+      </div>
+
+      {/* Opción de Login Animado con Mascota (únicamente configurable por el administrador) */}
+      <div className="glass-card p-4 sm:p-6 space-y-3">
+        <div className="flex items-center gap-2 pb-2 border-b border-border">
+          <Sparkles className="w-5 h-5 text-primary" />
+          <div>
+            <h3 className="font-display font-bold text-base sm:text-lg">Animación en Pantalla de Acceso</h3>
+            <p className="text-xs text-muted-foreground">Personaliza el aspecto de la pantalla de inicio de sesión.</p>
+          </div>
+        </div>
+
+        <label className="flex items-center justify-between gap-3 p-3.5 rounded-xl border border-border bg-card/60 hover:bg-card cursor-pointer transition-all">
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">Mostrar Mascota Interactiva</p>
+              <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                Cuando está activada, aparece una mascota barista en el acceso que reacciona a lo que escribes y cambia según la hora del día (mañana, tarde y noche). Si la desactivas, la pantalla mantendrá un estilo sobrio y formal con el logo de tu negocio.
+              </p>
+            </div>
+          </div>
+          <input
+            type="checkbox"
+            checked={animatedLoginEnabled}
+            onChange={e => setAnimatedLoginEnabled(e.target.checked)}
+            className="w-5 h-5 accent-primary cursor-pointer shrink-0"
+          />
+        </label>
       </div>
 
       <div className="glass-card p-4 sm:p-6">
@@ -502,6 +556,18 @@ function GeneralSettings() {
         </div>
       </div>
 
+      {/* Botón Guardar Configuración (entre Diseño y Salario y Sonidos y Mensajes) */}
+      <div className="py-1">
+        <Button
+          onClick={handleSave}
+          className="w-full h-12 text-sm font-bold shadow-md bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl flex items-center justify-center gap-2"
+          size="lg"
+        >
+          <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+          Guardar Configuración
+        </Button>
+      </div>
+
       {/* Sonidos y Mensajes de Bienvenida */}
       <div className="glass-card p-4 sm:p-6 space-y-4">
         <div className="flex items-center gap-2 pb-2 border-b border-border">
@@ -543,7 +609,7 @@ function GeneralSettings() {
               <div>
                 <p className="text-sm font-semibold text-foreground">Efectos de Sonido del Sistema</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Reproduce tonos armónicos al iniciar sesión, cerrar turno y sonido táctil al eliminar elementos.
+                  Reproduce tonos armónicos al iniciar sesión, cerrar turno, escanear QR y sonido táctil al eliminar elementos.
                 </p>
               </div>
             </div>
@@ -552,6 +618,28 @@ function GeneralSettings() {
               checked={soundEffectsEnabled}
               onChange={e => {
                 setSoundEffectsEnabledState(e.target.checked);
+              }}
+              className="w-5 h-5 accent-primary cursor-pointer shrink-0"
+            />
+          </label>
+
+          <label className="flex items-center justify-between gap-3 p-3 rounded-xl border border-border bg-card/60 hover:bg-card cursor-pointer transition-all">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0 mt-0.5">
+                <Vibrate className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Vibración Táctil (Respuesta Háptica)</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Vibración sutil al escribir en campos de texto, pulsar botones del POS y confirmar acciones.
+                </p>
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              checked={hapticsEnabled}
+              onChange={e => {
+                setHapticsEnabledState(e.target.checked);
               }}
               className="w-5 h-5 accent-primary cursor-pointer shrink-0"
             />
@@ -621,8 +709,6 @@ function GeneralSettings() {
           </div>
         </div>
       </div>
-
-      <Button onClick={handleSave} className="w-full" size="lg">Guardar Configuración</Button>
 
       {/* Copia de Seguridad compacta y cifrada */}
       <CompactBackupControl />

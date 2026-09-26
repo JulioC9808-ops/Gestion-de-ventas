@@ -17,9 +17,9 @@ export const REMOTE_CONFIG_URL =
 
 const CACHE_KEY = 'gv_remote_branding_cache_v1';
 const FETCH_TIMEOUT_MS = 15000;
-const MAX_TOTAL_BYTES = 1_000_000;   // 1MB el JSON entero
-const MAX_IMAGE_CHARS = 400_000;     // ~300KB de imagen en base64
-const CHECK_INTERVAL_MS = 2 * 60 * 60 * 1000; // cada 2h
+const MAX_TOTAL_BYTES = 3_500_000;   // 3.5MB el JSON entero
+const MAX_IMAGE_CHARS = 1_800_000;   // ~1.3MB de imagen en base64
+const CHECK_INTERVAL_MS = 30 * 60 * 1000; // cada 30min
 
 interface RemoteOfferDisc { active?: boolean; percent?: number; label?: string; }
 interface RemoteConfig {

@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import HelpTip from '@/components/HelpTip';
 import { useData } from '@/contexts/DataContext';
-import { Package, Coffee, UtensilsCrossed, Sandwich } from 'lucide-react';
+import { Package, Coffee, UtensilsCrossed, Sandwich, Printer } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import CreateReceiptModal from '@/components/CreateReceiptModal';
 
 export default function StockView() {
   const { products, getStockQuantity } = useData();
+  const [createReceiptOpen, setCreateReceiptOpen] = useState(false);
 
   const stockItems = products.map(p => ({
     ...p,
@@ -13,11 +16,20 @@ export default function StockView() {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-header flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <h1 className="page-title">Stock Disponible</h1>
           <HelpTip>Estos son los productos disponibles para la venta en tu turno actual.</HelpTip>
         </div>
+        <Button
+          type="button"
+          onClick={() => setCreateReceiptOpen(true)}
+          variant="outline"
+          className="border-primary/40 bg-primary/5 hover:bg-primary hover:text-primary-foreground text-foreground text-xs sm:text-sm font-semibold h-9 shrink-0 shadow-xs"
+        >
+          <Printer className="w-4 h-4 mr-1.5" />
+          Crear Comprobante (Opcional)
+        </Button>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {stockItems.length === 0 ? (
@@ -39,6 +51,11 @@ export default function StockView() {
           </div>
         ))}
       </div>
+
+      <CreateReceiptModal
+        open={createReceiptOpen}
+        onClose={() => setCreateReceiptOpen(false)}
+      />
     </div>
   );
 }
