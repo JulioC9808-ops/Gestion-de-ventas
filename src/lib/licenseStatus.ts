@@ -121,7 +121,8 @@ export function getLicenseStatus(deviceId: string | null | undefined): {
   }
 
   const friendly = formatFriendlyDeviceId(deviceId).toUpperCase();
-  const clean = deviceId.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+  const rawUpper = String(deviceId).trim().toUpperCase();
+  const clean = String(deviceId).replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
 
   // Convertir cached.blocked a lista uniforme
   let blockedList: Array<{ id: string; reason?: string }> = [];
@@ -145,13 +146,15 @@ export function getLicenseStatus(deviceId: string | null | undefined): {
   const found = blockedList.find(b => {
     if (!b || !b.id) return false;
     const target = b.id.trim();
+    const targetUpper = target.toUpperCase();
     const bFriendly = formatFriendlyDeviceId(target).toUpperCase();
     const bClean = target.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
     return (
       bFriendly === friendly ||
+      targetUpper === rawUpper ||
+      targetUpper === friendly ||
       bClean === clean ||
-      target.toUpperCase() === friendly ||
-      target.toUpperCase() === clean
+      targetUpper === clean
     );
   });
 

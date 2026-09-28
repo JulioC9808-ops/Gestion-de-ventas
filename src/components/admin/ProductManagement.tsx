@@ -142,8 +142,11 @@ export default function ProductManagement() {
                         variant="ghost"
                         size="sm"
                         onClick={() => {
+                          const confirmed = window.confirm(`¿Estás seguro de que deseas eliminar el producto "${p.name}" del almacén? Esta acción es irreversible.`);
+                          if (!confirmed) return;
                           playTrashSound();
                           deleteProduct(p.id);
+                          toast.success(`Producto "${p.name}" eliminado del almacén.`);
                         }}
                         className="group text-destructive hover:text-destructive hover:bg-destructive/10"
                         title="Eliminar producto"

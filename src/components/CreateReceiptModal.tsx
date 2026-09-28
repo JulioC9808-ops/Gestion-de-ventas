@@ -1,12 +1,28 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { Printer, Plus, Trash2, Receipt, Percent, DollarSign, CreditCard, User, Building, Clock, ShoppingBag, Image as ImageIcon, Check } from 'lucide-react';
+import {
+  Printer,
+  Plus,
+  Trash2,
+  Receipt,
+  Percent,
+  DollarSign,
+  CreditCard,
+  User,
+  Building,
+  ShoppingBag,
+  Image as ImageIcon,
+  Share2,
+  Copy,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { triggerHaptic } from '@/lib/haptics';
+import { safeRandomId } from '@/lib/utils';
+import { getHavanaNow, formatHavanaDate, formatHavanaTime } from '@/lib/havanaTime';
 
 interface Props {
   open: boolean;
@@ -92,6 +108,13 @@ export default function CreateReceiptModal({ open, onClose }: Props) {
   });
   const [notes, setNotes] = useState('¡Gracias por su compra!');
 
+  // Actualizar nombre del negocio o atendido si cambian externamente
+  useEffect(() => {
+    if (settings.businessName) {
+      setBusinessName(settings.businessName);
+    }
+  }, [settings.businessName]);
+
   // Lista de productos en el comprobante
   const [items, setItems] = useState<ReceiptItem[]>([]);
   const [selectedProductId, setSelectedProductId] = useState('');
@@ -149,7 +172,7 @@ export default function CreateReceiptModal({ open, onClose }: Props) {
       return [
         ...prev,
         {
-          id: crypto.randomUUID(),
+          id: safeRandomId(),
           name: prod.name,
           quantity: 1,
           unitPrice: prod.price,
@@ -159,6 +182,7 @@ export default function CreateReceiptModal({ open, onClose }: Props) {
 
     triggerHaptic('selection');
     setSelectedProductId('');
+    toast.success(`"${prod.name}" añadido al comprobante`);
   };
 
   // Agregar ítem manual / libre
@@ -178,7 +202,7 @@ export default function CreateReceiptModal({ open, onClose }: Props) {
     setItems(prev => [
       ...prev,
       {
-        id: crypto.randomUUID(),
+        id: safeRandomId(),
         name: trimmed,
         quantity: Math.max(1, customQty || 1),
         unitPrice: priceNum,
@@ -189,6 +213,7 @@ export default function CreateReceiptModal({ open, onClose }: Props) {
     setCustomName('');
     setCustomQty(1);
     setCustomPrice('');
+    toast.success(`"${trimmed}" añadido al comprobante`);
   };
 
   const handleUpdateItemQty = (id: string, delta: number) => {
@@ -211,29 +236,126 @@ export default function CreateReceiptModal({ open, onClose }: Props) {
     triggerHaptic('selection');
   };
 
-  // Función para imprimir el comprobante térmico / estándar
+  const generateTextReceipt = (): string => {
+    const havanaNow = getHavanaNow();
+    const dateStr = formatHavanaDate(havanaNow);
+    const timeStr = formatHavanaTime(havanaNow);
+    const pctNum = parseFloat(transferPercent);
+    const hasTransferFee = !isNaN(pctNum) && pctNum > 0 && transferFee > 0;
+    const numCash = parseFloat(cashAmount) || 0;
+    const numTransfer = parseFloat(transferAmount) || 0;
+
+    const lines: string[] = [
+      `🧾 *${businessName.toUpperCase()}*`,
+      `📄 COMPROBANTE DE VENTA`,
+      `📅 Fecha: ${dateStr} • ⏰ Hora: ${timeStr}`,
+      `👤 Atendido por: ${attendantName}`,
+      `---------------------------------`,
+    ];
+
+    items.forEach(i => {
+      lines.push(`• ${i.name}`);
+      lines.push(`  ${i.quantity} x $${i.unitPrice.toLocaleString('es-ES')} = $${(i.quantity * i.unitPrice).toLocaleString('es-ES')} CUP`);
+    });
+
+    lines.push(`---------------------------------`);
+    if (hasTransferFee) {
+      lines.push(`Subtotal: $${subtotal.toLocaleString('es-ES')} CUP`);
+      lines.push(`Recargo Transferencia (${transferPercent}%): +$${transferFee.toLocaleString('es-ES')} CUP`);
+    }
+    lines.push(`*TOTAL: $${total.toLocaleString('es-ES')} CUP*`);
+
+    if (numCash > 0 && numTransfer > 0) {
+      lines.push(`Pago Efectivo: $${numCash.toLocaleString('es-ES')} CUP`);
+      lines.push(`Pago Transferencia: $${numTransfer.toLocaleString('es-ES')} CUP`);
+    } else if (numTransfer > 0) {
+      lines.push(`Pago Transferencia: $${numTransfer.toLocaleString('es-ES')} CUP`);
+    } else if (numCash > 0) {
+      lines.push(`Pago Efectivo: $${numCash.toLocaleString('es-ES')} CUP`);
+    }
+
+    if (changeDue > 0) {
+      lines.push(`Cambio / Vuelto: $${changeDue.toLocaleString('es-ES')} CUP`);
+    }
+
+    if (notes) {
+      lines.push(`---------------------------------`);
+      lines.push(`${notes}`);
+    }
+
+    return lines.join('\n');
+  };
+
+  const handleShare = async () => {
+    if (items.length === 0) {
+      toast.error('Agrega al menos un producto al comprobante antes de compartir.');
+      return;
+    }
+
+    const text = generateTextReceipt();
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: `Comprobante - ${businessName}`,
+          text,
+        });
+        triggerHaptic('success');
+        toast.success('Comprobante compartido');
+        return;
+      } catch (err: unknown) {
+        if ((err as Error)?.name === 'AbortError') return;
+      }
+    }
+
+    // Fallback: copiar al portapapeles
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+        triggerHaptic('success');
+        toast.success('Comprobante copiado al portapapeles (listo para pegar en WhatsApp o SMS)');
+      } else {
+        toast.info(text);
+      }
+    } catch {
+      toast.error('No se pudo copiar automáticamente. Por favor mantén presionado para copiar.');
+    }
+  };
+
+  const handleCopyText = async () => {
+    if (items.length === 0) {
+      toast.error('Agrega al menos un producto al comprobante.');
+      return;
+    }
+    const text = generateTextReceipt();
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+        triggerHaptic('success');
+        toast.success('Comprobante copiado al portapapeles');
+      }
+    } catch {
+      toast.error('No se pudo copiar el texto');
+    }
+  };
+
+  // Función universal para imprimir compatible con Android (Chrome / WebView) y PC (Windows / Mac)
   const handlePrint = () => {
     if (items.length === 0) {
       toast.error('Agrega al menos un producto al comprobante antes de imprimir.');
       return;
     }
 
-    const printWindow = window.open('', '_blank', 'width=380,height=600');
-    if (!printWindow) {
-      toast.error('No se pudo abrir la ventana de impresión. Habilita las ventanas emergentes.');
-      return;
-    }
-
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    const timeStr = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    const havanaNow = getHavanaNow();
+    const dateStr = formatHavanaDate(havanaNow);
+    const timeStr = formatHavanaTime(havanaNow);
 
     const effectiveLogo = customLogoUrl || businessLogo;
-    const logoHtml = includeLogo && effectiveLogo
-      ? `<div style="text-align:center; margin-bottom: 10px;">
-          <img src="${effectiveLogo}" alt="Logo" id="ticket-logo" style="max-height: 70px; max-width: 160px; object-fit: contain; display: block; margin: 0 auto;" />
-         </div>`
-      : '';
+    const logoHtml =
+      includeLogo && effectiveLogo
+        ? `<div style="text-align:center; margin-bottom: 8px;">
+            <img src="${effectiveLogo}" alt="Logo" style="max-height: 65px; max-width: 150px; object-fit: contain; display: block; margin: 0 auto;" />
+           </div>`
+        : '';
 
     const pctNum = parseFloat(transferPercent);
     const hasTransferFee = !isNaN(pctNum) && pctNum > 0 && transferFee > 0;
@@ -245,10 +367,10 @@ export default function CreateReceiptModal({ open, onClose }: Props) {
         i => `
         <tr>
           <td style="padding: 3px 0; text-align: left; vertical-align: top;">
-            <div style="font-weight: bold;">${i.name}</div>
-            <div style="font-size: 11px; color: #555;">${i.quantity} x $${i.unitPrice.toLocaleString('es-ES')}</div>
+            <div style="font-weight: bold; font-size: 12px;">${i.name}</div>
+            <div style="font-size: 11px; color: #444;">${i.quantity} x $${i.unitPrice.toLocaleString('es-ES')}</div>
           </td>
-          <td style="padding: 3px 0; text-align: right; vertical-align: top; font-weight: bold;">
+          <td style="padding: 3px 0; text-align: right; vertical-align: top; font-weight: bold; font-size: 12px;">
             $${(i.quantity * i.unitPrice).toLocaleString('es-ES')}
           </td>
         </tr>
@@ -259,112 +381,102 @@ export default function CreateReceiptModal({ open, onClose }: Props) {
     const paymentRowsHtml =
       numCash > 0 && numTransfer > 0
         ? `
-        <div class="row">
+        <div style="display:flex; justify-content:space-between; margin:2px 0;">
           <span>Efectivo:</span>
-          <span class="bold">$${numCash.toLocaleString('es-ES')} CUP</span>
+          <span style="font-weight:bold;">$${numCash.toLocaleString('es-ES')} CUP</span>
         </div>
-        <div class="row">
+        <div style="display:flex; justify-content:space-between; margin:2px 0;">
           <span>Transferencia:</span>
-          <span class="bold">$${numTransfer.toLocaleString('es-ES')} CUP</span>
+          <span style="font-weight:bold;">$${numTransfer.toLocaleString('es-ES')} CUP</span>
         </div>
       `
         : numTransfer > 0
         ? `
-        <div class="row">
+        <div style="display:flex; justify-content:space-between; margin:2px 0;">
           <span>Pago:</span>
-          <span class="bold">Transferencia ($${numTransfer.toLocaleString('es-ES')} CUP)</span>
+          <span style="font-weight:bold;">Transferencia ($${numTransfer.toLocaleString('es-ES')} CUP)</span>
         </div>
       `
         : numCash > 0
         ? `
-        <div class="row">
+        <div style="display:flex; justify-content:space-between; margin:2px 0;">
           <span>Pago:</span>
-          <span class="bold">Efectivo ($${numCash.toLocaleString('es-ES')} CUP)</span>
+          <span style="font-weight:bold;">Efectivo ($${numCash.toLocaleString('es-ES')} CUP)</span>
         </div>
       `
         : `
-        <div class="row">
+        <div style="display:flex; justify-content:space-between; margin:2px 0;">
           <span>Pago:</span>
-          <span class="bold">Efectivo</span>
+          <span style="font-weight:bold;">Efectivo</span>
         </div>
       `;
 
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <title>Comprobante de Venta - ${businessName}</title>
-        <style>
+    // 1. Inyectar / Actualizar portal de impresión directo en el documento
+    let printPortal = document.getElementById('gv_receipt_print_portal');
+    if (!printPortal) {
+      printPortal = document.createElement('div');
+      printPortal.id = 'gv_receipt_print_portal';
+      document.body.appendChild(printPortal);
+    }
+
+    printPortal.innerHTML = `
+      <style id="gv-receipt-print-style">
+        @media print {
+          body > *:not(#gv_receipt_print_portal) {
+            display: none !important;
+          }
+          #gv_receipt_print_portal {
+            display: block !important;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            max-width: 80mm !important;
+            margin: 0 auto !important;
+            padding: 8px !important;
+            color: #000 !important;
+            background: #fff !important;
+            font-family: 'Courier New', Courier, monospace !important;
+            font-size: 12px !important;
+            line-height: 1.3 !important;
+          }
           @page {
-            margin: 0;
+            margin: 4mm 2mm;
             size: auto;
           }
-          body {
-            font-family: 'Courier New', Courier, monospace, monospace;
-            width: 78mm;
-            max-width: 100%;
-            margin: 0 auto;
-            padding: 12px 10px;
-            color: #000;
-            background: #fff;
-            font-size: 12px;
-            line-height: 1.3;
+        }
+        @media screen {
+          #gv_receipt_print_portal {
+            display: none !important;
           }
-          .center { text-align: center; }
-          .bold { font-weight: bold; }
-          .divider {
-            border-top: 1px dashed #000;
-            margin: 8px 0;
-          }
-          .double-divider {
-            border-top: 2px solid #000;
-            margin: 8px 0;
-          }
-          .row {
-            display: flex;
-            justify-content: space-between;
-            margin: 2px 0;
-          }
-          table {
-            width: 100%;
-            border-collapse: collapse;
-          }
-          .total-row {
-            font-size: 15px;
-            font-weight: bold;
-            display: flex;
-            justify-content: space-between;
-            margin-top: 4px;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="center">
+        }
+      </style>
+      <div style="width: 78mm; max-width: 100%; margin: 0 auto; padding: 6px; font-family: 'Courier New', Courier, monospace; color: #000; font-size: 12px; line-height: 1.3;">
+        <div style="text-align: center;">
           ${logoHtml}
-          <div style="font-size: 16px; font-weight: bold; text-transform: uppercase;">${businessName}</div>
-          <div style="font-size: 11px; margin-top: 2px;">COMPROBANTE DE COMPRA</div>
+          <div style="font-size: 15px; font-weight: bold; text-transform: uppercase;">${businessName}</div>
+          <div style="font-size: 11px; margin-top: 2px;">COMPROBANTE DE VENTA</div>
         </div>
 
-        <div class="divider"></div>
+        <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
 
-        <div class="row">
+        <div style="display: flex; justify-content: space-between; margin: 2px 0; font-size: 11px;">
           <span>Fecha: ${dateStr}</span>
           <span>Hora: ${timeStr}</span>
         </div>
-        <div class="row">
+        <div style="display: flex; justify-content: space-between; margin: 2px 0; font-size: 11px;">
           <span>Atendido por:</span>
-          <span class="bold">${attendantName}</span>
+          <span style="font-weight: bold;">${attendantName}</span>
         </div>
         ${paymentRowsHtml}
 
-        <div class="divider"></div>
+        <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
 
-        <table>
+        <table style="width: 100%; border-collapse: collapse;">
           <thead>
             <tr style="border-bottom: 1px solid #000; font-size: 11px;">
-              <th style="text-align: left; padding-bottom: 3px;">DESCRIPCIÓN</th>
-              <th style="text-align: right; padding-bottom: 3px;">IMPORTE</th>
+              <th style="text-align: left; padding-bottom: 2px;">DESCRIPCIÓN</th>
+              <th style="text-align: right; padding-bottom: 2px;">IMPORTE</th>
             </tr>
           </thead>
           <tbody>
@@ -372,24 +484,24 @@ export default function CreateReceiptModal({ open, onClose }: Props) {
           </tbody>
         </table>
 
-        <div class="divider"></div>
+        <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
 
         ${
           hasTransferFee
             ? `
-          <div class="row">
+          <div style="display: flex; justify-content: space-between; margin: 2px 0;">
             <span>Subtotal:</span>
             <span>$${subtotal.toLocaleString('es-ES')} CUP</span>
           </div>
-          <div class="row">
-            <span>Recargo Transferencia (${transferPercent}%):</span>
+          <div style="display: flex; justify-content: space-between; margin: 2px 0;">
+            <span>Recargo Transf. (${transferPercent}%):</span>
             <span>+$${transferFee.toLocaleString('es-ES')} CUP</span>
           </div>
         `
             : ''
         }
 
-        <div class="total-row">
+        <div style="display: flex; justify-content: space-between; margin-top: 4px; font-size: 14px; font-weight: bold;">
           <span>TOTAL:</span>
           <span>$${total.toLocaleString('es-ES')} CUP</span>
         </div>
@@ -397,8 +509,8 @@ export default function CreateReceiptModal({ open, onClose }: Props) {
         ${
           changeDue > 0
             ? `
-          <div class="divider"></div>
-          <div class="row bold">
+          <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
+          <div style="display: flex; justify-content: space-between; font-weight: bold;">
             <span>Cambio / Vuelto:</span>
             <span>$${changeDue.toLocaleString('es-ES')} CUP</span>
           </div>
@@ -406,46 +518,36 @@ export default function CreateReceiptModal({ open, onClose }: Props) {
             : ''
         }
 
-        <div class="double-divider"></div>
+        <div style="border-top: 2px solid #000; margin: 8px 0;"></div>
 
-        <div class="center" style="margin-top: 10px; font-size: 12px; font-weight: bold;">
+        <div style="text-align: center; margin-top: 6px; font-size: 12px; font-weight: bold;">
           ${notes}
         </div>
-        <div class="center" style="margin-top: 4px; font-size: 10px; color: #666;">
+        <div style="text-align: center; margin-top: 3px; font-size: 10px; color: #555;">
           Conserve este comprobante
         </div>
-
-        <script>
-          function doPrint() {
-            window.focus();
-            window.print();
-            setTimeout(function() { window.close(); }, 800);
-          }
-          window.addEventListener('load', function() {
-            var logo = document.getElementById('ticket-logo');
-            if (logo) {
-              if (logo.complete && logo.naturalHeight !== 0) {
-                setTimeout(doPrint, 250);
-              } else {
-                logo.onload = function() { setTimeout(doPrint, 250); };
-                logo.onerror = function() { doPrint(); };
-                setTimeout(doPrint, 2500);
-              }
-            } else {
-              setTimeout(doPrint, 150);
-            }
-          });
-        </script>
-      </body>
-      </html>
+      </div>
     `;
 
-    printWindow.document.open();
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
-
     triggerHaptic('success');
-    toast.success('Comprobante enviado a imprimir');
+    toast.success('Abriendo diálogo de impresión...');
+
+    // Invocar impresión nativa
+    setTimeout(() => {
+      try {
+        window.print();
+      } catch (err) {
+        console.error('Error al imprimir comprobante:', err);
+        // Fallback abrir ventana
+        const w = window.open('', '_blank');
+        if (w) {
+          w.document.write(printPortal?.innerHTML || '');
+          w.document.close();
+          w.focus();
+          w.print();
+        }
+      }
+    }, 150);
   };
 
   return (
@@ -589,7 +691,7 @@ export default function CreateReceiptModal({ open, onClose }: Props) {
                 size="sm"
                 onClick={handleAddCatalogProduct}
                 disabled={!selectedProductId}
-                className="h-9 px-3 text-xs"
+                className="h-9 px-3 text-xs font-semibold"
               >
                 <Plus className="w-3.5 h-3.5 mr-1" /> Añadir
               </Button>
@@ -628,7 +730,7 @@ export default function CreateReceiptModal({ open, onClose }: Props) {
                   variant="outline"
                   size="sm"
                   onClick={handleAddCustomItem}
-                  className="sm:col-span-2 h-8 text-xs"
+                  className="sm:col-span-2 h-8 text-xs font-semibold"
                 >
                   <Plus className="w-3.5 h-3.5 mr-1" /> Agregar
                 </Button>
@@ -638,7 +740,7 @@ export default function CreateReceiptModal({ open, onClose }: Props) {
             {/* Tabla de ítems añadidos */}
             {items.length === 0 ? (
               <div className="p-6 text-center border border-dashed border-border rounded-xl text-muted-foreground text-xs">
-                No hay productos agregados todavía. Selecciona un producto del menú o escribe uno manual.
+                No hay productos agregados todavía. Selecciona un producto del menú o escribe uno manual arriba.
               </div>
             ) : (
               <div className="border border-border rounded-xl overflow-hidden bg-card/50">
@@ -809,20 +911,48 @@ export default function CreateReceiptModal({ open, onClose }: Props) {
         </div>
 
         {/* Botones de acción */}
-        <div className="p-4 border-t border-border bg-card/60 flex items-center justify-between gap-3 shrink-0">
+        <div className="p-4 border-t border-border bg-card/60 flex flex-wrap items-center justify-between gap-2.5 shrink-0">
           <Button type="button" variant="ghost" size="sm" onClick={onClose} className="text-xs">
             Cerrar
           </Button>
 
-          <Button
-            type="button"
-            onClick={handlePrint}
-            disabled={items.length === 0}
-            className="text-xs font-bold px-5 h-9 bg-primary text-primary-foreground shadow-md hover:bg-primary/90"
-          >
-            <Printer className="w-4 h-4 mr-1.5" />
-            Imprimir Comprobante
-          </Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleCopyText}
+              disabled={items.length === 0}
+              className="text-xs font-semibold h-9"
+              title="Copiar texto del ticket"
+            >
+              <Copy className="w-3.5 h-3.5 mr-1.5" />
+              Copiar
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleShare}
+              disabled={items.length === 0}
+              className="text-xs font-semibold h-9 border-primary/30 hover:bg-primary/10"
+              title="Compartir ticket por WhatsApp, SMS o aplicaciones de mensajería"
+            >
+              <Share2 className="w-3.5 h-3.5 mr-1.5 text-primary" />
+              WhatsApp / Compartir
+            </Button>
+
+            <Button
+              type="button"
+              onClick={handlePrint}
+              disabled={items.length === 0}
+              className="text-xs font-bold px-4 sm:px-5 h-9 bg-primary text-primary-foreground shadow-md hover:bg-primary/90"
+            >
+              <Printer className="w-4 h-4 mr-1.5" />
+              Imprimir Comprobante
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

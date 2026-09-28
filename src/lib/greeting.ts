@@ -4,6 +4,8 @@
  * y búsqueda/traducción automática en internet según el turno de trabajo (Mañana / Tarde / Noche).
  */
 
+import { detectShiftType, getHavanaNow, type ShiftType } from './havanaTime';
+
 export interface ShiftGreeting {
   greeting: string;
   shiftName: string;
@@ -163,7 +165,7 @@ const GREETINGS_DB: Record<string, Record<ShiftPeriod, { greeting: string; shift
   es: {
     morning: { greeting: '¡Buenos días', shiftName: 'Turno Mañana', periodText: 'la mañana', icon: '☀️', prefix: '☀️ Enfoque de la mañana: ' },
     afternoon: { greeting: '¡Buenas tardes', shiftName: 'Turno Tarde', periodText: 'la tarde', icon: '🌤️', prefix: '🌤️ Impulso de la tarde: ' },
-    night: { greeting: '¡Buenas noches', shiftName: 'Turno Noche', periodText: 'la noche', icon: '🌙', prefix: '🌙 Reflexión de cierre: ' },
+    night: { greeting: '¡Buenas noches', shiftName: 'Turno Nocturno', periodText: 'la noche', icon: '🌙', prefix: '🌙 Reflexión de cierre: ' },
   },
   pt: {
     morning: { greeting: '¡Bom dia', shiftName: 'Turno da Manhã', periodText: 'a manhã', icon: '☀️', prefix: '☀️ Foco da manhã: ' },
@@ -215,10 +217,7 @@ export function setQuoteLanguages(langs: string[]): void {
 }
 
 export function getCurrentPeriod(): ShiftPeriod {
-  const hour = new Date().getHours();
-  if (hour >= 5 && hour < 12) return 'morning';
-  if (hour >= 12 && hour < 19) return 'afternoon';
-  return 'night';
+  return detectShiftType();
 }
 
 function getDayOfYear(): number {

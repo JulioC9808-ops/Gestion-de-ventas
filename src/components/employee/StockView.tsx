@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import HelpTip from '@/components/HelpTip';
 import { useData } from '@/contexts/DataContext';
 import { Package, Coffee, UtensilsCrossed, Sandwich, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import CreateReceiptModal from '@/components/CreateReceiptModal';
+import { useReceiptModal } from '@/lib/receiptModalStore';
 
 export default function StockView() {
   const { products, getStockQuantity } = useData();
-  const [createReceiptOpen, setCreateReceiptOpen] = useState(false);
+  const { openReceipt } = useReceiptModal();
 
   const stockItems = products.map(p => ({
     ...p,
@@ -23,7 +23,7 @@ export default function StockView() {
         </div>
         <Button
           type="button"
-          onClick={() => setCreateReceiptOpen(true)}
+          onClick={openReceipt}
           variant="outline"
           className="border-primary/40 bg-primary/5 hover:bg-primary hover:text-primary-foreground text-foreground text-xs sm:text-sm font-semibold h-9 shrink-0 shadow-xs"
         >
@@ -51,11 +51,6 @@ export default function StockView() {
           </div>
         ))}
       </div>
-
-      <CreateReceiptModal
-        open={createReceiptOpen}
-        onClose={() => setCreateReceiptOpen(false)}
-      />
     </div>
   );
 }

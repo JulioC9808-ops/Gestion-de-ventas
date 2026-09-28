@@ -66,8 +66,27 @@ export async function getAndroidDeviceId(): Promise<string | null> {
   }
 }
 
-/** ID unificado: sincrónico en PC, asíncrono en Android. */
-export async function getDeviceId(): Promise<{ id: string | null; hw: HardwareComponents | null }> {
-  if (isDesktop()) return { id: getMachineId(), hw: getHardwareComponents() };
-  return { id: await getAndroidDeviceId(), hw: null };
+/** ID unificado: sincrónico en PC, asíncrono en Android, y persistente en Web/Navegador. */
+export async function getDeviceId(): Promise<{ id: string; hw: HardwareComponents | null }> {
+  if (isDesktop()) {
+    const mId = getMachineId();
+    return { id: mId || 'GV-DEV-PC-DESKTOP', hw: getHardwareComponents() };
+  }
+  const androidId = await getAndroidDeviceId();
+  if (androidId) return { id: androidId, hw: null };
+
+  // Fallback seguro y persistente para Web / PWA / Modo Navegador
+  try {
+    let webId = localStorage.getItem('gv_web_device_id');
+    if (!webId || webId === 'web' || webId.length < 6) {
+      const rnd = typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : Math.random().toString(36).substring(2) + Date.now().toString(36);
+      webId = 'WEB-' + rnd.replace(/-/g, '').substring(0, 16).toUpperCase();
+      localStorage.setItem('gv_web_device_id', webId);
+    }
+    return { id: webId, hw: null };
+  } catch {
+    return { id: 'GV-DEV-LOCAL-TERMINAL', hw: null };
+  }
 }

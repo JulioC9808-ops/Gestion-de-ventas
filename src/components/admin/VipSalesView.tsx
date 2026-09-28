@@ -2,6 +2,11 @@ import React from 'react';
 import HelpTip from '@/components/HelpTip';
 import { useData } from '@/contexts/DataContext';
 import { Crown } from 'lucide-react';
+import {
+  getShiftInfo,
+  formatHavanaTime,
+  formatHavanaDate,
+} from '@/lib/havanaTime';
 
 export default function VipSalesView() {
   const { reports } = useData();
@@ -12,6 +17,8 @@ export default function VipSalesView() {
       ...v,
       employeeName: r.employeeName,
       date: r.date,
+      closedAt: r.closedAt,
+      closedTimeFormatted: r.closedTimeFormatted,
       shift: r.shift,
     }))
   ).reverse();
@@ -43,18 +50,38 @@ export default function VipSalesView() {
         ) : (
           <table className="data-table">
             <thead>
-              <tr><th>Fecha</th><th>Empleado</th><th>Turno</th><th>Cliente</th><th>Monto</th></tr>
+              <tr>
+                <th>Fecha y Hora (La Habana)</th>
+                <th>Empleado</th>
+                <th>Turno</th>
+                <th>Cliente</th>
+                <th>Monto</th>
+              </tr>
             </thead>
             <tbody>
-              {allVip.map((v, i) => (
-                <tr key={i}>
-                  <td className="text-sm">{new Date(v.date).toLocaleDateString()}</td>
-                  <td className="font-medium">{v.employeeName}</td>
-                  <td className="capitalize">{v.shift === 'morning' ? 'Mañana' : 'Tarde'}</td>
-                  <td>{v.concept}</td>
-                  <td className="font-semibold">${v.amount.toLocaleString()}</td>
-                </tr>
-              ))}
+              {allVip.map((v, i) => {
+                const shiftInfo = getShiftInfo(v.shift);
+                const formattedTime = v.closedTimeFormatted || formatHavanaTime(v.closedAt || v.date);
+                const formattedDate = formatHavanaDate(v.closedAt || v.date, true);
+
+                return (
+                  <tr key={i}>
+                    <td className="text-xs font-mono font-semibold">
+                      <div className="text-foreground">{formattedDate}</div>
+                      <div className="text-muted-foreground font-normal">{formattedTime}</div>
+                    </td>
+                    <td className="font-medium">{v.employeeName}</td>
+                    <td>
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border ${shiftInfo.badgeClass}`}>
+                        <span>{shiftInfo.icon}</span>
+                        <span>{shiftInfo.label}</span>
+                      </span>
+                    </td>
+                    <td>{v.concept}</td>
+                    <td className="font-semibold font-mono">${v.amount.toLocaleString()}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

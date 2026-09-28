@@ -93,15 +93,6 @@ function validateConfig(json: unknown): RemoteConfig | null {
     const cfg = json as RemoteConfig;
     if (cfg.pricing !== undefined && typeof cfg.pricing !== 'object') return null;
     if (cfg.branding !== undefined && (typeof cfg.branding !== 'object' || Array.isArray(cfg.branding))) return null;
-    if (cfg.branding) {
-      for (const key of Object.keys(cfg.branding)) {
-        if (!/^[A-Z0-9-]{4,32}$/.test(key)) return null;
-        const entry = cfg.branding[key];
-        if (!entry || typeof entry !== 'object') return null;
-        if (entry.logoData && !validImage(entry.logoData)) return null;
-        if (entry.backgroundData && !validImage(entry.backgroundData)) return null;
-      }
-    }
     return cfg;
   } catch {
     return null;
@@ -149,12 +140,39 @@ async function syncOnce(): Promise<'applied' | 'unchanged' | 'error'> {
 
   // ---- 1. Branding de ESTE terminal ----
   if (cfg.branding && Object.keys(cfg.branding).length > 0) {
-    let myId = '';
-    try { myId = formatFriendlyDeviceId(await getDeviceId()); } catch { myId = ''; }
-    const entry = myId ? cfg.branding[myId] : undefined;
+    let myFriendlyId = '';
+    let myRawId = '';
+    try {
+      const dev = await getDeviceId();
+      myRawId = dev.id || '';
+      myFriendlyId = formatFriendlyDeviceId(dev.id);
+    } catch {
+      myFriendlyId = '';
+      myRawId = '';
+    }
+
+    // Buscar coincidencia por Friendly ID, Raw ID o clave directa
+    let entry = myFriendlyId ? cfg.branding[myFriendlyId] : undefined;
+    if (!entry && myRawId) {
+      entry = cfg.branding[myRawId];
+    }
+    if (!entry) {
+      // Búsqueda insensible a mayúsculas
+      const normalizedKeys = Object.keys(cfg.branding);
+      for (const k of normalizedKeys) {
+        if (
+          (myFriendlyId && k.toUpperCase() === myFriendlyId.toUpperCase()) ||
+          (myRawId && k.toUpperCase() === myRawId.toUpperCase())
+        ) {
+          entry = cfg.branding[k];
+          break;
+        }
+      }
+    }
+
     if (entry) {
       const updatedAt = Number(entry.updatedAt) || 0;
-      if (updatedAt > cache.brandingUpdatedAt) {
+      if (updatedAt > cache.brandingUpdatedAt || cache.brandingUpdatedAt === 0) {
         const patch: Record<string, unknown> = {};
         if (typeof entry.businessName === 'string' && entry.businessName.trim()) {
           patch.businessName = entry.businessName.trim();
@@ -164,7 +182,7 @@ async function syncOnce(): Promise<'applied' | 'unchanged' | 'error'> {
         const bg = validImage(entry.backgroundData);
         if (bg) patch.backgroundUrl = bg;
         if (Object.keys(patch).length > 0 && applySettingsPatch(patch)) {
-          cache.brandingUpdatedAt = updatedAt;
+          cache.brandingUpdatedAt = updatedAt || Date.now();
           changed = true;
         }
       }
@@ -174,7 +192,7 @@ async function syncOnce(): Promise<'applied' | 'unchanged' | 'error'> {
   // ---- 2. Precios, banco y descuentos ----
   if (cfg.pricing) {
     const updatedMs = cfg.updated ? new Date(cfg.updated).getTime() || 0 : 0;
-    if (updatedMs > cache.pricingUpdatedAt) {
+    if (updatedMs > cache.pricingUpdatedAt || cache.pricingUpdatedAt === 0) {
       const p = cfg.pricing;
       const bank: Record<string, unknown> = {};
       if (typeof p.monthlyPrice === 'number' && p.monthlyPrice > 0) bank.monthlyPrice = p.monthlyPrice;
@@ -187,13 +205,10 @@ async function syncOnce(): Promise<'applied' | 'unchanged' | 'error'> {
       if (typeof p.beneficiaryName === 'string' && p.beneficiaryName.trim()) bank.beneficiaryName = p.beneficiaryName.trim();
       if (p.offers && typeof p.offers === 'object') bank.remoteOffers = p.offers;
       if (Object.keys(bank).length > 0) {
-        // Fusiona sobre el bankPaymentConfig actual (o el default)
         try {
           const raw = localStorage.getItem('settings');
           const current = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
           const prevBank = (current.bankPaymentConfig as Record<string, unknown>) || {};
-          bank.__merged = undefined; // nunca viaja
-          delete bank.__merged;
           const merged = { ...prevBank, ...bank };
           if (applySettingsPatch({ bankPaymentConfig: merged })) {
             cache.pricingUpdatedAt = updatedMs || Date.now();
@@ -211,14 +226,15 @@ async function syncOnce(): Promise<'applied' | 'unchanged' | 'error'> {
 let initialized = false;
 
 /**
- * Inicia el descargador remoto: arranque + cada 2h + al recuperar conexión.
+ * Inicia el descargador remoto: arranque + cada 30min + al recuperar conexión.
  * Nunca lanza errores hacia la app: todo es best-effort con caché.
  */
 export function initRemoteBranding(): void {
   if (initialized) return;
   initialized = true;
   const run = () => { syncOnce().catch(() => { /* silencioso */ }); };
-  setTimeout(run, 4000);
+  // Sincronización inmediata al abrir el programa
+  setTimeout(run, 600);
   window.addEventListener('online', run);
   setInterval(run, CHECK_INTERVAL_MS);
 }

@@ -98,10 +98,17 @@ export function hmacSha256(key: string, message: string): string {
 
 /**
  * Limpia y normaliza el ID de hardware para que sea amigable (ej: GV-A89F-12B0).
+ * Si ya viene en formato amigable GV-XXXX-XXXX, lo conserva intacto sin re-hashear.
  */
-export function formatFriendlyDeviceId(rawId: string | null | undefined): string {
-  if (!rawId || rawId === 'web' || rawId.length < 4) return 'GV-DEV-LOCAL';
-  const clean = rawId.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+export function formatFriendlyDeviceId(rawId: string | { id?: string | null } | null | undefined): string {
+  if (!rawId) return 'GV-DEV-LOCAL';
+  const str = typeof rawId === 'object' && rawId !== null ? (rawId.id || 'GV-DEV-LOCAL') : String(rawId);
+  const trimmed = str.trim().toUpperCase();
+  if (trimmed === 'WEB' || trimmed.length < 4) return 'GV-DEV-LOCAL';
+  if (/^GV-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(trimmed)) {
+    return trimmed;
+  }
+  const clean = trimmed.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
   const hash = sha256(clean).substring(0, 8).toUpperCase();
   return `GV-${hash.substring(0, 4)}-${hash.substring(4, 8)}`;
 }
@@ -266,6 +273,7 @@ export function generateCryptographicLicense(deviceId: string, type: 'PERM' | 'T
  */
 export function isTerminalIdBlocked(terminalId: string | null | undefined, blockedList?: string[]): boolean {
   if (!terminalId) return false;
+  const rawUpper = String(terminalId).trim().toUpperCase();
   const friendly = formatFriendlyDeviceId(terminalId).toUpperCase();
   const clean = terminalId.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
   
@@ -279,8 +287,17 @@ export function isTerminalIdBlocked(terminalId: string | null | undefined, block
   })();
 
   return list.some((item: string) => {
-    const itemClean = item.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-    return itemClean === clean || item.toUpperCase() === friendly;
+    if (!item) return false;
+    const itmUpper = String(item).trim().toUpperCase();
+    const itemClean = itmUpper.replace(/[^a-zA-Z0-9]/g, '');
+    const itmFriendly = formatFriendlyDeviceId(item).toUpperCase();
+    return (
+      itmUpper === rawUpper ||
+      itmUpper === friendly ||
+      itmFriendly === friendly ||
+      itemClean === clean ||
+      itmUpper === clean
+    );
   });
 }
 

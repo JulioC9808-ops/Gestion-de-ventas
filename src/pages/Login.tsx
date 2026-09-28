@@ -3,8 +3,7 @@ import type { User as UserType } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
 import {
-  Coffee, Lock, User, MessageCircle, HelpCircle, Sparkles, Eye, EyeOff,
-  Sun, Moon, Sunrise, RotateCw, Delete, Check, KeyRound, Copy
+  Coffee, Lock, User, MessageCircle, HelpCircle, Eye, EyeOff, KeyRound, Copy
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +16,7 @@ import { playLoginSound } from '@/lib/soundUtils';
 import { generateDevChallenge } from '@/lib/cryptoLicense';
 import { triggerHaptic } from '@/lib/haptics';
 import AnimatedMascot from '@/components/login/AnimatedMascot';
+import { setPinchZoomActive } from '@/lib/pinchZoom';
 import { toast } from 'sonner';
 
 const DEV_WHATSAPP = '+5351616816';
@@ -44,7 +44,11 @@ export default function Login() {
   const [isUserFocused, setIsUserFocused] = useState(false);
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [isCardFlipped, setIsCardFlipped] = useState(false);
+
+  useEffect(() => {
+    // La pantalla de Login SIEMPRE debe estar en escala 1.0 (sin distorsión ni zoom)
+    setPinchZoomActive(false);
+  }, []);
 
   // Tema automático estricto según la hora del día (sin selectores manuales en el Login)
   const [activeTheme, setActiveTheme] = useState<'morning' | 'afternoon' | 'night'>(() => getSystemLoginTheme());
@@ -55,21 +59,6 @@ export default function Login() {
     const interval = setInterval(updateTheme, 60 * 1000); // comprobar cada minuto
     return () => clearInterval(interval);
   }, []);
-
-  // Teclado táctil en Modo Tarde
-  const handleKeypadPress = (val: string) => {
-    triggerHaptic('light');
-    setError('');
-    if (val === 'backspace') {
-      setPassword(prev => prev.slice(0, -1));
-    } else if (val === 'clear') {
-      setPassword('');
-    } else {
-      if (password.length < 20) {
-        setPassword(prev => prev + val);
-      }
-    }
-  };
 
   // Acceso Técnico / Dev Challenge-Response 2FA (100% Offline)
   const [devOtpOpen, setDevOtpOpen] = useState(false);
@@ -177,7 +166,7 @@ export default function Login() {
     );
   };
 
-  const isAnimated = settings.animatedLoginEnabled !== false;
+  const isAnimated = settings.animatedLoginEnabled === true;
 
   const bgStyle = settings.backgroundUrl
     ? { backgroundImage: `url(${settings.backgroundUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
@@ -206,87 +195,61 @@ export default function Login() {
       )}
       {settings.backgroundUrl && <div className="absolute inset-0 bg-black/25 pointer-events-none" />}
 
-      {/* Contenedor principal del Login con soporte para 3D Flip */}
-      <div className="relative z-10 w-full max-w-md mx-4 perspective-1000 py-6">
+      {/* Contenedor principal del Login */}
+      <div className="relative z-10 w-full max-w-md mx-4 py-4 flex flex-col items-center">
+        {/* Mascota Barista Interactiva FUERA del recuadro (si está habilitada en Ajustes) */}
+        {isAnimated && (
+          <div className="w-full flex justify-center -mb-2 z-20">
+            <AnimatedMascot
+              variant={activeTheme}
+              isUserFocused={isUserFocused}
+              isPasswordFocused={isPasswordFocused || (Boolean(password) && !showPassword)}
+              isSuccess={isSuccess}
+              hasError={Boolean(error)}
+              characterLength={username.length}
+            />
+          </div>
+        )}
+
         <div
-          className={`w-full transition-transform duration-700 transform-style-3d ${
-            isAnimated && activeTheme === 'afternoon' && isCardFlipped ? 'rotate-y-180' : ''
+          className={`w-full ${
+            isAnimated && activeTheme === 'night'
+              ? 'liquid-gradient-border p-[2px] rounded-3xl shadow-2xl neon-card-glow'
+              : ''
           }`}
         >
-          {/* ================= CARA FRONTAL (Formulario Standard / Mascota / Neón) ================= */}
           <div
-            className={`w-full ${isAnimated && activeTheme === 'afternoon' ? 'backface-hidden' : ''} ${
-              isAnimated && activeTheme === 'night'
-                ? 'liquid-gradient-border p-[2px] rounded-3xl shadow-2xl neon-card-glow'
-                : ''
+            className={`glass-card-translucent p-8 sm:p-10 shadow-2xl border border-border/70 ${
+              isAnimated && activeTheme === 'night' ? 'bg-zinc-950/85 backdrop-blur-xl rounded-[22px]' : ''
             }`}
           >
-            <div
-              className={`glass-card-translucent p-8 sm:p-10 shadow-2xl border border-border/70 ${
-                isAnimated && activeTheme === 'night' ? 'bg-zinc-950/85 backdrop-blur-xl rounded-[22px]' : ''
-              }`}
-            >
-              {/* Mascota Barista Interactiva adaptada a la hora del día (si está habilitada en Ajustes) */}
-              {isAnimated && (
-                <div className="w-full flex justify-center -mt-2 mb-2">
-                  <AnimatedMascot
-                    variant={activeTheme}
-                    isUserFocused={isUserFocused}
-                    isPasswordFocused={isPasswordFocused || (Boolean(password) && !showPassword)}
-                    isSuccess={isSuccess}
-                    hasError={Boolean(error)}
-                    characterLength={username.length}
-                  />
+            {/* Encabezado: SIEMPRE muestra el Logo y Nombre del local actual */}
+            <div className="flex flex-col items-center mb-6">
+              {settings.logoUrl ? (
+                <img
+                  src={settings.logoUrl}
+                  alt="Logo"
+                  className={`w-14 h-14 rounded-2xl object-cover mb-2 ring-2 shadow-md ${
+                    isAnimated && activeTheme === 'night' ? 'ring-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.35)]' : 'ring-primary/20'
+                  }`}
+                />
+              ) : (
+                <div className="w-14 h-14 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center mb-2 shadow-md">
+                  <Coffee className="w-7 h-7" />
                 </div>
               )}
-
-              {/* Encabezado Logo y Nombre de Cafetería */}
-              <div className="flex flex-col items-center mb-6">
-                {settings.logoUrl ? (
-                  <img
-                    src={settings.logoUrl}
-                    alt="Logo"
-                    className={`w-14 h-14 rounded-2xl object-cover mb-2 ring-2 shadow-md ${
-                      isAnimated && activeTheme === 'night' ? 'ring-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.35)]' : 'ring-primary/20'
-                    }`}
-                  />
-                ) : !isAnimated ? (
-                  <div className="w-14 h-14 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center mb-2 shadow-md">
-                    <Coffee className="w-7 h-7" />
-                  </div>
-                ) : null}
-                <h1 className="text-2xl font-bold font-display text-center text-foreground">
-                  {settings.businessName}
-                </h1>
-                <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground font-medium">
-                  {isAnimated && activeTheme === 'morning' && <span>🌅 Buenos días •</span>}
-                  {isAnimated && activeTheme === 'afternoon' && <span>☀️ Buenas tardes •</span>}
-                  {isAnimated && activeTheme === 'night' && <span>🌙 Buenas noches •</span>}
-                  <span>Acceso al Sistema</span>
-                </div>
+              <h1 className="text-2xl font-bold font-display text-center text-foreground">
+                {settings.businessName || 'Mi Negocio'}
+              </h1>
+              <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground font-medium">
+                {isAnimated && activeTheme === 'morning' && <span>🌅 Buenos días •</span>}
+                {isAnimated && activeTheme === 'afternoon' && <span>☀️ Buenas tardes •</span>}
+                {isAnimated && activeTheme === 'night' && <span>🌙 Buenas noches •</span>}
+                <span>Acceso al Sistema</span>
               </div>
+            </div>
 
-              {/* Botón rápido en Modo Tarde para girar la tarjeta al teclado 3D (solo en modo animado) */}
-              {isAnimated && activeTheme === 'afternoon' && (
-                <div className="mb-4 flex items-center justify-between p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs">
-                  <span className="font-semibold text-amber-700 dark:text-amber-300">
-                    Modo Tarde Táctil
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      triggerHaptic('selection');
-                      setIsCardFlipped(true);
-                    }}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500 text-white font-bold text-[11px] shadow-xs hover:bg-amber-600 transition-all"
-                  >
-                    <RotateCw className="w-3 h-3 mr-0.5" />
-                    Girar a Teclado 3D
-                  </button>
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
+            <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-foreground flex items-center gap-2">
                     Usuario
@@ -426,117 +389,7 @@ export default function Login() {
               </div>
             </div>
           </div>
-
-          {/* ================= CARA POSTERIOR (3D FLIP: TECLADO TÁCTIL MODO TARDE) ================= */}
-          {isAnimated && activeTheme === 'afternoon' && (
-            <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180">
-              <div className="glass-card-translucent p-6 sm:p-8 shadow-2xl border border-border/80 flex flex-col justify-between h-full rounded-2xl bg-card">
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h2 className="text-base font-bold font-display text-foreground">Teclado Táctil 3D</h2>
-                      <p className="text-xs text-muted-foreground">Escribe tu PIN de forma rápida</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        triggerHaptic('selection');
-                        setIsCardFlipped(false);
-                      }}
-                      className="px-2.5 py-1 text-xs rounded-lg border border-border bg-background hover:bg-muted font-semibold transition-colors flex items-center gap-1"
-                    >
-                      <RotateCw className="w-3 h-3" />
-                      Volver
-                    </button>
-                  </div>
-
-                  {/* Selector rápido de usuario */}
-                  <div className="mb-4">
-                    <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block mb-1.5">
-                      Seleccionar Usuario:
-                    </label>
-                    <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto pr-1">
-                      {users.map(u => (
-                        <button
-                          key={u.id}
-                          type="button"
-                          onClick={() => {
-                            triggerHaptic('selection');
-                            setUsername(u.username);
-                          }}
-                          className={`text-xs px-2.5 py-1 rounded-lg border font-semibold transition-all ${
-                            username.toLowerCase() === u.username.toLowerCase()
-                              ? 'border-amber-500 bg-amber-500/15 text-amber-700 dark:text-amber-300'
-                              : 'border-border bg-background/80 text-muted-foreground hover:bg-muted'
-                          }`}
-                        >
-                          {u.name || u.username}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Indicador de PIN con puntos iluminados */}
-                  <div className="py-2.5 px-3 rounded-xl bg-muted/40 border border-border flex items-center justify-between mb-4">
-                    <span className="text-xs font-semibold text-muted-foreground">
-                      PIN ({username || 'Sin usuario'}):
-                    </span>
-                    <div className="flex items-center gap-2">
-                      {Array.from({ length: Math.max(password.length, 4) }).map((_, i) => (
-                        <span
-                          key={i}
-                          className={`w-3 h-3 rounded-full transition-all duration-200 ${
-                            i < password.length
-                              ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)] scale-110'
-                              : 'bg-border'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Teclado numérico táctil */}
-                <div className="grid grid-cols-3 gap-2 my-2">
-                  {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'backspace'].map(key => {
-                    const isAction = key === 'clear' || key === 'backspace';
-                    return (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => handleKeypadPress(key)}
-                        className={`h-12 rounded-xl text-base font-bold font-mono flex items-center justify-center transition-all active:scale-95 ${
-                          isAction
-                            ? 'bg-muted/70 text-foreground border border-border text-xs font-sans'
-                            : 'bg-card border border-border/80 text-foreground hover:border-amber-500/50 shadow-xs hover:bg-amber-500/5'
-                        }`}
-                      >
-                        {key === 'backspace' ? <Delete className="w-4 h-4" /> : key === 'clear' ? 'Borrar' : key}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {error && (
-                  <div className="bg-destructive/10 text-destructive text-xs p-2 rounded-lg text-center border border-destructive/30 my-1 animate-wiggle">
-                    {error}
-                  </div>
-                )}
-
-                <Button
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={loading || !username || !password}
-                  className="w-full h-10 mt-2 font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-md text-xs"
-                >
-                  <Check className="w-4 h-4 mr-1.5" />
-                  {loading ? 'Entrando...' : 'Entrar con PIN'}
-                </Button>
-              </div>
-            </div>
-          )}
         </div>
-      </div>
 
       {/* Modal Acceso Desarrollador 2FA (Challenge-Response OTP 100% Offline) */}
       <Dialog open={devOtpOpen} onOpenChange={setDevOtpOpen}>

@@ -7,6 +7,13 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import AnimatedTrash from '@/components/ui/animated-trash';
 import { playTrashSound } from '@/lib/soundUtils';
 import { toast } from 'sonner';
+import {
+  getShiftInfo,
+  formatHavanaTime,
+  formatHavanaDate,
+  formatHavanaDateTime,
+  formatClosureSummary,
+} from '@/lib/havanaTime';
 
 export default function Reports() {
   const { reports, clearReports } = useData();
@@ -109,33 +116,76 @@ export default function Reports() {
                   ];
                   const top = methods.reduce((a, b) => (b.amount > a.amount ? b : a));
                   const topMethod = top.amount > 0 ? top.name : '—';
+                  const shiftInfo = getShiftInfo(r.shift);
+                  const closureSummary = formatClosureSummary(r.employeeName, r.closedAt || r.date);
+                  const formattedDate = formatHavanaDate(r.closedAt || r.date);
+                  const formattedTime = r.closedTimeFormatted || formatHavanaTime(r.closedAt || r.date);
+
                   return (
-                  <div key={r.id} className="border border-border rounded-lg overflow-hidden">
+                  <div key={r.id} className="border border-border rounded-xl overflow-hidden shadow-xs hover:border-border/90 transition-all">
                     <button
                       onClick={() => toggleExpand(r.id)}
-                      className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+                      className="w-full flex items-center justify-between p-4 hover:bg-muted/40 transition-colors text-left"
                     >
-                      <div className="flex items-center gap-6 text-sm flex-wrap">
-                        <span>{new Date(r.date).toLocaleDateString()}</span>
-                        <span className="font-medium">{r.employeeName}</span>
-                        <span className="capitalize">{r.shift === 'morning' ? 'Mañana' : 'Tarde'}</span>
-                        <span className="font-semibold">${r.totalSold.toLocaleString()}</span>
-                        <span className="text-success font-medium">${r.salary.toFixed(2)}</span>
-                        <span className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary">
-                          Método de Pago: <strong>{topMethod}</strong>
-                        </span>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full pr-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${shiftInfo.badgeClass}`}>
+                              <span>{shiftInfo.icon}</span>
+                              <span>{shiftInfo.label}</span>
+                            </span>
+                            <span className="text-xs font-mono text-muted-foreground font-semibold">
+                              {formattedDate} • {formattedTime}
+                            </span>
+                          </div>
+                          <p className="text-sm font-semibold text-foreground">
+                            {closureSummary}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-4 text-sm flex-wrap">
+                          <div>
+                            <span className="text-xs text-muted-foreground block sm:hidden">Vendido:</span>
+                            <span className="font-bold text-foreground font-mono text-base">${r.totalSold.toLocaleString()}</span>
+                          </div>
+                          <div>
+                            <span className="text-xs text-muted-foreground block sm:hidden">Salario:</span>
+                            <span className="text-success font-semibold">${r.salary.toFixed(2)}</span>
+                          </div>
+                          <span className="text-xs px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20 shrink-0">
+                            {topMethod}
+                          </span>
+                        </div>
                       </div>
-                      {expandedReport === r.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      {expandedReport === r.id ? <ChevronUp className="w-4 h-4 shrink-0 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground" />}
                     </button>
                     
                     {expandedReport === r.id && (
                       <div className="border-t border-border p-4 bg-muted/20 space-y-3">
+                        {/* Summary Header */}
+                        <div className="p-2.5 rounded-lg bg-card/70 border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                          <div>
+                            <span className="text-muted-foreground">Responsable del turno: </span>
+                            <strong className="text-foreground font-semibold">{r.employeeName}</strong>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Hora de Cierre (La Habana): </span>
+                            <strong className="text-foreground font-mono font-bold">{formattedTime}</strong>
+                            <span className="text-muted-foreground"> ({formattedDate})</span>
+                          </div>
+                        </div>
+
                         {/* Products */}
                         <div>
                           <p className="text-sm font-bold mb-1">📋 Productos Vendidos:</p>
-                          {r.items.map(item => (
-                            <p key={item.productId} className="text-sm ml-4">• {item.productName}: {item.quantitySold} × ${item.price} = ${item.subtotal.toLocaleString()}</p>
-                          ))}
+                          <div className="space-y-1 ml-2">
+                            {r.items.map(item => (
+                              <div key={item.productId} className="text-xs sm:text-sm flex justify-between py-0.5 border-b border-border/40">
+                                <span>• {item.productName} ({item.quantitySold} × ${item.price})</span>
+                                <span className="font-semibold font-mono">${item.subtotal.toLocaleString()}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                         {/* Cash breakdown */}
                         <div>

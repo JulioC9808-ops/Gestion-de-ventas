@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
-import { Coffee, LogOut, type LucideIcon, HelpCircle, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
+import { Coffee, LogOut, type LucideIcon, HelpCircle, PanelLeftOpen, PanelLeftClose, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { isMobileDevice, getAppVersion, getPlatformLabel } from '@/lib/platform';
@@ -12,6 +12,9 @@ import Tutorial from '@/components/Tutorial';
 import EmployeeLicenseBanner from '@/components/EmployeeLicenseBanner';
 import RenewalOfferBanner from '@/components/RenewalOfferBanner';
 import ZoomLupitaButton from '@/components/ZoomLupitaButton';
+import { setPinchZoomActive } from '@/lib/pinchZoom';
+import { useReceiptModal } from '@/lib/receiptModalStore';
+import CreateReceiptModal from '@/components/CreateReceiptModal';
 
 interface NavItem {
   label: string;
@@ -30,6 +33,7 @@ interface AppLayoutProps {
 export default function AppLayout({ children, nav, activeKey, onNav }: AppLayoutProps) {
   const { currentUser, logout } = useAuth();
   const { settings } = useData();
+  const { isOpen: receiptOpen, openReceipt, closeReceipt } = useReceiptModal();
   const isMobile = useIsMobile();
   const native = isMobileDevice();
   // En Android/celular NUNCA hay barra superior: solo lateral (izquierda o derecha).
@@ -37,6 +41,13 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
   const onRight = settings.navPosition === 'side-right';
   const [collapsed, setCollapsed] = React.useState(isMobile);
 
+  React.useEffect(() => {
+    // Activar escala guardada y pellizcar ÚNICAMENTE dentro de la aplicación principal
+    setPinchZoomActive(true);
+    return () => {
+      setPinchZoomActive(false);
+    };
+  }, []);
 
   React.useEffect(() => {
     setCollapsed(isMobile);
@@ -107,6 +118,16 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
             </nav>
 
             <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                onClick={openReceipt}
+                variant="outline"
+                className="border-sidebar-border bg-sidebar-accent/50 hover:bg-sidebar-accent text-sidebar-foreground text-xs font-semibold h-8 px-2.5 shadow-xs"
+                title="Crear e imprimir comprobante de venta"
+              >
+                <Printer className="w-3.5 h-3.5 mr-1.5 text-primary" />
+                <span className="hidden sm:inline">Comprobante</span>
+              </Button>
               <ZoomLupitaButton />
               <div className="flex items-center gap-2.5">
                 {currentUser?.avatarUrl ? (
@@ -140,6 +161,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
           {children}
         </main>
         <Tutorial />
+        <CreateReceiptModal open={receiptOpen} onClose={closeReceipt} />
       </div>
     );
   }
@@ -230,6 +252,22 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
           })}
         </nav>
 
+        {/* Botón rápido Crear Comprobante */}
+        <div className={`px-2 py-1.5 ${collapsed ? 'flex justify-center' : ''}`}>
+          <Button
+            type="button"
+            onClick={openReceipt}
+            variant="outline"
+            className={`border-sidebar-border bg-sidebar-accent/40 hover:bg-sidebar-accent text-sidebar-foreground text-xs font-semibold h-9 shadow-xs transition-all ${
+              collapsed ? 'w-10 h-10 p-0 rounded-xl justify-center' : 'w-full justify-start px-3 rounded-xl'
+            }`}
+            title="Crear e imprimir comprobante de venta"
+          >
+            <Printer className="w-4 h-4 text-primary shrink-0" />
+            {!collapsed && <span className="ml-2 truncate">Crear Comprobante</span>}
+          </Button>
+        </div>
+
         <div className={`border-t border-sidebar-border ${collapsed ? 'p-1.5' : 'p-3'}`}>
           {collapsed ? (
             <div className="flex justify-center my-2" title={currentUser?.name}>
@@ -303,6 +341,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
       </div>
 
       <Tutorial />
+      <CreateReceiptModal open={receiptOpen} onClose={closeReceipt} />
     </div>
   );
 }

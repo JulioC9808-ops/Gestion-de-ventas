@@ -5,7 +5,13 @@ import { Package, Users, TrendingUp, DollarSign, Crown, PieChart as PieIcon, Ref
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import RatesCard from '@/components/RatesCard';
-import CreateReceiptModal from '@/components/CreateReceiptModal';
+import { useReceiptModal } from '@/lib/receiptModalStore';
+import {
+  getShiftInfo,
+  formatHavanaTime,
+  formatHavanaDate,
+  formatClosureSummary,
+} from '@/lib/havanaTime';
 
 interface Props {
   onNav?: (key: string) => void;
@@ -13,7 +19,7 @@ interface Props {
 
 export default function AdminOverview({ onNav }: Props) {
   const { products, stock, reports, users, settings, updateSettings, getStockQuantity } = useData();
-  const [createReceiptOpen, setCreateReceiptOpen] = useState(false);
+  const { openReceipt } = useReceiptModal();
 
   // Alerta de productos con stock bajo (< 5 unidades en almacén o venta)
   const lowStockAlerts = useMemo(() => {
@@ -95,7 +101,7 @@ export default function AdminOverview({ onNav }: Props) {
         </div>
         <Button
           type="button"
-          onClick={() => setCreateReceiptOpen(true)}
+          onClick={openReceipt}
           variant="outline"
           className="border-primary/40 bg-primary/5 hover:bg-primary hover:text-primary-foreground text-foreground text-xs sm:text-sm font-semibold h-9 shrink-0 shadow-xs"
         >
@@ -199,31 +205,6 @@ export default function AdminOverview({ onNav }: Props) {
           </p>
         )}
       </div>
-      {/* Crear Comprobante (Opcional) */}
-      <div className="glass-card p-6 mb-6">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-primary/10 text-primary">
-              <Printer className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-xl font-display font-bold">Crear Comprobante (Opcional)</h2>
-              <p className="text-xs text-muted-foreground">
-                Crea e imprime un ticket/comprobante personalizado para el cliente al instante con desglose, % de transferencia y datos del negocio.
-              </p>
-            </div>
-          </div>
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => setCreateReceiptOpen(true)}
-            className="h-9 px-4 text-xs font-semibold shadow-xs"
-          >
-            <Printer className="w-3.5 h-3.5 mr-1.5" />
-            Crear Comprobante Personalizado
-          </Button>
-        </div>
-      </div>
 
       <RatesCard />
 
@@ -243,8 +224,8 @@ export default function AdminOverview({ onNav }: Props) {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Fecha</th>
-                <th>Empleado</th>
+                <th>Fecha y Hora (La Habana)</th>
+                <th>Empleado / Cierre</th>
                 <th>Turno</th>
                 <th>Total</th>
                 <th>VIP</th>
@@ -252,24 +233,42 @@ export default function AdminOverview({ onNav }: Props) {
               </tr>
             </thead>
             <tbody>
-              {recentReports.map(r => (
-                <tr key={r.id}>
-                  <td className="text-sm">{new Date(r.date).toLocaleDateString()}</td>
-                  <td className="text-sm font-medium">{r.employeeName}</td>
-                  <td className="text-sm capitalize">{r.shift === 'morning' ? 'Mañana' : 'Tarde'}</td>
-                  <td className="text-sm font-semibold">${r.totalSold.toLocaleString()}</td>
-                  <td className="text-sm">${r.vipSales.reduce((s, v) => s + v.amount, 0).toLocaleString()}</td>
-                  <td>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                      r.status === 'balanced' ? 'bg-success/10 text-success' :
-                      r.status === 'surplus' ? 'bg-warning/10 text-warning' :
-                      'bg-destructive/10 text-destructive'
-                    }`}>
-                      {r.status === 'balanced' ? '✅ Cuadrado' : r.status === 'surplus' ? '⬆️ Sobrante' : '⬇️ Faltante'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {recentReports.map(r => {
+                const shiftInfo = getShiftInfo(r.shift);
+                const formattedTime = r.closedTimeFormatted || formatHavanaTime(r.closedAt || r.date);
+                const formattedDate = formatHavanaDate(r.closedAt || r.date, true);
+                const closureSummary = formatClosureSummary(r.employeeName, r.closedAt || r.date);
+
+                return (
+                  <tr key={r.id}>
+                    <td className="text-xs font-mono font-semibold">
+                      <div className="text-foreground">{formattedDate}</div>
+                      <div className="text-muted-foreground font-normal">{formattedTime}</div>
+                    </td>
+                    <td className="text-sm">
+                      <div className="font-semibold text-foreground">{r.employeeName}</div>
+                      <div className="text-xs text-muted-foreground">{closureSummary}</div>
+                    </td>
+                    <td>
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${shiftInfo.badgeClass}`}>
+                        <span>{shiftInfo.icon}</span>
+                        <span>{shiftInfo.label}</span>
+                      </span>
+                    </td>
+                    <td className="text-sm font-semibold font-mono">${r.totalSold.toLocaleString()}</td>
+                    <td className="text-sm font-mono">${r.vipSales.reduce((s, v) => s + v.amount, 0).toLocaleString()}</td>
+                    <td>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                        r.status === 'balanced' ? 'bg-success/10 text-success' :
+                        r.status === 'surplus' ? 'bg-warning/10 text-warning' :
+                        'bg-destructive/10 text-destructive'
+                      }`}>
+                        {r.status === 'balanced' ? '✅ Cuadrado' : r.status === 'surplus' ? '⬆️ Sobrante' : '⬇️ Faltante'}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
@@ -484,11 +483,6 @@ function SalesPieChart({ data }: { data: { cash: number; transfer: number; vip: 
           })}
         </div>
       </div>
-
-      <CreateReceiptModal
-        open={createReceiptOpen}
-        onClose={() => setCreateReceiptOpen(false)}
-      />
     </div>
   );
 }

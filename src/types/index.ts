@@ -56,7 +56,10 @@ export interface ShiftReport {
   employeeId: string;
   employeeName: string;
   date: string;
-  shift: 'morning' | 'afternoon';
+  shift: 'morning' | 'afternoon' | 'night' | string;
+  closedAt?: string;
+  closedTimeFormatted?: string;
+  closedBy?: string;
   items: SaleItem[];
   cashTotal: number;
   cashBreakdown: Record<number, number>;

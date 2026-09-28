@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, type ReactNode
 import type { User, UserRole } from '@/types';
 import { readEmployeeLicense, isEmployeeLicenseActive } from '@/lib/employeeLicense';
 import { verifyDevChallengeResponse } from '@/lib/cryptoLicense';
+import { recordSessionLoginTime, clearSessionLoginTime } from '@/lib/havanaTime';
 
 export interface LoginResult {
   ok: boolean;
@@ -58,6 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setCurrentUser(user);
     localStorage.setItem('currentUser', JSON.stringify(user));
+    recordSessionLoginTime();
     return { ok: true };
   }, [getUsers]);
 
@@ -76,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
       setCurrentUser(activeDevUser);
       localStorage.setItem('currentUser', JSON.stringify(activeDevUser));
+      recordSessionLoginTime();
       return true;
     }
     return false;
@@ -88,6 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     setCurrentUser(null);
     localStorage.removeItem('currentUser');
+    clearSessionLoginTime();
   }, []);
 
   const isRole = useCallback((role: UserRole) => currentUser?.role === role, [currentUser]);

@@ -15,12 +15,29 @@ import { startShiftShare, stopShiftShare } from '@/lib/syncTransport';
 import QrDisplay from '@/components/QrDisplay';
 import QrScannerModal from '@/components/QrScannerModal';
 import { triggerHaptic } from '@/lib/haptics';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { safeRandomId } from '@/lib/utils';
+import { useReceiptModal } from '@/lib/receiptModalStore';
+import {
+  getHavanaNow,
+  detectShiftType,
+  detectSmartShift,
+  getSessionLoginTime,
+  getClosedShiftsForDate,
+  isShiftAlreadyClosedToday,
+  getShiftInfo,
+  formatHavanaTime,
+  formatHavanaDate,
+  formatClosureSummary,
+  type ShiftType,
+} from '@/lib/havanaTime';
 
 const DENOMINATIONS = [20000, 10000, 5000, 2000, 1000, 500, 200, 100, 50, 20, 10, 5, 3, 1];
 
 export default function ShiftClose() {
   const { products, getStockQuantity, reduceStock, addReport, settings, users, reports } = useData();
   const { currentUser, logout } = useAuth();
+  const { openReceipt } = useReceiptModal();
   const [step, setStep] = useState<1 | 2 | 3 | 'sync'>(1);
   const [isClosing, setIsClosing] = useState(false);
   const [scanAckOpen, setScanAckOpen] = useState(false);
@@ -71,7 +88,19 @@ export default function ShiftClose() {
 
   // Step 3: final report
   const [finalReport, setFinalReport] = useState<ShiftReport | null>(null);
+  const [confirmShiftDialogOpen, setConfirmShiftDialogOpen] = useState(false);
+  const [candidateShift, setCandidateShift] = useState<ShiftType>('morning');
+  const closedShiftsToday = useMemo(() => getClosedShiftsForDate(reports, getHavanaNow()), [reports]);
+  const [selectedShift, setSelectedShift] = useState<ShiftType>(() =>
+    detectSmartShift({ loginTime: getSessionLoginTime(), existingDayReports: reports })
+  );
 
+  // Recalcular turno inteligente al montar o cuando cambian los reportes
+  useEffect(() => {
+    const smart = detectSmartShift({ loginTime: getSessionLoginTime(), existingDayReports: reports });
+    setSelectedShift(smart);
+    setCandidateShift(smart);
+  }, [reports]);
 
   // Calculate sold items
   const saleItems: SaleItem[] = useMemo(() =>
@@ -96,14 +125,9 @@ export default function ShiftClose() {
   const difference = totalDeclared - totalSold;
   const isBalanced = Math.abs(difference) < 0.01;
 
-  const currentShift = (): 'morning' | 'afternoon' => {
-    const hour = new Date().getHours();
-    return hour < 14 ? 'morning' : 'afternoon';
-  };
-
   const addTransfer = () => {
     if (!newTransfer.amount) return;
-    setTransfers(prev => [...prev, { id: crypto.randomUUID(), amount: Number(newTransfer.amount), code: newTransfer.code || '' }]);
+    setTransfers(prev => [...prev, { id: safeRandomId(), amount: Number(newTransfer.amount), code: newTransfer.code || '' }]);
     setNewTransfer({ amount: '', code: '' });
   };
 
@@ -114,17 +138,22 @@ export default function ShiftClose() {
 
   const addVip = () => {
     if (!newVip.amount || !newVip.concept) return;
-    setVipSales(prev => [...prev, { id: crypto.randomUUID(), concept: newVip.concept, amount: Number(newVip.amount) }]);
+    setVipSales(prev => [...prev, { id: safeRandomId(), concept: newVip.concept, amount: Number(newVip.amount) }]);
     setNewVip({ concept: '', amount: '' });
   };
 
-  const buildReport = (): ShiftReport => {
+  const buildReport = (shiftToUse: ShiftType = selectedShift): ShiftReport => {
+    const havanaNow = getHavanaNow();
+    const employee = freshUser?.name || currentUser?.name || 'Empleado';
     return {
-      id: crypto.randomUUID(),
+      id: safeRandomId(),
       employeeId: freshUser?.id || currentUser?.id || '',
-      employeeName: freshUser?.name || currentUser?.name || '',
-      date: new Date().toISOString(),
-      shift: currentShift(),
+      employeeName: employee,
+      date: havanaNow.toISOString(),
+      shift: shiftToUse,
+      closedAt: havanaNow.toISOString(),
+      closedTimeFormatted: formatHavanaTime(havanaNow),
+      closedBy: employee,
       items: saleItems,
       cashTotal,
       cashBreakdown: bills,
@@ -145,17 +174,7 @@ export default function ShiftClose() {
       toast.error('No puedes cerrar un turno sin ventas. Registra al menos un producto vendido.');
       return;
     }
-    const report = buildReport();
-    // El administrador cierra en su propio dispositivo: no necesita la pantalla de confirmación.
-    if (isAdmin) {
-      setFinalReport(report);
-      setIsClosing(true);
-      saleItems.forEach(item => reduceStock(item.productId, item.quantitySold));
-      addReport({ ...report, synced: true });
-      toast.success('Turno cerrado exitosamente. Hasta Pronto');
-      logout();
-      return;
-    }
+    const report = buildReport(selectedShift);
     setFinalReport(report);
     setStep(3);
   };
@@ -165,11 +184,40 @@ export default function ShiftClose() {
     setStep(2);
   };
 
+  const handleSelectShiftInFinalReview = (newShift: ShiftType) => {
+    triggerHaptic('selection');
+    setSelectedShift(newShift);
+    setCandidateShift(newShift);
+    if (finalReport) {
+      setFinalReport({
+        ...finalReport,
+        shift: newShift,
+      });
+    }
+  };
+
   const handleCloseAndLogout = () => {
     if (isClosing) return;
 
+    const currentShift = finalReport?.shift || selectedShift;
+
+    // Validación humana y profesional contra turnos duplicados en el mismo día
+    if (isShiftAlreadyClosedToday(currentShift, reports, getHavanaNow())) {
+      const shiftInfo = getShiftInfo(currentShift);
+      const confirmOverride = window.confirm(
+        `Aviso: El ${shiftInfo.label} ya tiene un cierre registrado hoy en esta jornada.\n\n¿Deseas registrar este nuevo cierre como ${shiftInfo.label} de todos modos?`
+      );
+      if (!confirmOverride) {
+        toast.info('Por favor selecciona otro turno disponible antes de cerrar.');
+        return;
+      }
+    }
+
     setIsClosing(true);
-    const baseReport = finalReport ?? buildReport();
+    const baseReport: ShiftReport = {
+      ...(finalReport ?? buildReport(currentShift)),
+      shift: currentShift,
+    };
     saleItems.forEach(item => reduceStock(item.productId, item.quantitySold));
 
     const h = new Date().getHours();
@@ -188,9 +236,9 @@ export default function ShiftClose() {
       return;
     }
 
-    // PC / Electron: flujo original
+    // PC / Electron / Admin: flujo directo con confirmación de turno
     addReport({ ...baseReport, synced: true });
-    toast.success('Turno cerrado exitosamente. ¡Hasta pronto!');
+    toast.success(`Turno (${getShiftInfo(currentShift).label}) cerrado exitosamente. ¡Hasta pronto!`);
     logout();
   };
 
@@ -278,6 +326,11 @@ export default function ShiftClose() {
   }
 
   if (step === 3 && finalReport) {
+    const shiftInfo = getShiftInfo(finalReport.shift);
+    const closureSummary = formatClosureSummary(finalReport.employeeName, finalReport.closedAt || finalReport.date);
+    const closureDate = formatHavanaDate(finalReport.closedAt || finalReport.date);
+    const closureTime = formatHavanaTime(finalReport.closedAt || finalReport.date);
+
     return (
       <div className="max-w-2xl mx-auto">
         <div className="glass-card p-8 animate-fade-in-up">
@@ -286,9 +339,78 @@ export default function ShiftClose() {
               <Check className="w-8 h-8 text-success" />
             </div>
             <h1 className="text-2xl font-display font-bold">Revisión Final del Turno</h1>
-            <p className="text-muted-foreground">
-              {new Date(finalReport.date).toLocaleDateString()} — Turno {finalReport.shift === 'morning' ? 'Mañana' : 'Tarde'}
-            </p>
+            
+            <div className="mt-2 flex flex-col items-center gap-1.5">
+              <div className="flex items-center gap-2 flex-wrap justify-center">
+                <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border ${shiftInfo.badgeClass}`}>
+                  <span>{shiftInfo.icon}</span>
+                  <span>{shiftInfo.label}</span>
+                </span>
+                <span className="text-xs text-muted-foreground font-mono">
+                  {closureDate} • {closureTime} (Hora La Habana)
+                </span>
+              </div>
+              <p className="text-sm font-semibold text-foreground mt-1">
+                {closureSummary}
+              </p>
+            </div>
+
+            {/* Selector interactivo de turno en la última pestaña antes de cerrar sesión */}
+            <div className="mt-4 p-3 rounded-2xl bg-muted/40 border border-border flex flex-col items-center gap-2 max-w-lg mx-auto">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Verifica o selecciona el turno que se cierra:
+              </span>
+              <div className="flex items-center gap-1.5 p-1 rounded-xl bg-background/90 border border-border shadow-xs flex-wrap justify-center">
+                <button
+                  type="button"
+                  onClick={() => handleSelectShiftInFinalReview('morning')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    finalReport.shift === 'morning'
+                      ? 'bg-amber-500 text-white shadow-xs'
+                      : closedShiftsToday.morning
+                      ? 'text-muted-foreground/60 line-through opacity-70 hover:opacity-100 hover:bg-muted'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  }`}
+                  title={closedShiftsToday.morning ? 'Turno Mañana (Ya cerrado hoy)' : 'Turno Mañana (06:00 AM – 02:00 PM)'}
+                >
+                  <span>🌅</span>
+                  <span>Mañana</span>
+                  {closedShiftsToday.morning && <span className="text-[10px] ml-0.5 no-underline">✓</span>}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSelectShiftInFinalReview('afternoon')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    finalReport.shift === 'afternoon'
+                      ? 'bg-orange-500 text-white shadow-xs'
+                      : closedShiftsToday.afternoon
+                      ? 'text-muted-foreground/60 line-through opacity-70 hover:opacity-100 hover:bg-muted'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  }`}
+                  title={closedShiftsToday.afternoon ? 'Turno Tarde (Ya cerrado hoy)' : 'Turno Tarde (02:00 PM – 11:00 PM)'}
+                >
+                  <span>☀️</span>
+                  <span>Tarde</span>
+                  {closedShiftsToday.afternoon && <span className="text-[10px] ml-0.5 no-underline">✓</span>}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSelectShiftInFinalReview('night')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    finalReport.shift === 'night'
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : closedShiftsToday.night
+                      ? 'text-muted-foreground/60 line-through opacity-70 hover:opacity-100 hover:bg-muted'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  }`}
+                  title={closedShiftsToday.night ? 'Turno Nocturno (Ya cerrado hoy)' : 'Turno Nocturno (11:00 PM – 06:00 AM)'}
+                >
+                  <span>🌙</span>
+                  <span>Nocturno</span>
+                  {closedShiftsToday.night && <span className="text-[10px] ml-0.5 no-underline">✓</span>}
+                </button>
+              </div>
+            </div>
           </div>
 
           <div className={`grid ${salaryByPercent ? 'grid-cols-2' : 'grid-cols-1'} gap-4 mb-6`}>
@@ -405,16 +527,105 @@ export default function ShiftClose() {
           <h1 className="page-title">Cierre de Turno</h1>
           <HelpTip>Registra lo que queda de cada producto para calcular lo vendido, luego desglosa los pagos recibidos. El turno solo se cierra si los montos cuadran.</HelpTip>
         </div>
-        <div className="step-indicator">
-          <div className={`step-dot ${step === 1 ? 'active' : (typeof step === 'number' && step > 1) ? 'completed' : 'pending'}`}>1</div>
-          <div className="w-8 h-0.5 bg-border" />
-          <div className={`step-dot ${step === 2 ? 'active' : (typeof step === 'number' && step > 2) ? 'completed' : 'pending'}`}>2</div>
+        <div className="flex items-center gap-3 flex-wrap">
+          <Button
+            type="button"
+            onClick={openReceipt}
+            variant="outline"
+            className="border-primary/40 bg-primary/5 hover:bg-primary hover:text-primary-foreground text-foreground text-xs sm:text-sm font-semibold h-9 shrink-0 shadow-xs"
+          >
+            <Printer className="w-4 h-4 mr-1.5" />
+            Crear Comprobante (Opcional)
+          </Button>
+          <div className="step-indicator">
+            <div className={`step-dot ${step === 1 ? 'active' : (typeof step === 'number' && step > 1) ? 'completed' : 'pending'}`}>1</div>
+            <div className="w-8 h-0.5 bg-border" />
+            <div className={`step-dot ${step === 2 ? 'active' : (typeof step === 'number' && step > 2) ? 'completed' : 'pending'}`}>2</div>
+          </div>
         </div>
       </div>
 
       {step === 1 && (
         <div className="glass-card p-6 animate-fade-in-up">
-          <h2 className="text-lg font-display font-bold mb-2">Paso 1: Rebajar Productos</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-border">
+            <div>
+              <h2 className="text-lg font-display font-bold">Paso 1: Rebajar Productos</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Hora oficial de La Habana: <strong className="text-primary font-mono">{formatHavanaTime(getHavanaNow())}</strong> • {formatHavanaDate(getHavanaNow())}
+              </p>
+            </div>
+
+            {/* Selector de Turno Automático con opción manual */}
+            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-muted/60 border border-border shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic('selection');
+                  if (closedShiftsToday.morning) {
+                    toast.info('El Turno Mañana ya fue cerrado hoy en esta jornada.');
+                  }
+                  setSelectedShift('morning');
+                }}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                  selectedShift === 'morning'
+                    ? 'bg-amber-500 text-white shadow-xs'
+                    : closedShiftsToday.morning
+                    ? 'text-muted-foreground/60 line-through opacity-70 hover:opacity-100 hover:bg-muted'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                }`}
+                title={closedShiftsToday.morning ? 'Turno Mañana (Ya cerrado hoy)' : 'Turno Mañana (06:00 AM – 02:00 PM)'}
+              >
+                <span>🌅</span>
+                <span>Mañana</span>
+                {closedShiftsToday.morning && <span className="text-[10px] ml-0.5 no-underline">✓</span>}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic('selection');
+                  if (closedShiftsToday.afternoon) {
+                    toast.info('El Turno Tarde ya fue cerrado hoy en esta jornada.');
+                  }
+                  setSelectedShift('afternoon');
+                }}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                  selectedShift === 'afternoon'
+                    ? 'bg-orange-500 text-white shadow-xs'
+                    : closedShiftsToday.afternoon
+                    ? 'text-muted-foreground/60 line-through opacity-70 hover:opacity-100 hover:bg-muted'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                }`}
+                title={closedShiftsToday.afternoon ? 'Turno Tarde (Ya cerrado hoy)' : 'Turno Tarde (02:00 PM – 11:00 PM)'}
+              >
+                <span>☀️</span>
+                <span>Tarde</span>
+                {closedShiftsToday.afternoon && <span className="text-[10px] ml-0.5 no-underline">✓</span>}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic('selection');
+                  if (closedShiftsToday.night) {
+                    toast.info('El Turno Nocturno ya fue cerrado hoy en esta jornada.');
+                  }
+                  setSelectedShift('night');
+                }}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                  selectedShift === 'night'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : closedShiftsToday.night
+                    ? 'text-muted-foreground/60 line-through opacity-70 hover:opacity-100 hover:bg-muted'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                }`}
+                title={closedShiftsToday.night ? 'Turno Nocturno (Ya cerrado hoy)' : 'Turno Nocturno (11:00 PM – 06:00 AM)'}
+              >
+                <span>🌙</span>
+                <span>Nocturno</span>
+                {closedShiftsToday.night && <span className="text-[10px] ml-0.5 no-underline">✓</span>}
+              </button>
+            </div>
+          </div>
+
           <p className="text-sm text-muted-foreground mb-4">Ingresa la cantidad que <strong>entregas/queda</strong> de cada producto. Stock - Entregado = Total Vendido.</p>
 
           <table className="data-table">

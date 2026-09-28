@@ -179,11 +179,8 @@ function getTouchDistance(e: TouchEvent): number {
 export function initPinchZoom(): () => void {
   if (typeof window === 'undefined') return () => {};
 
-  // Si ya se reprodujo la intro previamente en la sesión, habilitar de inmediato
-  const introAlreadyPlayed = sessionStorage.getItem('intro_played') === '1';
-  if (introAlreadyPlayed) {
-    setPinchZoomActive(true);
-  }
+  // Asegurar que inicie desactivado hasta que el usuario ingrese a AppLayout
+  setPinchZoomActive(false);
 
   const handleTouchStart = (e: TouchEvent) => {
     if (!isPinchZoomActive) return;
@@ -211,8 +208,7 @@ export function initPinchZoom(): () => void {
 
       if (initialDistance > 15 && currentDist > 15) {
         const ratio = currentDist / initialDistance;
-        // El pellizco solo achica o escala compacta (0.75x a 1.05x), evitando conflictos con el zoom de la lupita
-        const targetScale = Math.max(PINCH_MIN_SCALE, Math.min(PINCH_MAX_SCALE, Math.round(initialScale * ratio * 100) / 100));
+        const targetScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, Math.round(initialScale * ratio * 100) / 100));
         applyScale(targetScale, true);
 
         if (e.cancelable) {

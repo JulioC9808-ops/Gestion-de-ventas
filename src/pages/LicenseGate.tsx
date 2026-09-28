@@ -22,6 +22,7 @@ import {
 } from '@/lib/cryptoLicense';
 import { getLicenseStatus, initLicenseStatusChecker, subscribeLicenseStatus } from '@/lib/licenseStatus';
 import { queueRegistryReport } from '@/lib/remoteRegistry';
+import { setPinchZoomActive } from '@/lib/pinchZoom';
 import { toast } from 'sonner';
 
 const LIFETIME_LICENSE = '08022664107';
@@ -190,8 +191,9 @@ export default function LicenseGate({ children }: LicenseGateProps) {
     setShowWelcome(false);
   };
 
-  // Cargar el ID de dispositivo
+  // Cargar el ID de dispositivo y asegurar zoom 1.0 en la pantalla de activación
   useEffect(() => {
+    setPinchZoomActive(false);
     let alive = true;
     getDeviceId().then(d => { if (alive) setDevice(d); });
     return () => { alive = false; };

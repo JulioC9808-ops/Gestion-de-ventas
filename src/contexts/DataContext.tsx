@@ -4,6 +4,7 @@ import type { BackupPayload } from '@/lib/backup';
 import defaultQr from '@/assets/dev-qr.png.asset.json';
 import { executeSilentAutoBackup, STORAGE_AUTO_BACKUP_LAST_DAY } from '@/lib/backupUtils';
 import { applyIncomingRatesSnapshot } from '@/lib/elToque';
+import { safeRandomId } from '@/lib/utils';
 
 export const DEFAULT_DEV_QR_URL = defaultQr.url;
 
@@ -120,7 +121,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   announcementUrl: DEFAULT_ANNOUNCEMENT_URL,
   welcomeGreetingsEnabled: true,
   soundEffectsEnabled: true,
-  animatedLoginEnabled: true,
+  animatedLoginEnabled: false,
   quoteLanguages: ['es'],
 };
 
@@ -204,9 +205,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       loaded.announcementUrl = DEFAULT_ANNOUNCEMENT_URL;
       dirty = true;
     }
-    // Si animatedLoginEnabled no está definido en el almacenamiento, activarlo por defecto
+    // Si animatedLoginEnabled no está definido en el almacenamiento, dejarlo desactivado por defecto
     if (loaded.animatedLoginEnabled === undefined) {
-      loaded.animatedLoginEnabled = true;
+      loaded.animatedLoginEnabled = false;
       dirty = true;
     }
     if (dirty) save('settings', loaded);
@@ -276,7 +277,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const setSt = persist('settings', setSettings);
 
   const addProduct = useCallback((p: Omit<Product, 'id'>) => {
-    setP(prev => [...prev, { ...p, id: crypto.randomUUID() }]);
+    setP(prev => [...prev, { ...p, id: safeRandomId() }]);
   }, []);
 
   const updateProduct = useCallback((p: Product) => {
@@ -301,7 +302,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       return [...prev, { productId, quantity: qty, addedAt: new Date().toISOString(), addedBy: userId }];
     });
     setM(prev => [...prev, {
-      id: crypto.randomUUID(),
+      id: safeRandomId(),
       productId,
       productName: product?.name || '',
       quantity: qty,
@@ -328,7 +329,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addUser = useCallback((u: Omit<User, 'id' | 'createdAt'>) => {
-    setU(prev => [...prev, { ...u, id: crypto.randomUUID(), createdAt: new Date().toISOString() }]);
+    setU(prev => [...prev, { ...u, id: safeRandomId(), createdAt: new Date().toISOString() }]);
   }, []);
 
   const updateUser = useCallback((u: User) => {
@@ -463,7 +464,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const target = admins[0];
       if (!target) {
         return [...prev, {
-          id: crypto.randomUUID(),
+          id: safeRandomId(),
           username: 'admin',
           password: 'admin123',
           name: 'Administrador',

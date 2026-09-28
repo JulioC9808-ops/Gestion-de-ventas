@@ -435,7 +435,9 @@ function hmacSha256(key,message){
 
 function formatFriendlyDeviceId(rawId){
   if(!rawId||rawId==='web'||String(rawId).length<4)return 'GV-DEV-LOCAL';
-  var clean=String(rawId).replace(/[^a-zA-Z0-9]/g,'').toUpperCase();
+  var str=String(rawId).trim().toUpperCase();
+  if(/^GV-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(str))return str;
+  var clean=str.replace(/[^a-zA-Z0-9]/g,'').toUpperCase();
   var hash=sha256(clean).substring(0,8).toUpperCase();
   return 'GV-'+hash.substring(0,4)+'-'+hash.substring(4,8);
 }
@@ -968,12 +970,22 @@ function renderOffers(){
   renderRemoteConfigJson();
 }
 
-function liveUpdateOffers(){
+var _liveOffersTimeout = null;
+function liveUpdateOffers(immediate){
+  if(!immediate){
+    if(_liveOffersTimeout) clearTimeout(_liveOffersTimeout);
+    _liveOffersTimeout = setTimeout(function(){ liveUpdateOffers(true); }, 200);
+    return;
+  }
   var o=getOffers();
-  o.cardNumber=document.getElementById('of-card').value.trim();
-  o.confirmPhone=document.getElementById('of-phone').value.trim();
-  o.beneficiaryName=document.getElementById('of-benef').value.trim();
-  o.currency=document.getElementById('of-curr').value.trim()||'CUP';
+  var cEl=document.getElementById('of-card');
+  var pEl=document.getElementById('of-phone');
+  var bEl=document.getElementById('of-benef');
+  var curEl=document.getElementById('of-curr');
+  if(cEl)o.cardNumber=cEl.value.trim();
+  if(pEl)o.confirmPhone=pEl.value.trim();
+  if(bEl)o.beneficiaryName=bEl.value.trim();
+  if(curEl)o.currency=curEl.value.trim()||'CUP';
   
   var mEl=document.getElementById('of-p-monthly');
   var qEl=document.getElementById('of-p-quarterly');
@@ -991,7 +1003,7 @@ function liveUpdateOffers(){
 }
 
 function saveOffers(){
-  liveUpdateOffers();
+  liveUpdateOffers(true);
   toast('💾 Precios y ofertas guardadas');
 }
 

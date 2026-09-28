@@ -42,6 +42,8 @@ export default function MovementHistory() {
                       variant="ghost"
                       size="sm"
                       onClick={() => {
+                        const confirmed = window.confirm(`¿Estás seguro de que deseas eliminar este registro de entrada (+${m.quantity} ${m.productName})?`);
+                        if (!confirmed) return;
                         playTrashSound();
                         deleteMovement(m.id);
                       }}

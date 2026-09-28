@@ -38,19 +38,18 @@ export default function IntroPlayer() {
 
   const closeIntro = () => {
     hideBootSplash();
-    setPinchZoomActive(true);
+    setPinchZoomActive(false);
     setShow(false);
   };
 
   useEffect(() => {
+    // Mantener zoom desactivado en intro y pantalla de login
+    setPinchZoomActive(false);
+
     if (!show) {
       hideBootSplash();
-      setPinchZoomActive(true);
       return;
     }
-
-    // Mientras la intro esté activa, asegurar zoom 1.0 absoluto sin distorsiones
-    setPinchZoomActive(false);
 
     if (mobile) hideBootSplash();
     // Cierre de seguridad: móvil 2.6s, PC máx 12s (por si el video no dispara "ended")
