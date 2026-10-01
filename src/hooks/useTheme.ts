@@ -269,8 +269,14 @@ export function useThemeApplier() {
       }
     }
 
-    // 4) Aplicar el color de fondo al <body> como fallback duro
-    document.body.style.backgroundColor = `hsl(${vars['--background']})`;
+    // 4) Aplicar el color de fondo al <html>, <body> y #root como fallback duro
+    const bgHsl = `hsl(${vars['--background']})`;
+    root.style.backgroundColor = bgHsl;
+    document.body.style.backgroundColor = bgHsl;
+    const rootEl = document.getElementById('root');
+    if (rootEl) {
+      rootEl.style.backgroundColor = bgHsl;
+    }
     document.body.style.color = settings.fontColor
       ? settings.fontColor
       : `hsl(${vars['--foreground']})`;

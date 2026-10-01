@@ -23,7 +23,13 @@
     <meta name="twitter:image" content="/favicon.png" />
     <style>
       /* Evita el destello negro/gris mientras arranca la app */
-      html, body, #root { background: #ffffff; }
+      html, body, #root {
+        background-color: hsl(var(--background, 0 0% 100%));
+        min-height: 100%;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+      }
       #boot-splash {
         position: fixed;
         inset: 0;

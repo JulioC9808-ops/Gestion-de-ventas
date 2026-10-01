@@ -539,7 +539,7 @@ export default function LicenseGate({ children }: LicenseGateProps) {
   const expiredDays = license.type === 'timed' ? daysLeftOf(license) : 0;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, hsl(0 0% 8%), hsl(0 0% 14%), hsl(0 0% 20%))' }}>
+    <div className="min-h-screen flex-1 w-full flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, hsl(0 0% 8%), hsl(0 0% 14%), hsl(0 0% 20%))' }}>
       <div className="w-full max-w-md mx-auto animate-fade-in-up">
         <div className="glass-card p-8 sm:p-10 border border-border/70 shadow-2xl">
           <div className="flex flex-col items-center mb-7">

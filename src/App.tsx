@@ -22,6 +22,7 @@ import { ShieldAlert, MessageCircle, AlertOctagon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { initRemoteBranding } from "@/lib/remoteBranding";
 import { initPinchZoom } from "@/lib/pinchZoom";
+import { initViewportManager } from "@/lib/viewport";
 
 const queryClient = new QueryClient();
 
@@ -35,7 +36,7 @@ function SuspendedScreen({ friendlyId, reason }: { friendlyId: string; reason: s
 
   return (
     <div
-      className="min-h-screen w-screen flex items-center justify-center p-4 select-none"
+      className="min-h-screen flex-1 w-full flex items-center justify-center p-4 select-none"
       style={{ background: 'linear-gradient(135deg, hsl(0 0% 5%), hsl(0 30% 8%), hsl(0 0% 12%))' }}
     >
       <div className="w-full max-w-md bg-card border border-destructive/40 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-6 text-center animate-in fade-in zoom-in-95 duration-200">
@@ -109,6 +110,7 @@ const App = () => {
 
     // Iniciar gestor de escala táctil (pellizcar para aumentar/disminuir)
     const cleanupPinchZoom = initPinchZoom();
+    const cleanupViewport = initViewportManager();
 
     // Obtener ID de hardware y verificar estado inicial
     let alive = true;
@@ -148,6 +150,7 @@ const App = () => {
       alive = false;
       unsub();
       cleanupPinchZoom();
+      cleanupViewport();
     };
   }, []);
 

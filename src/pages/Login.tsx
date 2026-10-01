@@ -46,8 +46,9 @@ export default function Login() {
   const [isSuccess, setIsSuccess] = useState(false);
 
   useEffect(() => {
-    // La pantalla de Login SIEMPRE debe estar en escala 1.0 (sin distorsión ni zoom)
-    setPinchZoomActive(false);
+    // La pantalla de Login en Android tiene escala fija al 80% (0.80) sin poder alterarse por pellizco
+    const defaultScale = isMobileDevice() ? 0.80 : 1.0;
+    setPinchZoomActive(false, defaultScale);
   }, []);
 
   // Tema automático estricto según la hora del día (sin selectores manuales en el Login)

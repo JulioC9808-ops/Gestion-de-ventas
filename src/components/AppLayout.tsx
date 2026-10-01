@@ -45,7 +45,8 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
     // Activar escala guardada y pellizcar ÚNICAMENTE dentro de la aplicación principal
     setPinchZoomActive(true);
     return () => {
-      setPinchZoomActive(false);
+      const exitScale = isMobileDevice() ? 0.80 : 1.0;
+      setPinchZoomActive(false, exitScale);
     };
   }, []);
 
@@ -67,7 +68,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
 
   if (isTop) {
     return (
-      <div className="min-h-screen flex flex-col bg-background text-foreground">
+      <div className="min-h-screen flex-1 flex flex-col bg-background text-foreground">
         {/* Top navbar */}
         <header className="bg-sidebar text-sidebar-foreground border-b border-sidebar-border">
           <div className="flex items-center justify-between px-6 py-3">
@@ -171,7 +172,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
   const drawer = isMobile;
 
   return (
-    <div className={`flex min-h-screen w-full bg-background text-foreground ${onRight ? 'flex-row-reverse' : ''}`}>
+    <div className={`flex min-h-screen flex-1 w-full bg-background text-foreground ${onRight ? 'flex-row-reverse' : ''}`}>
       <aside
         className={`sidebar-nav flex flex-col shrink-0 transition-all duration-200 ${
           drawer
@@ -329,7 +330,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
         />
       )}
 
-      <main className="flex-1 min-w-0 max-w-full p-3 md:p-8 overflow-x-hidden overflow-y-auto">
+      <main className="flex-1 min-w-0 max-w-full p-3 md:p-8 overflow-x-auto overflow-y-auto overscroll-contain">
         <EmployeeLicenseBanner />
         <RenewalOfferBanner />
         {children}

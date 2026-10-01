@@ -51,12 +51,17 @@ export function applyScale(scale: number, showFeedback = false): void {
   if (typeof document !== 'undefined') {
     try {
       const body = document.body;
+      const html = document.documentElement;
       if (body) {
         if (clamped === 1.0) {
           (body.style as unknown as { zoom: string }).zoom = '';
           body.style.removeProperty('zoom');
+          body.style.removeProperty('--gv-ui-zoom');
+          if (html) html.style.removeProperty('--gv-ui-zoom');
         } else {
           (body.style as unknown as { zoom: string }).zoom = String(clamped);
+          body.style.setProperty('--gv-ui-zoom', String(clamped));
+          if (html) html.style.setProperty('--gv-ui-zoom', String(clamped));
         }
       }
     } catch {
@@ -80,28 +85,18 @@ export function getCurrentScale(): number {
 
 /**
  * Controla si el zoom está habilitado.
- * Durante la pantalla de carga (video/intro), debe estar en `false` para que ocupe 100% de la pantalla.
- * Al pasar al Login o interfaz principal, se activa en `true`.
+ * Durante la pantalla de carga (video/intro), se fija en 1.0.
+ * En la pantalla de login en Android, se fija al 80% (0.80) sin alterarse.
+ * Al pasar al dashboard principal (AppLayout), se activa el zoom dinámico del usuario.
  */
-export function setPinchZoomActive(active: boolean): void {
+export function setPinchZoomActive(active: boolean, forceScale?: number): void {
   isPinchZoomActive = active;
 
   if (typeof document === 'undefined') return;
 
   if (!active) {
-    // Restaurar inmediatamente a escala 1.0 pura durante la pantalla de inicio
-    try {
-      if (document.body) {
-        (document.body.style as unknown as { zoom: string }).zoom = '';
-        document.body.style.removeProperty('zoom');
-      }
-      if (document.documentElement) {
-        (document.documentElement.style as unknown as { zoom: string }).zoom = '';
-        document.documentElement.style.removeProperty('zoom');
-      }
-    } catch {
-      // Silencioso
-    }
+    const targetScale = typeof forceScale === 'number' ? forceScale : 1.0;
+    applyScale(targetScale, false);
 
     if (toastEl) {
       toastEl.style.opacity = '0';
