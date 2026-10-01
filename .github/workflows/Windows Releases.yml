@@ -488,7 +488,7 @@ jobs:
       # NOTIFICAR TELEGRAM
       # ============================================================
 
-      - name: Notify Telegram channel
+      - name: Telegram Notification
         if: success()
         shell: bash
         env:
@@ -496,13 +496,26 @@ jobs:
           VERSION: ${{ env.APP_VERSION }}
           EXE_NAME: ${{ steps.find_exe.outputs.exe_name }}
         run: |
+          set -e
+
+          echo "=============================================="
+          echo "NOTIFICACION TELEGRAM"
+          echo "=============================================="
+
           WINDOWS_URL="https://github.com/JulioC9808-ops/Sistema-Updates/releases/download/v${VERSION}/${EXE_NAME}"
           GITHUB_URL="https://github.com/JulioC9808-ops/Sistema-Updates/releases/tag/v${VERSION}"
 
-          NOTES="Nueva version de GEVEN disponible para Windows."
+          echo "Windows URL:"
+          echo "$WINDOWS_URL"
+
+          echo
+          echo "GitHub URL:"
+          echo "$GITHUB_URL"
+
+          NOTES="Nueva versión de GEVEN disponible para Windows."
 
           if [ -f "release_notes.txt" ]; then
-            GENERATED_NOTES=$(cat release_notes.txt)
+            GENERATED_NOTES="$(cat release_notes.txt)"
 
             if [ -n "$GENERATED_NOTES" ]; then
               NOTES="$GENERATED_NOTES"
@@ -512,42 +525,4 @@ jobs:
           MESSAGE=$(printf '🚀 GEVEN v%s - Windows\n\n%s' "$VERSION" "$NOTES")
 
           # Telegram permite hasta 4096 caracteres.
-          if [ "${#MESSAGE}" -gt 4000 ]; then
-            MESSAGE="${MESSAGE:0:3990}"$'\n\n…'
-          fi
-
-          KEYBOARD=$(printf '{"inline_keyboard":[[{"text":"🖥️ Descargar Windows","url":"%s"}],[{"text":"📋 Ver cambios completos","url":"%s"}]]}' "$WINDOWS_URL" "$GITHUB_URL")
-
-          curl -sS -X POST \
-            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            --data-urlencode "chat_id=@Gestion_Ventas" \
-            --data-urlencode "text=${MESSAGE}" \
-            --data-urlencode "reply_markup=${KEYBOARD}" \
-            -d "disable_web_page_preview=false"
-
-      # ============================================================
-      # VERIFICACION FINAL
-      # ============================================================
-
-      - name: Verify Windows release
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.UPDATES_TOKEN }}
-          TAG: ${{ env.RELEASE_TAG }}
-        run: |
-          echo "=============================================="
-          echo "VERIFICACION FINAL WINDOWS"
-          echo "=============================================="
-
-          gh release view "$TAG" \
-            -R JulioC9808-ops/Sistema-Updates
-
-          echo
-          echo "=============================================="
-          echo "ASSETS PUBLICADOS"
-          echo "=============================================="
-
-          gh release view "$TAG" \
-            -R JulioC9808-ops/Sistema-Updates \
-            --json assets \
-            --jq '.assets[].name'
+          if [ "${#MESSAGE}" -gt 4000
