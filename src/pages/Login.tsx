@@ -17,6 +17,7 @@ import { generateDevChallenge } from '@/lib/cryptoLicense';
 import { triggerHaptic } from '@/lib/haptics';
 import AnimatedMascot from '@/components/login/AnimatedMascot';
 import { setPinchZoomActive } from '@/lib/pinchZoom';
+import { isMobileDevice } from '@/lib/platform';
 import { toast } from 'sonner';
 
 const DEV_WHATSAPP = '+5351616816';
