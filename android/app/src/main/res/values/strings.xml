@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">GestionDeVentas</string>
-    <string name="title_activity_main">GestionDeVentas</string>
+    <string name="app_name">GEVEN</string>
+    <string name="title_activity_main">GEVEN</string>
     <string name="package_name">com.gestion.ventas</string>
     <string name="custom_url_scheme">com.gestion.ventas</string>
 </resources>

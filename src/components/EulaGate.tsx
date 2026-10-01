@@ -17,13 +17,13 @@ const BUILD_DATE = (() => {
 
 const EULA_TEXT = `ACUERDO DE LICENCIA DE USUARIO FINAL (EULA)
 
-Sistema de Gestión de Ventas – Desarrollado por Julio_GE
+GEVEN – Gestión de Ventas – Desarrollado por Julio_GE
 Última actualización: ${BUILD_DATE}
 
 Le rogamos leer detenidamente este Acuerdo de Licencia de Usuario Final antes de comenzar a utilizar la aplicación. Al instalar, registrar o utilizar este software, usted acepta plenamente los términos y condiciones aquí estipulados.
 
 1. NATURALEZA Y PROPÓSITO DEL SOFTWARE
-Gestión de Ventas es una solución tecnológica offline-first diseñada para la gestión comercial integral, control riguroso de inventario, auditoría de flujo de caja, liquidación precisa de salarios y automatización de cierres de turno, orientada a salvaguardar la transparencia operativa del negocio.
+GEVEN (Gestión de Ventas) es una solución tecnológica offline-first diseñada para la gestión comercial integral, control riguroso de inventario, auditoría de flujo de caja, liquidación precisa de salarios y automatización de cierres de turno, orientada a salvaguardar la transparencia operativa del negocio.
 
 2. CONCESIÓN DE LICENCIA Y ALCANCE
 • La licencia concedida otorga el derecho de uso personal e intransferible para el establecimiento comercial o terminal registrado.

@@ -7,6 +7,7 @@ const path = require('path');
 const root = path.join(__dirname, '..');
 const mainCjs = path.join(root, 'electron', 'main.cjs');
 const backupCjs = path.join(root, 'electron', 'main.dev.cjs');
+const distInstaller = path.join(root, 'dist-installer');
 
 function run(cmd, args) {
   const r = spawnSync(cmd, args, { stdio: 'inherit', shell: true });
@@ -14,6 +15,20 @@ function run(cmd, args) {
 }
 
 try {
+  // Limpiar instaladores previos para garantizar UN SOLO instalador en dist-installer/
+  if (fs.existsSync(distInstaller)) {
+    try {
+      const files = fs.readdirSync(distInstaller);
+      for (const file of files) {
+        if (file.endsWith('.exe') || file.endsWith('.blockmap') || file === 'latest.yml') {
+          fs.unlinkSync(path.join(distInstaller, file));
+        }
+      }
+    } catch (e) {
+      console.warn('Aviso limpiando dist-installer previo:', e.message);
+    }
+  }
+
   run('npm', ['run', 'build:protected']);                          // Capa 2
   run('npx', ['electron', 'scripts/compile-in-electron.cjs']);     // Capa 3
   fs.copyFileSync(mainCjs, backupCjs);
@@ -26,3 +41,4 @@ try {
     console.log('main.cjs original restaurado.');
   }
 }
+

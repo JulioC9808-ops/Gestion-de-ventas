@@ -367,8 +367,8 @@ export async function executeSilentAutoBackup(data: {
 
     // 3. Notificación del sistema en la barra de notificaciones
     await sendSystemNotification(
-      'Gestión de Ventas',
-      'Copia De Seguridad actualizada con éxito'
+      'GEVEN – Gestión de Ventas',
+      'Copia de seguridad actualizada con éxito'
     );
 
     return true;

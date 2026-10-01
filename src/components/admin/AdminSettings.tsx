@@ -101,8 +101,8 @@ function ImportantNotes() {
   const handleInvite = async () => {
     const inviteUrl = telegramUrl;
     const shareData = {
-      title: 'Sistema de Gestión de Ventas',
-      text: '¡Hola! Te recomiendo este excelente sistema de gestión de ventas y control de negocios. Conoce todas las novedades y actualizaciones en el canal oficial:',
+      title: 'GEVEN – Gestión de Ventas',
+      text: '¡Hola! Te recomiendo GEVEN – Gestión de Ventas, un excelente sistema para el control de negocios. Conoce todas las novedades y actualizaciones en el canal oficial:',
       url: inviteUrl,
     };
 
@@ -739,13 +739,13 @@ function GeneralSettings() {
         <div className="pt-4 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
           <div>
             <div className="flex items-center gap-2">
-              <p className="font-semibold text-foreground text-sm">Estado del Sistema</p>
+              <p className="font-semibold text-foreground text-sm">GEVEN • Estado del Sistema</p>
               <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30">
                 v{getAppVersion()} ({getPlatformLabel()})
               </span>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Comprueba si existe una nueva versión disponible para tu dispositivo.
+              Gestión de Ventas — Comprueba si existe una nueva versión disponible para tu dispositivo.
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">

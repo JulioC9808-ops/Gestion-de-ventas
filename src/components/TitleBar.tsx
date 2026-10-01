@@ -43,7 +43,7 @@ export default function TitleBar() {
         ) : (
           <Coffee className="w-4 h-4 text-primary" />
         )}
-        <span className="truncate tracking-tight">{settings.businessName || 'Gestión de Ventas'}</span>
+        <span className="truncate tracking-tight">{settings.businessName || 'GEVEN – Gestión de Ventas'}</span>
       </div>
 
       {/* Botones de ventana */}

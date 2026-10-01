@@ -683,7 +683,7 @@ export default function LicenseGate({ children }: LicenseGateProps) {
 
           <div className="mt-6 text-center space-y-1.5 pt-4 border-t border-border/40">
             <p className="text-xs text-muted-foreground">
-              © 2026 Gestión de Ventas. Todos los derechos reservados.
+              © 2026 GEVEN – Gestión de Ventas. Todos los derechos reservados.
             </p>
             <div>
               <span className="gold-signature-shimmer text-xs tracking-wider">

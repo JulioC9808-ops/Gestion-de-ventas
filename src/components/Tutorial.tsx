@@ -366,9 +366,9 @@ function InteractiveBackupDemo() {
 
 const ADMIN_STEPS: TutorialStep[] = [
   {
-    title: '¡Bienvenido a Gestión de Ventas!',
+    title: '¡Bienvenido a GEVEN!',
     badge: 'Inicio Rápido',
-    description: 'Controla todo tu negocio desde un solo lugar: productos, inventario en almacén, ventas de tus empleados, salarios y cierres de turno exactos.',
+    description: 'GEVEN (Gestión de Ventas) te permite controlar todo tu negocio desde un solo lugar: productos, inventario en almacén, ventas de tus empleados, salarios y cierres de turno exactos.',
     icon: Sparkles,
     interactiveComponent: () => (
       <div className="p-3 bg-card border border-border/80 rounded-xl space-y-2">

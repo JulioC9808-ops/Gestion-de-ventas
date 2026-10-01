@@ -80,7 +80,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
                 </div>
               )}
               <div className="flex items-center gap-1.5">
-                <h2 className="font-display font-bold text-sm text-sidebar-foreground">{settings.businessName}</h2>
+                <h2 className="font-display font-bold text-sm text-sidebar-foreground">{settings.businessName || 'GEVEN'}</h2>
                 <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-sidebar-accent/80 text-sidebar-foreground/90 border border-sidebar-border/50">
                   v{getAppVersion()}
                 </span>
@@ -196,7 +196,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
             {!collapsed && (
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-1">
-                  <h2 className="font-display font-bold text-sm text-sidebar-foreground truncate">{settings.businessName}</h2>
+                  <h2 className="font-display font-bold text-sm text-sidebar-foreground truncate">{settings.businessName || 'GEVEN'}</h2>
                   <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-sidebar-accent/90 text-sidebar-foreground/90 border border-sidebar-border/40 shrink-0">
                     v{getAppVersion()}
                   </span>

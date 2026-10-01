@@ -148,7 +148,7 @@ export default function RenewalOfferModal({
     });
 
     // 2. Preparar mensaje de WhatsApp para Julio_GE
-    const msg = `¡Hola Julio_GE! He realizado el pago para la renovación de mi licencia en Gestión de Ventas:
+    const msg = `¡Hola Julio_GE! He realizado el pago para la renovación de mi licencia en GEVEN (Gestión de Ventas):
 
 📌 *Comprobante de Pago*:
 - *ID de Terminal*: ${terminalId}

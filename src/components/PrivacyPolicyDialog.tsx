@@ -58,7 +58,7 @@ export default function PrivacyPolicyDialog({
                 1. Compromiso de Privacidad y Seguridad
               </h4>
               <p className="text-muted-foreground">
-                La aplicación <strong>Gestión de Ventas</strong> ha sido desarrollada para ofrecer una herramienta
+                La aplicación <strong>GEVEN – Gestión de Ventas</strong> ha sido desarrollada para ofrecer una herramienta
                 eficiente, segura y offline-first para la administración de inventario, turnos y ventas. La privacidad
                 y el control absoluto de sus datos empresariales son nuestra máxima prioridad.
               </p>

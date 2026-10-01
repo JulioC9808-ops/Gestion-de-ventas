@@ -239,8 +239,11 @@ export default function Login() {
                 </div>
               )}
               <h1 className="text-2xl font-bold font-display text-center text-foreground">
-                {settings.businessName || 'Mi Negocio'}
+                {settings.businessName || 'GEVEN'}
               </h1>
+              <p className="text-xs text-muted-foreground font-semibold tracking-wider text-center uppercase -mt-0.5 mb-1">
+                Gestión de Ventas
+              </p>
               <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground font-medium">
                 {isAnimated && activeTheme === 'morning' && <span>🌅 Buenos días •</span>}
                 {isAnimated && activeTheme === 'afternoon' && <span>☀️ Buenas tardes •</span>}
@@ -379,7 +382,7 @@ export default function Login() {
 
               <div className="mt-5 text-center space-y-1">
                 <p className="text-xs text-muted-foreground font-medium">
-                  © 2026 Gestión de Ventas. Todos los derechos reservados.
+                  © 2026 GEVEN – Gestión de Ventas. Todos los derechos reservados.
                 </p>
                 <div>
                   <span className="gold-signature-shimmer text-xs tracking-wider">

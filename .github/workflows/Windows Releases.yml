@@ -78,7 +78,7 @@ jobs:
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: windows-installer
+          name: GEVEN-windows-installer
           path: dist-installer/*.exe
           retention-days: 3
 
@@ -126,7 +126,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.get_release.outputs.new_tag }}
-          name: "Gestion de Ventas v${{ steps.get_release.outputs.new_tag }} (Windows)"
+          name: "GEVEN v${{ steps.get_release.outputs.new_tag }} (Windows)"
           files: ${{ steps.find_exe.outputs.exe_path }}
           draft: false
           prerelease: false
@@ -178,8 +178,8 @@ jobs:
             fi
           else
             if [ -n "$BLOCKMAP_FILE" ]; then
-              gh release create "$TAG" "$EXE" latest.yml "$BLOCKMAP_FILE" -R JulioC9808-ops/Sistema-Updates -t "Version $TAG (Windows)" -n "Actualizacion automatica - v$TAG"
+              gh release create "$TAG" "$EXE" latest.yml "$BLOCKMAP_FILE" -R JulioC9808-ops/Sistema-Updates -t "GEVEN v$TAG (Windows)" -n "Actualizacion automatica GEVEN - v$TAG"
             else
-              gh release create "$TAG" "$EXE" latest.yml -R JulioC9808-ops/Sistema-Updates -t "Version $TAG (Windows)" -n "Actualizacion automatica - v$TAG"
+              gh release create "$TAG" "$EXE" latest.yml -R JulioC9808-ops/Sistema-Updates -t "GEVEN v$TAG (Windows)" -n "Actualizacion automatica GEVEN - v$TAG"
             fi
           fi
