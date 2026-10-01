@@ -7,8 +7,8 @@ permissions:
   contents: write
 
 env:
-  APP_VERSION: "1.3.8"
-  RELEASE_TAG: "v1.3.8"
+  APP_VERSION: "1.2.0"
+  RELEASE_TAG: "v1.2.0"
 
 jobs:
   build:
@@ -32,6 +32,7 @@ jobs:
         run: |
           echo Configurando version de GEVEN a %APP_VERSION%
           npm version %APP_VERSION% --no-git-tag-version --allow-same-version
+
           echo.
           echo package.json actualizado:
           node -e "console.log('Version:', require('./package.json').version)"
@@ -284,7 +285,6 @@ jobs:
             echo "Contenido original:"
             cat latest.yml
 
-            # Asegurar que la version corresponda a la Release.
             sed -i "s/^version:.*/version: $VERSION/" latest.yml
 
             echo
@@ -329,28 +329,83 @@ jobs:
           cat latest.yml
 
       # ============================================================
-      # CREAR RELEASE EN REPOSITORIO PRINCIPAL
+      # CREAR / ACTUALIZAR RELEASE EN REPOSITORIO PRINCIPAL
+      #
+      # GitHub genera las Release Notes automaticamente.
       # ============================================================
 
       - name: Create Windows release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ env.RELEASE_TAG }}
-          name: "GEVEN v${{ env.APP_VERSION }} (Windows)"
-          body: |
-            ## GEVEN v${{ env.APP_VERSION }}
-
-            Actualización de GEVEN - Gestión de Ventas para Windows.
-
-            ### Instalador
-            `GEVEN-Setup-${{ env.APP_VERSION }}.exe`
-          files: |
-            ${{ steps.find_exe.outputs.exe_path }}
-          draft: false
-          prerelease: false
-          overwrite_files: true
+        shell: bash
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ env.RELEASE_TAG }}
+          VERSION: ${{ env.APP_VERSION }}
+          EXE_PATH: ${{ steps.find_exe.outputs.exe_path }}
+        run: |
+          echo "=============================================="
+          echo "RELEASE WINDOWS"
+          echo "=============================================="
+
+          if gh release view "$TAG" -R "${{ github.repository }}" > /dev/null 2>&1; then
+
+            echo "La Release $TAG ya existe."
+            echo "Actualizando archivos..."
+
+            gh release edit "$TAG" \
+              -R "${{ github.repository }}" \
+              --title "GEVEN v${VERSION} (Windows)"
+
+            gh release upload "$TAG" \
+              "$EXE_PATH" \
+              -R "${{ github.repository }}" \
+              --clobber
+
+          else
+
+            echo "Creando Release $TAG con notas automaticas..."
+
+            gh release create "$TAG" \
+              "$EXE_PATH" \
+              -R "${{ github.repository }}" \
+              --title "GEVEN v${VERSION} (Windows)" \
+              --generate-notes
+
+          fi
+
+      # ============================================================
+      # OBTENER RELEASE NOTES
+      # ============================================================
+
+      - name: Get Windows release notes
+        id: release_notes
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ env.RELEASE_TAG }}
+        run: |
+          echo "Obteniendo Release Notes generadas por GitHub..."
+
+          gh release view "$TAG" \
+            -R "${{ github.repository }}" \
+            --json body \
+            --jq '.body' > release_notes.txt
+
+          echo
+          echo "=============================================="
+          echo "RELEASE NOTES"
+          echo "=============================================="
+
+          cat release_notes.txt
+
+          echo
+          echo "Guardando notas para Telegram..."
+
+          {
+            echo 'notes<<EOF'
+            cat release_notes.txt
+            echo
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
 
       # ============================================================
       # PUBLICAR EN SISTEMA-UPDATES
@@ -362,7 +417,6 @@ jobs:
           GH_TOKEN: ${{ secrets.UPDATES_TOKEN }}
           TAG: ${{ env.RELEASE_TAG }}
           EXE_PATH: ${{ steps.find_exe.outputs.exe_path }}
-          EXE_NAME: ${{ steps.find_exe.outputs.exe_name }}
         run: |
           echo "=============================================="
           echo "PUBLICANDO EN SISTEMA-UPDATES"
@@ -387,10 +441,6 @@ jobs:
 
           echo "Blockmap:"
           echo "${BLOCKMAP_FILE:-(ninguno)}"
-
-          # --------------------------------------------------------
-          # Comprobar si ya existe la Release
-          # --------------------------------------------------------
 
           if gh release view "$TAG" \
             -R JulioC9808-ops/Sistema-Updates \
@@ -454,37 +504,548 @@ jobs:
           fi
 
       # ============================================================
-      # VERIFICACION FINAL
+      # NOTIFICAR TELEGRAM CON BOTONES
       # ============================================================
 
-      - name: Verify published update
+      - name: Notify Telegram channel
+        if: success()
+        shell: bash
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          VERSION: ${{ env.APP_VERSION }}
+          EXE_NAME: ${{ steps.find_exe.outputs.exe_name }}
+        run: |
+          WINDOWS_URL="https://github.com/JulioC9808-ops/Sistema-Updates/releases/download/v${VERSION}/${EXE_NAME}"
+
+          GITHUB_URL="https://github.com/JulioC9808-ops/Sistema-Updates/releases/tag/v${VERSION}"
+
+          NOTES_FILE="release_notes.txt"
+
+          if [ ! -f "$NOTES_FILE" ]; then
+            echo "No existe release_notes.txt"
+            echo "Usando mensajename: Release Windows
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  APP_VERSION: "1.2.0"
+  RELEASE_TAG: "v1.2.0"
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # ============================================================
+      # CONFIGURAR VERSION
+      # ============================================================
+
+      - name: Set application version
+        shell: cmd
+        run: |
+          echo Configurando version de GEVEN a %APP_VERSION%
+          npm version %APP_VERSION% --no-git-tag-version --allow-same-version
+
+          echo.
+          echo package.json actualizado:
+          node -e "console.log('Version:', require('./package.json').version)"
+
+      # ============================================================
+      # INSTALACION LIMPIA
+      # ============================================================
+
+      - name: Clean install
+        shell: cmd
+        run: |
+          if exist node_modules rd /s /q node_modules
+          if exist package-lock.json del /f /q package-lock.json
+
+          npm install --include=optional --no-audit --no-fund --legacy-peer-deps --registry=https://registry.npmjs.org/
+
+      # ============================================================
+      # DEPENDENCIAS NATIVAS
+      # ============================================================
+
+      - name: Fix native dependencies (Rollup + SWC)
+        shell: cmd
+        run: |
+          npm install @rollup/rollup-win32-x64-msvc --save-dev --include=optional
+          npm install @swc/core-win32-x64-msvc --save-dev --include=optional
+
+      # ============================================================
+      # VERIFICAR DEPENDENCIAS NATIVAS
+      # ============================================================
+
+      - name: Verify native bindings
+        shell: cmd
+        run: |
+          node -e "require('@rollup/rollup-win32-x64-msvc'); console.log('Rollup binding OK');"
+          node -e "require('@swc/core-win32-x64-msvc'); console.log('SWC binding OK');"
+          node -e "const swc = require('@swc/core'); console.log('SWC core loads OK, version:', swc.version);"
+
+      # ============================================================
+      # LICENCIA NSIS
+      # ============================================================
+
+      - name: Prepare NSIS license encoding
+        shell: powershell
+        run: |
+          $path = "resources/license.txt"
+
+          if (Test-Path $path) {
+              $content = [System.IO.File]::ReadAllText(
+                  $path,
+                  [System.Text.Encoding]::UTF8
+              )
+
+              [System.IO.File]::WriteAllText(
+                  $path,
+                  $content,
+                  [System.Text.Encoding]::GetEncoding(1252)
+              )
+
+              Write-Host "License converted to Windows-1252 successfully."
+          }
+          else {
+              Write-Host "No se encontro resources/license.txt"
+          }
+
+      # ============================================================
+      # BUILD VITE
+      # ============================================================
+
+      - name: Build app
+        shell: cmd
+        env:
+          VITE_ELTOQUE_API_KEY: ${{ secrets.VITE_ELTOQUE_API_KEY }}
+        run: |
+          npm run build
+
+      # ============================================================
+      # ELECTRON + PROTECCION + NSIS
+      #
+      # IMPORTANTE:
+      # protect-build.cjs ya ejecuta electron-builder.
+      # NO ejecutar electron-builder nuevamente aqui.
+      # ============================================================
+
+      - name: Package Electron app (PROTEGIDO)
+        shell: cmd
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          VITE_ELTOQUE_API_KEY: ${{ secrets.VITE_ELTOQUE_API_KEY }}
+        run: |
+          npm run electron:installer
+
+      # ============================================================
+      # MOSTRAR ARCHIVOS GENERADOS
+      # ============================================================
+
+      - name: Inspect generated installer
+        shell: bash
+        run: |
+          echo "=============================================="
+          echo "CONTENIDO DE dist-installer"
+          echo "=============================================="
+
+          if [ ! -d "dist-installer" ]; then
+            echo "ERROR: No existe dist-installer/"
+            exit 1
+          fi
+
+          ls -lah dist-installer/
+
+          echo
+          echo "=============================================="
+          echo "INSTALADORES EXE ENCONTRADOS"
+          echo "=============================================="
+
+          find dist-installer -maxdepth 1 -type f -name "*.exe" -print
+
+      # ============================================================
+      # NORMALIZAR NOMBRES
+      # ============================================================
+
+      - name: Normalize filenames
+        shell: bash
+        run: |
+          echo "=== Contenido ANTES de normalizar ==="
+          ls -la dist-installer/
+
+          find dist-installer -maxdepth 1 -type f -name "* *" -print0 |
+          while IFS= read -r -d '' f; do
+            dir=$(dirname "$f")
+            base=$(basename "$f")
+            newbase="${base// /_}"
+
+            echo "Renombrando:"
+            echo "  $f"
+            echo "  -> $dir/$newbase"
+
+            mv "$f" "$dir/$newbase"
+          done
+
+          echo
+          echo "=== Contenido DESPUES de normalizar ==="
+          ls -la dist-installer/
+
+      # ============================================================
+      # VERIFICAR QUE EXISTE EXACTAMENTE UN EXE
+      # ============================================================
+
+      - name: Find installer file
+        id: find_exe
+        shell: bash
+        run: |
+          mapfile -t EXES < <(
+            find dist-installer \
+              -maxdepth 1 \
+              -type f \
+              -name "*.exe" \
+              -print
+          )
+
+          COUNT="${#EXES[@]}"
+
+          echo "Cantidad de EXE encontrados: $COUNT"
+
+          if [ "$COUNT" -eq 0 ]; then
+            echo "ERROR: No se encontro ningun .exe en dist-installer/"
+            ls -la dist-installer/ || true
+            exit 1
+          fi
+
+          if [ "$COUNT" -gt 1 ]; then
+            echo "ERROR: Se encontraron varios instaladores:"
+            printf '%s\n' "${EXES[@]}"
+            echo
+            echo "El proceso debe generar un solo instalador."
+            exit 1
+          fi
+
+          EXE_PATH="${EXES[0]}"
+          EXE_NAME=$(basename "$EXE_PATH")
+
+          echo "exe_path=$EXE_PATH" >> "$GITHUB_OUTPUT"
+          echo "exe_name=$EXE_NAME" >> "$GITHUB_OUTPUT"
+
+          echo
+          echo "Instalador encontrado:"
+          echo "$EXE_PATH"
+
+      # ============================================================
+      # VERIFICAR NOMBRE Y VERSION
+      # ============================================================
+
+      - name: Verify installer version
+        shell: bash
+        env:
+          EXPECTED_VERSION: ${{ env.APP_VERSION }}
+          EXE_NAME: ${{ steps.find_exe.outputs.exe_name }}
+        run: |
+          echo "Version esperada: $EXPECTED_VERSION"
+          echo "Instalador generado: $EXE_NAME"
+
+          case "$EXE_NAME" in
+            *"$EXPECTED_VERSION"*.exe)
+              echo "OK: El nombre del instalador contiene la version correcta."
+              ;;
+            *)
+              echo "ERROR: El instalador no contiene la version $EXPECTED_VERSION"
+              echo "Esperado algo como: GEVEN-Setup-$EXPECTED_VERSION.exe"
+              exit 1
+              ;;
+          esac
+
+      # ============================================================
+      # SUBIR ARTIFACT DE GITHUB ACTIONS
+      # ============================================================
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GEVEN-windows-installer
+          path: dist-installer/*.exe
+          retention-days: 3
+
+      # ============================================================
+      # PREPARAR LATEST.YML
+      # ============================================================
+
+      - name: Prepare latest.yml for auto-updater
+        shell: bash
+        env:
+          VERSION: ${{ env.APP_VERSION }}
+          EXE_PATH: ${{ steps.find_exe.outputs.exe_path }}
+          EXE_NAME: ${{ steps.find_exe.outputs.exe_name }}
+        run: |
+          echo "Preparando latest.yml..."
+
+          LATEST_YML=$(find dist-installer \
+            -maxdepth 1 \
+            -type f \
+            -name "latest.yml" \
+            -print -quit)
+
+          if [ -n "$LATEST_YML" ]; then
+
+            echo "Electron-builder genero:"
+            echo "$LATEST_YML"
+
+            cp "$LATEST_YML" ./latest.yml
+
+            echo
+            echo "Contenido original:"
+            cat latest.yml
+
+            sed -i "s/^version:.*/version: $VERSION/" latest.yml
+
+            echo
+            echo "Contenido final:"
+            cat latest.yml
+
+          else
+
+            echo "Electron-builder no genero latest.yml."
+            echo "Generandolo manualmente..."
+
+            SHA512_B64=$(
+              sha512sum "$EXE_PATH" |
+              awk '{print $1}' |
+              xxd -r -p |
+              base64 |
+              tr -d '\n'
+            )
+
+            SIZE_BYTES=$(stat -c%s "$EXE_PATH" 2>/dev/null || wc -c < "$EXE_PATH")
+
+            RELEASE_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+            {
+              echo "version: $VERSION"
+              echo "path: $EXE_NAME"
+              echo "sha512: $SHA512_B64"
+              echo "releaseDate: $RELEASE_DATE"
+              echo "files:"
+              echo "  - url: $EXE_NAME"
+              echo "    sha512: $SHA512_B64"
+              echo "    size: $SIZE_BYTES"
+            } > latest.yml
+
+          fi
+
+          echo
+          echo "=============================================="
+          echo "LATEST.YML FINAL"
+          echo "=============================================="
+
+          cat latest.yml
+
+      # ============================================================
+      # CREAR / ACTUALIZAR RELEASE EN REPOSITORIO PRINCIPAL
+      #
+      # GitHub genera las Release Notes automaticamente.
+      # ============================================================
+
+      - name: Create Windows release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ env.RELEASE_TAG }}
+          VERSION: ${{ env.APP_VERSION }}
+          EXE_PATH: ${{ steps.find_exe.outputs.exe_path }}
+        run: |
+          echo "=============================================="
+          echo "RELEASE WINDOWS"
+          echo "=============================================="
+
+          if gh release view "$TAG" -R "${{ github.repository }}" > /dev/null 2>&1; then
+
+            echo "La Release $TAG ya existe."
+            echo "Actualizando archivos..."
+
+            gh release edit "$TAG" \
+              -R "${{ github.repository }}" \
+              --title "GEVEN v${VERSION} (Windows)"
+
+            gh release upload "$TAG" \
+              "$EXE_PATH" \
+              -R "${{ github.repository }}" \
+              --clobber
+
+          else
+
+            echo "Creando Release $TAG con notas automaticas..."
+
+            gh release create "$TAG" \
+              "$EXE_PATH" \
+              -R "${{ github.repository }}" \
+              --title "GEVEN v${VERSION} (Windows)" \
+              --generate-notes
+
+          fi
+
+      # ============================================================
+      # OBTENER RELEASE NOTES
+      # ============================================================
+
+      - name: Get Windows release notes
+        id: release_notes
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ env.RELEASE_TAG }}
+        run: |
+          echo "Obteniendo Release Notes generadas por GitHub..."
+
+          gh release view "$TAG" \
+            -R "${{ github.repository }}" \
+            --json body \
+            --jq '.body' > release_notes.txt
+
+          echo
+          echo "=============================================="
+          echo "RELEASE NOTES"
+          echo "=============================================="
+
+          cat release_notes.txt
+
+          echo
+          echo "Guardando notas para Telegram..."
+
+          {
+            echo 'notes<<EOF'
+            cat release_notes.txt
+            echo
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      # ============================================================
+      # PUBLICAR EN SISTEMA-UPDATES
+      # ============================================================
+
+      - name: Publish update to Sistema-Updates
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.UPDATES_TOKEN }}
           TAG: ${{ env.RELEASE_TAG }}
+          EXE_PATH: ${{ steps.find_exe.outputs.exe_path }}
         run: |
           echo "=============================================="
-          echo "VERIFICACION FINAL"
+          echo "PUBLICANDO EN SISTEMA-UPDATES"
           echo "=============================================="
 
-          echo
-          echo "Release publicada:"
-          gh release view "$TAG" \
-            -R JulioC9808-ops/Sistema-Updates
+          echo "Repositorio:"
+          echo "JulioC9808-ops/Sistema-Updates"
 
-          echo
-          echo "=============================================="
-          echo "ARCHIVOS DE LA RELEASE"
-          echo "=============================================="
+          echo "Tag:"
+          echo "$TAG"
 
-          gh release view "$TAG" \
+          echo "EXE:"
+          echo "$EXE_PATH"
+
+          BLOCKMAP_FILE=$(
+            find dist-installer \
+              -maxdepth 1 \
+              -type f \
+              -name "*.blockmap" \
+              -print -quit
+          )
+
+          echo "Blockmap:"
+          echo "${BLOCKMAP_FILE:-(ninguno)}"
+
+          if gh release view "$TAG" \
             -R JulioC9808-ops/Sistema-Updates \
-            --json assets \
-            --jq '.assets[] | "\(.name) - \(.size) bytes"'
+            > /dev/null 2>&1
+          then
 
-          echo
-          echo "=============================================="
-          echo "PROCESO COMPLETADO"
-          echo "=============================================="
-          echo "GEVEN version: ${{ env.APP_VERSION }}"
-          echo "Tag: $TAG"
+            echo
+            echo "La Release $TAG ya existe."
+            echo "Actualizando archivos..."
+
+            if [ -n "$BLOCKMAP_FILE" ]; then
+
+              gh release upload \
+                "$TAG" \
+                "$EXE_PATH" \
+                latest.yml \
+                "$BLOCKMAP_FILE" \
+                -R JulioC9808-ops/Sistema-Updates \
+                --clobber
+
+            else
+
+              gh release upload \
+                "$TAG" \
+                "$EXE_PATH" \
+                latest.yml \
+                -R JulioC9808-ops/Sistema-Updates \
+                --clobber
+
+            fi
+
+          else
+
+            echo
+            echo "La Release $TAG no existe."
+            echo "Creando nueva Release..."
+
+            if [ -n "$BLOCKMAP_FILE" ]; then
+
+              gh release create \
+                "$TAG" \
+                "$EXE_PATH" \
+                latest.yml \
+                "$BLOCKMAP_FILE" \
+                -R JulioC9808-ops/Sistema-Updates \
+                -t "GEVEN v${{ env.APP_VERSION }} (Windows)" \
+                -n "Actualizacion automatica GEVEN - v${{ env.APP_VERSION }}"
+
+            else
+
+              gh release create \
+                "$TAG" \
+                "$EXE_PATH" \
+                latest.yml \
+                -R JulioC9808-ops/Sistema-Updates \
+                -t "GEVEN v${{ env.APP_VERSION }} (Windows)" \
+                -n "Actualizacion automatica GEVEN - v${{ env.APP_VERSION }}"
+
+            fi
+
+          fi
+
+      # ============================================================
+      # NOTIFICAR TELEGRAM CON BOTONES
+      # ============================================================
+
+      - name: Notify Telegram channel
+        if: success()
+        shell: bash
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          VERSION: ${{ env.APP_VERSION }}
+          EXE_NAME: ${{ steps.find_exe.outputs.exe_name }}
+        run: |
+          WINDOWS_URL="https://github.com/JulioC9808-ops/Sistema-Updates/releases/download/v${VERSION}/${EXE_NAME}"
+
+          GITHUB_URL="https://github.com/JulioC9808-ops/Sistema-Updates/releases/tag/v${VERSION}"
+
+          NOTES_FILE="release_notes.txt"
+
+          if [ ! -f "$NOTES_FILE" ]; then
+            echo "No existe release_notes.txt"
+            echo "Usando mensaje
