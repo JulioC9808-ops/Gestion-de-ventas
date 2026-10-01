@@ -61,8 +61,8 @@ jobs:
       - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: temurin
+          java-version: "17"
 
       # ============================================================
       # ANDROID SDK
@@ -189,13 +189,29 @@ jobs:
             android/app/build/outputs/apk/release/app-release-signed.apk
 
       # ============================================================
+      # NOMBRE FINAL DEL APK
+      #
+      # El APK ya esta firmado.
+      # Solo cambiamos el nombre para distribucion.
+      # ============================================================
+
+      - name: Rename APK for distribution
+        run: |
+          cp \
+            android/app/build/outputs/apk/release/app-release-signed.apk \
+            android/app/build/outputs/apk/release/GEVEN-Android.apk
+
+          echo "APK final:"
+          ls -lh android/app/build/outputs/apk/release/GEVEN-Android.apk
+
+      # ============================================================
       # SHA-256
       # ============================================================
 
       - name: Calculate SHA-256 hash for in-app updates
         run: |
           APK_HASH=$(sha256sum \
-            android/app/build/outputs/apk/release/app-release-signed.apk \
+            android/app/build/outputs/apk/release/GEVEN-Android.apk \
             | awk '{print $1}')
 
           echo "APK SHA-256 HASH: $APK_HASH"
@@ -256,8 +272,8 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GestionDeSistema-release-apk
-          path: android/app/build/outputs/apk/release/app-release-signed.apk
+          name: GEVEN-Android
+          path: android/app/build/outputs/apk/release/GEVEN-Android.apk
           if-no-files-found: error
           retention-days: 3
 
@@ -268,7 +284,7 @@ jobs:
       - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GestionDeSistema-release-aab-playstore
+          name: GEVEN-Android-PlayStore
           path: android/app/build/outputs/bundle/release/app-release-signed.aab
           if-no-files-found: error
           retention-days: 3
@@ -280,8 +296,6 @@ jobs:
       # android-v1.3
       # android-v1.4
       # android-v1.5
-      #
-      # GitHub genera automaticamente las Release Notes.
       # ============================================================
 
       - name: Create Android historical release
@@ -302,6 +316,167 @@ jobs:
 
             echo "La Release $ANDROID_TAG ya existe."
 
+            gh release edit "$ANDROID_TAG" \
+              -R JulioC9808-ops/Sistema-Updates \
+              --title "GEVEN v${VERSION} (Android)"
+
+            gh release upload "$ANDROID_TAG" \
+              android/app/build/outputs/apk/release/GEVEN-Android.apk \
+              -R JulioC9808-ops/Sistema-Updates \
+              --clobber
+
           else
 
-            echo "Creando
+            echo "Creando Release historica $ANDROID_TAG..."
+
+            gh release create "$ANDROID_TAG" \
+              android/app/build/outputs/apk/release/GEVEN-Android.apk \
+              -R JulioC9808-ops/Sistema-Updates \
+              --title "GEVEN v${VERSION} (Android)" \
+              --generate-notes
+
+          fi
+
+      # ============================================================
+      # OBTENER RELEASE NOTES ANDROID
+      # ============================================================
+
+      - name: Get Android release notes
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.UPDATES_TOKEN }}
+          ANDROID_TAG: ${{ steps.android_release.outputs.android_tag }}
+        run: |
+          echo "Obteniendo Release Notes de Android..."
+
+          gh release view "$ANDROID_TAG" \
+            -R JulioC9808-ops/Sistema-Updates \
+            --json body \
+            --jq '.body' > android_release_notes.txt
+
+          echo
+          echo "=============================================="
+          echo "ANDROID RELEASE NOTES"
+          echo "=============================================="
+
+          cat android_release_notes.txt
+
+      # ============================================================
+      # PUBLICAR APK ESTABLE
+      #
+      # Release:
+      # android
+      #
+      # Archivo:
+      # GEVEN-Android.apk
+      # ============================================================
+
+      - name: Publish stable Android release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.UPDATES_TOKEN }}
+          VERSION: ${{ steps.app_version.outputs.version_name }}
+        run: |
+          echo "=============================================="
+          echo "RELEASE ESTABLE ANDROID"
+          echo "=============================================="
+
+          APK="android/app/build/outputs/apk/release/GEVEN-Android.apk"
+
+          if gh release view android \
+            -R JulioC9808-ops/Sistema-Updates \
+            > /dev/null 2>&1
+          then
+
+            echo "La Release android ya existe."
+
+            gh release edit android \
+              -R JulioC9808-ops/Sistema-Updates \
+              --title "GEVEN v${VERSION} (Android)" \
+              --prerelease=false
+
+            gh release upload android \
+              "$APK" \
+              -R JulioC9808-ops/Sistema-Updates \
+              --clobber
+
+          else
+
+            echo "Creando Release estable android..."
+
+            gh release create android \
+              "$APK" \
+              -R JulioC9808-ops/Sistema-Updates \
+              --title "GEVEN v${VERSION} (Android)" \
+              --notes "Version estable de GEVEN para Android."
+
+          fi
+
+      # ============================================================
+      # NOTIFICAR TELEGRAM
+      # ============================================================
+
+      - name: Notify Telegram channel
+        if: success()
+        shell: bash
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          VERSION: ${{ steps.app_version.outputs.version_name }}
+          ANDROID_TAG: ${{ steps.android_release.outputs.android_tag }}
+        run: |
+          APK_URL="https://github.com/JulioC9808-ops/Sistema-Updates/releases/download/android/GEVEN-Android.apk"
+          GITHUB_URL="https://github.com/JulioC9808-ops/Sistema-Updates/releases/tag/${ANDROID_TAG}"
+
+          NOTES="Nueva version de GEVEN disponible para Android."
+
+          if [ -f "android_release_notes.txt" ]; then
+            GENERATED_NOTES=$(cat android_release_notes.txt)
+
+            if [ -n "$GENERATED_NOTES" ]; then
+              NOTES="$GENERATED_NOTES"
+            fi
+          fi
+
+          MESSAGE=$(printf '🚀 GEVEN v%s - Android\n\n%s' "$VERSION" "$NOTES")
+
+          # Telegram permite hasta 4096 caracteres.
+          if [ "${#MESSAGE}" -gt 4000 ]; then
+            MESSAGE="${MESSAGE:0:3990}"$'\n\n…'
+          fi
+
+          KEYBOARD=$(printf '{"inline_keyboard":[[{"text":"📱 Descargar Android","url":"%s"}],[{"text":"📋 Ver cambios completos","url":"%s"}]]}' "$APK_URL" "$GITHUB_URL")
+
+          curl -sS -X POST \
+            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=@Gestion_Ventas" \
+            --data-urlencode "text=${MESSAGE}" \
+            --data-urlencode "reply_markup=${KEYBOARD}" \
+            -d "disable_web_page_preview=false"
+
+      # ============================================================
+      # VERIFICACION FINAL
+      # ============================================================
+
+      - name: Verify Android release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.UPDATES_TOKEN }}
+          ANDROID_TAG: ${{ steps.android_release.outputs.android_tag }}
+        run: |
+          echo "=============================================="
+          echo "VERIFICACION FINAL ANDROID"
+          echo "=============================================="
+
+          echo
+          echo "Release historica:"
+          gh release view "$ANDROID_TAG" \
+            -R JulioC9808-ops/Sistema-Updates \
+            --json name,tagName,assets \
+            --jq '{name: .name, tag: .tagName, assets: [.assets[].name]}'
+
+          echo
+          echo "Release estable:"
+          gh release view android \
+            -R JulioC9808-ops/Sistema-Updates \
+            --json name,tagName,isPrerelease,assets \
+            --jq '{name: .name, tag: .tagName, prerelease: .isPrerelease, assets: [.assets[].name]}'
