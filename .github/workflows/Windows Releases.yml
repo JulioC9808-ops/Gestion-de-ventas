@@ -512,17 +512,38 @@ jobs:
           echo "GitHub URL:"
           echo "$GITHUB_URL"
 
-          NOTES="Nueva versión de GEVEN disponible para Windows."
+          MESSAGE="🚀 GEVEN v${VERSION} - Windows
 
-          if [ -f "release_notes.txt" ]; then
-            GENERATED_NOTES="$(cat release_notes.txt)"
+          Nueva versión de GEVEN disponible para Windows."
 
-            if [ -n "$GENERATED_NOTES" ]; then
-              NOTES="$GENERATED_NOTES"
-            fi
+          export WINDOWS_URL
+          export GITHUB_URL
+          export MESSAGE
+
+          python -c 'import json,os; payload={"chat_id":"@Gestion_Ventas","text":os.environ["MESSAGE"],"reply_markup":{"inline_keyboard":[[{"text":"🖥️ Descargar Windows","url":os.environ["WINDOWS_URL"]}],[{"text":"📋 Ver cambios completos","url":os.environ["GITHUB_URL"]}]]},"disable_web_page_preview":False}; json.dump(payload,open("telegram_payload.json","w",encoding="utf-8"),ensure_ascii=False,separators=(",",":"))'
+
+          echo
+          echo "Payload generado:"
+          cat telegram_payload.json
+
+          echo
+          echo "=============================================="
+          echo "ENVIANDO A TELEGRAM"
+          echo "=============================================="
+
+          RESPONSE=$(curl -sS \
+            -X POST \
+            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -H "Content-Type: application/json; charset=utf-8" \
+            --data-binary "@telegram_payload.json")
+
+          echo
+          echo "Respuesta de Telegram:"
+          echo "$RESPONSE"
+
+          if echo "$RESPONSE" | grep -q '"ok":true'; then
+            echo "Telegram: mensaje enviado correctamente."
+          else
+            echo "ERROR: Telegram rechazo el mensaje."
+            exit 1
           fi
-
-          MESSAGE=$(printf '🚀 GEVEN v%s - Windows\n\n%s' "$VERSION" "$NOTES")
-
-          # Telegram permite hasta 4096 caracteres.
-          if [ "${#MESSAGE}" -gt 4000
