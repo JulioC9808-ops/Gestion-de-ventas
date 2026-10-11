@@ -45,8 +45,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
     // Activar escala guardada y pellizcar ÚNICAMENTE dentro de la aplicación principal
     setPinchZoomActive(true);
     return () => {
-      const exitScale = isMobileDevice() ? 0.80 : 1.0;
-      setPinchZoomActive(false, exitScale);
+      setPinchZoomActive(false);
     };
   }, []);
 
@@ -68,10 +67,10 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
 
   if (isTop) {
     return (
-      <div className="min-h-screen flex-1 flex flex-col bg-background text-foreground">
+      <div className="app-shell flex flex-col bg-background text-foreground">
         {/* Top navbar */}
         <header className="bg-sidebar text-sidebar-foreground border-b border-sidebar-border">
-          <div className="flex items-center justify-between px-6 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-3">
             <div className="flex items-center gap-3">
               {settings.logoUrl ? (
                 <img src={settings.logoUrl} alt="Logo" className="w-8 h-8 rounded-lg object-cover" />
@@ -91,7 +90,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
               </span>
             </div>
 
-            <nav className="flex items-center gap-1">
+            <nav className="flex flex-wrap items-center gap-1">
               {nav.map(item => {
                 const Icon = item.icon;
                 const active = activeKey === item.key;
@@ -108,7 +107,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
                       >
                         <Icon className="w-4 h-4" />
                         <span className="hidden lg:inline">{item.label}</span>
-                      </button>
+                      </Button>
                     </TooltipTrigger>
                     {item.tip && (
                       <TooltipContent><p className="max-w-xs">{item.tip}</p></TooltipContent>
@@ -125,6 +124,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
                 variant="outline"
                 className="border-sidebar-border bg-sidebar-accent/50 hover:bg-sidebar-accent text-sidebar-foreground text-xs font-semibold h-8 px-2.5 shadow-xs"
                 title="Crear e imprimir comprobante de venta"
+                aria-label="Crear e imprimir comprobante de venta"
               >
                 <Printer className="w-3.5 h-3.5 mr-1.5 text-primary" />
                 <span className="hidden sm:inline">Comprobante</span>
@@ -147,6 +147,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
               <Button
                 variant="ghost"
                 size="sm"
+                aria-label="Cerrar sesión"
                 className="text-sidebar-foreground/60 hover:text-sidebar-foreground"
                 onClick={handleLogout}
               >
@@ -156,7 +157,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
           </div>
         </header>
 
-        <main className="flex-1 p-8 overflow-auto">
+        <main className="app-main flex-1" tabIndex={0} aria-label="Contenido principal">
           <EmployeeLicenseBanner />
           <RenewalOfferBanner />
           {children}
@@ -172,11 +173,11 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
   const drawer = isMobile;
 
   return (
-    <div className={`flex min-h-screen flex-1 w-full bg-background text-foreground ${onRight ? 'flex-row-reverse' : ''}`}>
+    <div className={`app-shell relative flex w-full bg-background text-foreground ${onRight ? 'flex-row-reverse' : ''}`}>
       <aside
-        className={`sidebar-nav flex flex-col shrink-0 transition-all duration-200 ${
+        className={`sidebar-nav min-h-0 flex flex-col shrink-0 transition-all duration-200 ${
           drawer
-            ? `fixed top-0 bottom-0 z-40 ${onRight ? 'right-0' : 'left-0'} ${
+            ? `absolute top-0 bottom-0 z-40 ${onRight ? 'right-0' : 'left-0'} ${
                 collapsed ? 'w-14' : 'w-[15.5rem] shadow-2xl'
               }`
             : collapsed
@@ -185,7 +186,7 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
         }`}
       >
 
-        <div className={`border-b border-sidebar-border ${collapsed ? 'p-2' : 'p-5'}`}>
+        <div className={`shrink-0 border-b border-sidebar-border ${collapsed ? 'p-2' : 'p-5'}`}>
           <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
             {settings.logoUrl ? (
               <img src={settings.logoUrl} alt="Logo" className="w-10 h-10 rounded-xl object-cover" />
@@ -216,14 +217,14 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
             variant="ghost"
             size="icon"
             aria-label={collapsed ? 'Expandir menú' : 'Recoger menú'}
-            className="h-9 w-9 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+            className="min-h-11 min-w-11 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
             onClick={() => setCollapsed(c => !c)}
           >
             {collapsed ? <PanelLeftOpen className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
           </Button>
         </div>
 
-        <nav className={`flex-1 space-y-1 ${collapsed ? 'p-1.5' : 'p-3'}`}>
+        <nav className={`min-h-0 flex-1 overflow-y-auto overscroll-y-contain space-y-1 ${collapsed ? 'p-1.5' : 'p-3'}`}>
           {nav.map(item => {
             const Icon = item.icon;
             const active = activeKey === item.key;
@@ -242,8 +243,8 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
                     }`}
                   >
                     <Icon className="w-4 h-4 shrink-0" />
-                    {!collapsed && <span className="truncate">{item.label}</span>}
-                  </button>
+                    {!collapsed && <span className="whitespace-normal break-words">{item.label}</span>}
+                  </Button>
                 </TooltipTrigger>
                 <TooltipContent side="right">
                   <p className="max-w-xs">{item.tip ?? item.label}</p>
@@ -263,13 +264,14 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
               collapsed ? 'w-10 h-10 p-0 rounded-xl justify-center' : 'w-full justify-start px-3 rounded-xl'
             }`}
             title="Crear e imprimir comprobante de venta"
+                aria-label="Crear e imprimir comprobante de venta"
           >
             <Printer className="w-4 h-4 text-primary shrink-0" />
             {!collapsed && <span className="ml-2 truncate">Crear Comprobante</span>}
           </Button>
         </div>
 
-        <div className={`border-t border-sidebar-border ${collapsed ? 'p-1.5' : 'p-3'}`}>
+        <div className={`shrink-0 border-t border-sidebar-border ${collapsed ? 'p-1.5' : 'p-3'}`}>
           {collapsed ? (
             <div className="flex justify-center my-2" title={currentUser?.name}>
               {currentUser?.avatarUrl ? (
@@ -324,20 +326,21 @@ export default function AppLayout({ children, nav, activeKey, onNav }: AppLayout
       {drawer && <div className="w-14 shrink-0" aria-hidden />}
       {drawer && !collapsed && (
         <div
-          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm"
+          className="absolute inset-0 z-30 bg-foreground/50 backdrop-blur-sm"
           onClick={() => setCollapsed(true)}
           aria-hidden
         />
       )}
 
-      <main className="flex-1 min-w-0 max-w-full p-3 md:p-8 overflow-x-auto overflow-y-auto overscroll-contain">
+      <main className="app-main flex-1" tabIndex={0} aria-label="Contenido principal">
         <EmployeeLicenseBanner />
         <RenewalOfferBanner />
         {children}
+        <div className="h-16 shrink-0" aria-hidden="true" />
       </main>
 
-      {/* Lupita de Zoom accesible en todas las pestañas */}
-      <div className="fixed bottom-3 right-3 z-30 sm:bottom-4 sm:right-4 print:hidden">
+      {/* Tamaño de lectura independiente del zoom nativo */}
+      <div className="absolute bottom-3 right-3 z-30 print:hidden">
         <ZoomLupitaButton className="shadow-lg backdrop-blur-md bg-card/90 border-primary/30" />
       </div>
 

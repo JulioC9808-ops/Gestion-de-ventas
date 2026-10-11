@@ -26,7 +26,7 @@ export default function TitleBar() {
 
   return (
     <div
-      className="flex items-center justify-between h-9 select-none transition-colors duration-300
+      className="flex items-center justify-between shrink-0 h-9 select-none transition-colors duration-300
                  bg-sidebar/90 backdrop-blur-xl
                  text-sidebar-foreground border-b border-sidebar-border/80 shadow-xs"
       style={{
