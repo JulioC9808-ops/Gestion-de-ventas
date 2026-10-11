@@ -36,7 +36,7 @@ export default function IntroPlayer() {
     if (meta) {
       meta.setAttribute(
         'content',
-        'width=device-width, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0, user-scalable=yes, viewport-fit=cover'
+        'width=device-width, initial-scale=1.0, viewport-fit=cover'
       );
     }
   }, []);
@@ -99,7 +99,7 @@ export default function IntroPlayer() {
   return (
     <div
       id="app-intro-overlay"
-      className={`fixed inset-0 z-[9999] w-screen h-screen overflow-hidden flex items-center justify-center select-none cursor-pointer transition-opacity duration-350 ease-out touch-none bg-background text-foreground ${
+      className={`fixed inset-0 z-[9999] w-full h-dvh overflow-hidden flex items-center justify-center select-none cursor-pointer transition-opacity duration-350 ease-out touch-none bg-background text-foreground ${
         isClosing ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
       onTouchMove={e => {

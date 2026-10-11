@@ -47,9 +47,7 @@ export default function Login() {
   const [isSuccess, setIsSuccess] = useState(false);
 
   useEffect(() => {
-    // La pantalla de Login en Android tiene escala fija al 80% (0.80) sin poder alterarse por pellizco
-    const defaultScale = isMobileDevice() ? 0.80 : 1.0;
-    setPinchZoomActive(false, defaultScale);
+    setPinchZoomActive(false);
   }, []);
 
   // Tema automático estricto según la hora del día (sin selectores manuales en el Login)
@@ -176,7 +174,7 @@ export default function Login() {
 
   return (
     <div
-      className={`login-container relative overflow-hidden transition-colors duration-700 ${
+      className={`login-container relative transition-colors duration-700 ${
         isAnimated && activeTheme === 'night' ? 'bg-gradient-to-br from-zinc-950 via-neutral-900 to-amber-950/40 text-foreground' : ''
       }`}
       style={bgStyle}
@@ -198,7 +196,7 @@ export default function Login() {
       {settings.backgroundUrl && <div className="absolute inset-0 bg-black/25 pointer-events-none" />}
 
       {/* Contenedor principal del Login */}
-      <div className="relative z-10 w-full max-w-md mx-4 py-4 flex flex-col items-center">
+      <div className="relative z-10 w-full max-w-md min-w-0 py-4 flex flex-col items-center">
         {/* Mascota Barista Interactiva FUERA del recuadro (si está habilitada en Ajustes) */}
         {isAnimated && (
           <div className="w-full flex justify-center -mb-2 z-20">

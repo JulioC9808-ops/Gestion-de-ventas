@@ -82,32 +82,6 @@
     text-shadow: none !important;
   }
 
-  /* Desplazamiento horizontal fluido en Android para tablas y ventanas */
-  [role="dialog"],
-  [data-radix-popper-content-wrapper],
-  .modal-content,
-  .overflow-touch-x {
-    max-width: 100%;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  @media (max-width: 768px) {
-    [role="dialog"] {
-      max-width: 95vw !important;
-      max-height: 92vh !important;
-      overflow-x: auto !important;
-      overflow-y: auto !important;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    table {
-      display: block;
-      width: 100%;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-  }
-
   /* Que los inputs nativos (date, number, time, color) hereden el esquema del tema */
   input[type="date"],
   input[type="time"],
@@ -134,39 +108,38 @@
   html {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
-    min-height: 100%;
-    min-height: 100vh;
-    min-height: 100dvh;
-    min-height: var(--app-viewport-height, 100dvh);
     width: 100%;
     height: 100%;
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
     @apply text-foreground;
     font-family: var(--font-body);
     background-color: hsl(var(--background));
-    min-height: 100%;
-    min-height: 100vh;
-    min-height: 100dvh;
-    min-height: calc(var(--app-viewport-height, 100dvh) / var(--gv-ui-zoom, 1));
-    min-width: calc(100% / var(--gv-ui-zoom, 1));
     width: 100%;
+    min-width: 0;
+    margin: 0;
   }
 
   #root {
-    min-height: 100%;
-    min-height: 100vh;
-    min-height: 100dvh;
-    min-height: calc(var(--app-viewport-height, 100dvh) / var(--gv-ui-zoom, 1));
-    min-width: calc(100% / var(--gv-ui-zoom, 1));
     width: 100%;
+    min-width: 0;
+    min-height: var(--app-viewport-height, 100dvh);
     display: flex;
     flex-direction: column;
-    flex: 1 1 auto;
     background-color: hsl(var(--background));
   }
 
+  /* Only the application shell owns page scrolling. Login/licensing use document scrolling. */
+  html:has(.app-shell), body:has(.app-shell) {
+    height: var(--app-viewport-height, 100dvh);
+    overflow: clip;
+  }
+  #root:has(.app-shell) {
+    height: var(--app-viewport-height, 100dvh);
+    min-height: 0;
+  }
   /* Cumplimiento de accesibilidad táctil para Android / dispositivos móviles */
   @media (pointer: coarse) {
     button, [role="button"], input[type="button"], input[type="submit"], select {
@@ -220,17 +193,55 @@
 
   .sidebar-nav {
     @apply bg-sidebar text-sidebar-foreground;
-    min-height: 100%;
-    min-height: 100vh;
-    min-height: 100dvh;
-    min-height: calc(var(--app-viewport-height, 100dvh) / var(--gv-ui-zoom, 1));
+    min-height: 0;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
-  .min-h-screen {
-    min-height: 100vh;
-    min-height: 100dvh;
-    min-height: calc(var(--app-viewport-height, 100dvh) / var(--gv-ui-zoom, 1));
+  .app-shell {
+    min-width: 0;
+    min-height: 0;
+    flex: 1 1 0%;
+    container-type: inline-size;
   }
+
+  .app-main {
+    min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-gutter: stable;
+    padding: max(0.75rem, env(safe-area-inset-top, 0px)) max(0.75rem, env(safe-area-inset-right, 0px)) max(1rem, env(safe-area-inset-bottom, 0px)) max(0.75rem, env(safe-area-inset-left, 0px));
+    overflow-wrap: anywhere;
+  }
+
+  .app-main > *, .app-main .grid > *, .app-main .flex > * {
+    min-width: 0;
+  }
+
+  .table-scroll {
+    width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+
+  .table-scroll:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  @media (min-width: 768px) {
+    .app-main { padding: 2rem; }
+  }
+
+  @container (max-width: 42rem) {
+    .app-main .grid-cols-2, .app-main .grid-cols-3,
+    .app-main .grid-cols-4, .app-main .grid-cols-5,
+    .app-main .grid-cols-7 { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  .min-h-screen { min-height: var(--app-viewport-height, 100dvh); }
 
   .stat-card {
     @apply glass-card p-6 transition-all duration-300 hover:scale-[1.02];
@@ -243,6 +254,7 @@
 
   .login-container {
     @apply min-h-screen flex-1 flex items-center justify-center;
+    padding: 1rem;
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
   }
@@ -255,11 +267,12 @@
   }
 
   .page-header {
-    @apply flex items-center justify-between mb-8;
+    @apply flex flex-wrap items-center justify-between gap-3 mb-8;
   }
 
   .page-title {
-    @apply text-3xl font-bold tracking-tight;
+    @apply text-3xl font-bold;
+    overflow-wrap: anywhere;
     font-family: var(--font-display);
     color: hsl(var(--foreground));
   }
@@ -307,7 +320,7 @@
   }
 
   .denomination-btn {
-    @apply h-12 px-4 rounded-lg font-semibold transition-all duration-200 border-2;
+    @apply min-h-12 h-auto py-2 px-4 rounded-lg font-semibold transition-all duration-200 border-2;
     @apply bg-card border-border text-foreground hover:border-primary hover:bg-primary/5;
   }
 
@@ -524,130 +537,23 @@ input[type="password"] {
   text-security: disc;
 }
 
-/* ===== Ajustes para pantallas de celular ===== */
+/* Mobile presentation: no global table conversion, font reduction or scroll overrides. */
 @media (max-width: 767px) {
-  html {
-    /* Texto legible en el celular sin que la interfaz se salga de pantalla */
-    font-size: 15px;
-  }
-  /* Permitir desplazamiento fluido en X/Y y zoom táctil en toda la app */
-  html, body {
-    touch-action: pan-x pan-y pinch-zoom;
-    -webkit-text-size-adjust: 100%;
-  }
-  body {
-    overflow-x: auto;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  /* Respeta la muesca / barra de gestos del teléfono y permite deslizar si la escala es grande */
-  main {
-    overflow-x: auto;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    padding-left: max(0.75rem, env(safe-area-inset-left)) !important;
-    padding-right: max(0.75rem, env(safe-area-inset-right)) !important;
-    padding-bottom: max(1rem, env(safe-area-inset-bottom)) !important;
-    padding-top: max(0.75rem, env(safe-area-inset-top)) !important;
-  }
-  /* Encabezados que no se recortan ni se salen de la pantalla */
-  .page-header {
-    @apply flex-col items-start gap-2;
-    margin-bottom: 1rem;
-  }
-  .page-title {
-    font-size: 1.3rem;
-    line-height: 1.25;
-    word-break: break-word;
-  }
-  /* Las tarjetas nunca se recortan; solo la tabla interior se desliza */
-  .glass-card,
-  .stat-card {
-    overflow: visible;
-    padding: 0.85rem !important;
-    max-width: 100%;
-  }
-  /* La tabla se envuelve en su propio contenedor deslizable */
-  .glass-card table,
-  .stat-card table {
-    display: block;
-    width: 100%;
-    max-width: 100%;
-    overflow-x: auto;
-    white-space: nowrap;
-    -webkit-overflow-scrolling: touch;
-  }
-  table {
-    font-size: 0.95rem;
-  }
-  .data-table th,
-  .data-table td {
-    padding: 0.6rem 0.55rem;
-  }
-  .data-table th {
-    font-size: 0.72rem;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-  /* Áreas táctiles cómodas (recomendación de Android: 48dp) */
-  button,
-  [role="tab"],
-  [role="menuitem"],
-  a.btn {
+  .page-header { align-items: flex-start; margin-bottom: 1rem; }
+  .page-header > .flex { flex-wrap: wrap; }
+  .glass-card, .stat-card { max-width: 100%; min-width: 0; }
+  input:not([type="range"]), select, textarea { min-height: 44px; }
+  .app-main button:not([role="switch"]), [role="dialog"] button:not([role="switch"]) {
+    height: auto;
     min-height: 44px;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
-  input,
-  select,
-  textarea {
-    font-size: 16px !important; /* evita el zoom automático de Android al enfocar */
-    min-height: 44px;
-    border-radius: 0.75rem;
-  }
-  /* Botones más redondeados y con más aire */
-  button {
-    border-radius: 0.75rem;
-  }
-  /* Las pestañas se pueden desplazar en vez de comprimirse */
-  [role="tablist"] {
-    overflow-x: auto;
-    justify-content: flex-start;
-    gap: 0.25rem;
-    padding: 0.25rem;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-  }
-  [role="tablist"]::-webkit-scrollbar { display: none; }
-  [role="tab"] {
-    flex: 0 0 auto;
-    padding-left: 0.9rem;
-    padding-right: 0.9rem;
-  }
-  /* Tarjetas con esquinas suaves y separación clara */
-  .glass-card,
-  .stat-card {
-    border-radius: 1rem;
-  }
-  .glass-card + .glass-card {
-    margin-top: 0.75rem;
-  }
-  /* Rejillas apretadas pasan a menos columnas para que quepan */
-  .grid.grid-cols-3,
-  .grid.grid-cols-4,
-  .grid.grid-cols-5 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .grid { gap: 0.65rem; }
-  .overflow-x-auto {
-    -webkit-overflow-scrolling: touch;
-  }
-  /* Diálogos anclados abajo, más fáciles de alcanzar con el pulgar */
-  [role="dialog"] {
-    max-width: calc(100vw - 1.25rem) !important;
-    max-height: 88vh;
-    overflow-y: auto;
-    border-radius: 1.25rem;
-    padding: 1rem !important;
-  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in-up, .animate-slide-in { animation: none; }
+  .stat-card:hover { transform: none; }
 }
 
 /* ================= LOGIN ANIMADO: 3D FLIP, NEÓN Y MASCOTA ================= */

@@ -14,8 +14,8 @@ export function initViewportManager(): () => void {
   const updateViewportDimensions = () => {
     try {
       const vv = window.visualViewport;
-      const height = vv ? vv.height : (window.innerHeight || document.documentElement.clientHeight);
-      const width = vv ? vv.width : (window.innerWidth || document.documentElement.clientWidth);
+      const height = vv ? vv.height * vv.scale : (window.innerHeight || document.documentElement.clientHeight);
+      const width = vv ? vv.width * vv.scale : (window.innerWidth || document.documentElement.clientWidth);
 
       const root = document.documentElement;
       if (root) {
