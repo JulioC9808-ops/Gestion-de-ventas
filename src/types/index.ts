@@ -22,6 +22,7 @@ export interface Product {
   category: string;
   unit: string;
   inventoryQty: number; // total in warehouse/almacen
+  imageUrl?: string | null; // foto de alta resolución del producto (Data URL)
 }
 
 export interface StockItem {

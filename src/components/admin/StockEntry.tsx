@@ -15,6 +15,7 @@ interface EntryAnnouncement {
   productId: string;
   productName: string;
   category: string;
+  imageUrl?: string | null;
   quantity: number;
   unit: string;
   timestamp: string;
@@ -52,6 +53,7 @@ export default function StockEntry() {
       productId,
       productName: targetProduct.name,
       category: targetProduct.category,
+      imageUrl: targetProduct.imageUrl || null,
       quantity: qty,
       unit: targetProduct.unit,
       timestamp: timeString,
@@ -118,9 +120,17 @@ export default function StockEntry() {
                     className="relative overflow-hidden flex items-center justify-between p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 backdrop-blur-sm shadow-sm hover:shadow-md transition-all group"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-xl shrink-0 border border-emerald-500/20">
-                        {getCategoryEmoji(entry.category)}
-                      </div>
+                      {entry.imageUrl ? (
+                        <img
+                          src={entry.imageUrl}
+                          alt={entry.productName}
+                          className="w-10 h-10 rounded-lg object-cover border border-emerald-500/30 shrink-0 shadow-xs"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-xl shrink-0 border border-emerald-500/20">
+                          {getCategoryEmoji(entry.category)}
+                        </div>
+                      )}
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
                           <p className="font-bold text-sm text-foreground truncate">{entry.productName}</p>
@@ -168,9 +178,19 @@ export default function StockEntry() {
               return (
                 <tr key={p.id}>
                   <td className="font-medium">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{getCategoryEmoji(p.category)}</span>
-                      {p.name}
+                    <div className="flex items-center gap-3">
+                      {p.imageUrl ? (
+                        <img
+                          src={p.imageUrl}
+                          alt={p.name}
+                          className="w-10 h-10 rounded-lg object-cover border border-border shadow-xs shrink-0"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-muted/60 border border-border/50 flex items-center justify-center text-xl shrink-0">
+                          {getCategoryEmoji(p.category)}
+                        </div>
+                      )}
+                      <span className="font-semibold text-foreground">{p.name}</span>
                     </div>
                   </td>
                   <td>
