@@ -76,7 +76,7 @@
       "menuCategory": "GEVEN",
       "installerLanguages": ["es_ES"],
       "language": "3082",
-      "multiLanguageInstaller": false,
+      "multiLanguageInstaller": true,
       "displayLanguageSelector": false
     }
   },

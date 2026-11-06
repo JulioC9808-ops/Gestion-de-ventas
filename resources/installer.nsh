@@ -14,6 +14,32 @@
   StrCpy $isForceMachineInstall 0
 !macroend
 
+; Definición de textos en Español para Modern UI (MUI_TEXT_*)
+!define MUI_TEXT_LICENSE_TITLE "Acuerdo de licencia"
+!define MUI_TEXT_LICENSE_SUBTITLE "Por favor, revise los términos de la licencia antes de instalar ${PRODUCT_NAME}."
+!define MUI_INNERTEXT_LICENSE_TOP "Presione Re Pág (Page Down) para ver el resto del acuerdo."
+!define MUI_INNERTEXT_LICENSE_BOTTOM "Si acepta todos los términos del acuerdo, haga clic en Acepto para continuar."
+!define MUI_INNERTEXT_LICENSE_BOTTOM_CHECKBOX "Si acepta los términos del acuerdo, marque la casilla abajo. Debe aceptar el acuerdo para instalar ${PRODUCT_NAME}. Haga clic en Siguiente para continuar."
+!define MUI_INNERTEXT_LICENSE_BOTTOM_RADIOBUTTONS "Si acepta los términos del acuerdo, seleccione la primera opción abajo. Debe aceptar el acuerdo para instalar ${PRODUCT_NAME}. Haga clic en Siguiente para continuar."
+
+!define MUI_TEXT_DIRECTORY_TITLE "Elegir lugar de instalación"
+!define MUI_TEXT_DIRECTORY_SUBTITLE "Elija la carpeta en la cual se instalará ${PRODUCT_NAME}."
+
+!define MUI_TEXT_INSTALLING_TITLE "Instalando"
+!define MUI_TEXT_INSTALLING_SUBTITLE "Por favor, espere mientras ${PRODUCT_NAME} se instala en su computadora."
+
+!define MUI_TEXT_FINISH_TITLE "Completando la instalación de ${PRODUCT_NAME}"
+!define MUI_TEXT_FINISH_SUBTITLE "La instalación de ${PRODUCT_NAME} se ha completado en su sistema."
+!define MUI_TEXT_FINISH_INFO_TITLE "Completando la instalación de ${PRODUCT_NAME}"
+!define MUI_TEXT_FINISH_INFO_TEXT "${PRODUCT_NAME} ha sido instalado en su sistema.$\r$\n$\r$\nHaga clic en Finalizar para cerrar este asistente."
+!define MUI_TEXT_FINISH_INFO_REBOOT "Su sistema debe ser reiniciado para completar la instalación de ${PRODUCT_NAME}. ¿Desea reiniciar ahora?"
+!define MUI_TEXT_FINISH_REBOOTNOW "Reiniciar ahora"
+!define MUI_TEXT_FINISH_REBOOTLATER "Deseo reiniciar manualmente más tarde"
+!define MUI_TEXT_FINISH_RUN "Ejecutar ${PRODUCT_NAME}"
+!define MUI_TEXT_FINISH_SHOWREADME "Mostrar Léame"
+
+!define MUI_BUTTONTEXT_FINISH "&Finalizar"
+
 !ifndef BUILD_UNINSTALLER
 
   ; Definición del hook GUIInit de Modern UI 2
@@ -25,7 +51,7 @@
   Var g_gevenSidebarInitialized
 
   !macro customHeader
-    ; Mueve un control hijo de $HWNDPARENT 164 px hacia la derecha
+    ; Mueve un control hijo de $HWNDPARENT 164 px hacia la derecha sin alterar su ancho ni alto
     Function GevenShiftControlRight
       Exch $R0 ; ID del control
       Push $R1
@@ -43,17 +69,22 @@
         System::Call '*$1(i .r2, i .r3, i .r4, i .r5)'
         System::Free $1
 
+        ; r4 = rect.right, r2 = rect.left -> ancho original = r4 - r2
+        IntOp $4 $4 - $2
+        ; r5 = rect.bottom, r3 = rect.top -> alto original = r5 - r3
+        IntOp $5 $5 - $3
+
         System::Call '*(i, i) p.r1'
         System::Call '*$1(i r2, i r3)'
         System::Call 'user32::ScreenToClient(p $HWNDPARENT, p r1)'
         System::Call '*$1(i .r2, i .r3)'
         System::Free $1
 
-        IntOp $5 $4 - $2 ; ancho
-        IntOp $6 $5 - $3 ; alto
         IntOp $2 $2 + 164 ; nueva posición X
 
-        System::Call 'user32::SetWindowPos(p $R1, p 0, i r2, i r3, i r5, i r6, i 0x14)'
+        ; SetWindowPos: x=r2, y=r3, cx=r4 (ancho original), cy=r5 (alto original), uFlags=0x14 (SWP_NOZORDER|SWP_NOACTIVATE)
+        System::Call 'user32::SetWindowPos(p $R1, p 0, i r2, i r3, i r4, i r5, i 0x14)'
+        System::Call 'user32::InvalidateRect(p $R1, p 0, i 1)'
       ${EndIf}
 
       Pop $6
@@ -89,11 +120,15 @@
         System::Call '*$1(i .r2, i .r3)'
         System::Free $1
 
-        IntOp $5 $4 - $2 ; ancho original
-        IntOp $6 $5 - $3 ; alto
-        IntOp $5 $5 + 164 ; ensanchado
+        ; r4 = rect.right, r2 = rect.left -> ancho original = r4 - r2
+        IntOp $4 $4 - $2
+        ; r5 = rect.bottom, r3 = rect.top -> alto original = r5 - r3
+        IntOp $5 $5 - $3
+        ; ensanchado en 164 px
+        IntOp $4 $4 + 164
 
-        System::Call 'user32::SetWindowPos(p $R1, p 0, i r2, i r3, i r5, i r6, i 0x14)'
+        ; SetWindowPos: x=r2, y=r3, cx=r4, cy=r5
+        System::Call 'user32::SetWindowPos(p $R1, p 0, i r2, i r3, i r4, i r5, i 0x14)'
       ${EndIf}
 
       Pop $6
@@ -123,16 +158,19 @@
         System::Call '*$1(i .r2, i .r3, i .r4, i .r5)'
         System::Free $1
 
+        ; r4 = rect.right, r2 = rect.left -> ancho
+        IntOp $4 $4 - $2
+        ; r5 = rect.bottom, r3 = rect.top -> alto
+        IntOp $5 $5 - $3
+
         System::Call '*(i, i) p.r1'
         System::Call '*$1(i r2, i r3)'
         System::Call 'user32::ScreenToClient(p $HWNDPARENT, p r1)'
         System::Call '*$1(i .r2, i .r3)'
         System::Free $1
 
-        IntOp $5 $4 - $2 ; ancho
-        IntOp $6 $5 - $3 ; alto
-
-        System::Call 'user32::SetWindowPos(p $R1, p 0, i 164, i r3, i r5, i r6, i 0x14)'
+        ; SetWindowPos: x=164, y=r3, cx=r4, cy=r5
+        System::Call 'user32::SetWindowPos(p $R1, p 0, i 164, i r3, i r4, i r5, i 0x14)'
       ${EndIf}
 
       Pop $6
@@ -173,9 +211,9 @@
           System::Free $1
 
           ${If} $r2 < 164
-            IntOp $5 $4 - $2 ; ancho
-            IntOp $6 $5 - $3 ; alto
-            System::Call 'user32::SetWindowPos(p $0, p 0, i 164, i r3, i r5, i r6, i 0x14)'
+            IntOp $4 $4 - $2 ; ancho
+            IntOp $5 $5 - $3 ; alto
+            System::Call 'user32::SetWindowPos(p $0, p 0, i 164, i r3, i r4, i r5, i 0x14)'
           ${EndIf}
         ${EndIf}
       ${EndIf}
@@ -268,5 +306,11 @@
   !macroend
 
 !endif
+
+!macro customInit
+  ; Asegurar que el instalador siempre use el idioma español (LCID 3082)
+  ; incluso en sistemas configurados en inglés u otros idiomas
+  StrCpy $LANGUAGE 3082
+!macroend
 
 

@@ -134,56 +134,56 @@ export default function ShiftSync() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-w-0">
       <div className="page-header">
-        <div className="flex items-center gap-3">
-          <h1 className="page-title">Centro de Sincronización</h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="page-title break-words">Centro de Sincronización</h1>
           <HelpTip>
             Recibe cierres de turno de tus empleados o sincroniza todos los datos del negocio con otro Administrador sin internet.
           </HelpTip>
         </div>
       </div>
 
-      {/* Selector de Pestañas */}
-      <div className="flex items-center gap-2 border-b border-border pb-3">
+      {/* Selector de Pestañas adaptativo */}
+      <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 border-b border-border pb-3">
         <Button
           variant={activeTab === 'shift' ? 'default' : 'outline'}
           size="sm"
           onClick={() => setActiveTab('shift')}
-          className="text-xs h-9"
+          className="text-xs h-auto min-h-[38px] py-2 px-3.5 flex-1 sm:flex-initial justify-center text-center whitespace-normal"
         >
-          <QrCode className="w-3.5 h-3.5 mr-1.5" />
-          Cierres de Turno (Empleados)
+          <QrCode className="w-3.5 h-3.5 mr-1.5 shrink-0" />
+          <span>Cierres de Turno (Empleados)</span>
         </Button>
         <Button
           variant={activeTab === 'admin' ? 'default' : 'outline'}
           size="sm"
           onClick={() => setActiveTab('admin')}
-          className="text-xs h-9"
+          className="text-xs h-auto min-h-[38px] py-2 px-3.5 flex-1 sm:flex-initial justify-center text-center whitespace-normal"
         >
-          <Shield className="w-3.5 h-3.5 mr-1.5 text-warning" />
-          Sincronizar entre Administradores
+          <Shield className="w-3.5 h-3.5 mr-1.5 text-warning shrink-0" />
+          <span>Sincronizar entre Administradores</span>
         </Button>
       </div>
 
       {/* PESTAÑA 1: Cierres de Turno de Empleados */}
       {activeTab === 'shift' && (
-        <div className="glass-card p-6 max-w-xl mx-auto text-center space-y-4">
-          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+        <div className="glass-card p-4 sm:p-6 w-full max-w-xl mx-auto text-center space-y-4 min-w-0">
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto shrink-0">
             <QrCode className="w-8 h-8 text-primary" />
           </div>
           <h2 className="text-lg font-display font-bold">Recibir Cierre de Turno</h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground leading-relaxed">
             Pídele a tu empleado que abra la sección "Cierre de Turno" y muestre su QR. Apunta la cámara hacia su pantalla para transferir las ventas del turno a tu dispositivo.
           </p>
-          <Button onClick={() => setScanShiftOpen(true)} className="w-full text-sm font-semibold h-10 shadow-sm">
-            <ScanLine className="w-4 h-4 mr-2" /> Escanear QR del Empleado
+          <Button onClick={() => setScanShiftOpen(true)} className="w-full text-sm font-semibold h-auto min-h-[40px] py-2 shadow-sm">
+            <ScanLine className="w-4 h-4 mr-2 shrink-0" /> Escanear QR del Empleado
           </Button>
           <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 text-xs text-muted-foreground text-left space-y-1">
             <p className="font-semibold text-foreground flex items-center gap-1.5">
-              <Smartphone className="w-3.5 h-3.5 text-primary" /> Transferencia directa sin internet
+              <Smartphone className="w-3.5 h-3.5 text-primary shrink-0" /> Transferencia directa sin internet
             </p>
-            <p>
+            <p className="leading-relaxed">
               El cierre se registra en tu sistema y de inmediato se te muestra un QR de confirmación (ACK) para que el empleado pueda cerrar sesión tranquilamente.
             </p>
           </div>
@@ -192,26 +192,26 @@ export default function ShiftSync() {
 
       {/* PESTAÑA 2: Sincronización entre Administradores */}
       {activeTab === 'admin' && (
-        <div className="glass-card p-6 max-w-2xl mx-auto space-y-5">
+        <div className="glass-card p-4 sm:p-6 w-full max-w-2xl mx-auto space-y-5 min-w-0">
           <div className="text-center space-y-2 pb-3 border-b border-border/60">
-            <div className="w-14 h-14 rounded-2xl bg-warning/10 text-warning flex items-center justify-center mx-auto">
+            <div className="w-14 h-14 rounded-2xl bg-warning/10 text-warning flex items-center justify-center mx-auto shrink-0">
               <Shield className="w-7 h-7" />
             </div>
             <h2 className="text-lg font-display font-bold">Sincronización Directa entre Administradores</h2>
-            <p className="text-xs text-muted-foreground max-w-md mx-auto">
+            <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
               Diseñado para cuando hay dos administradores al frente del negocio. Permite transferir todo el catálogo, inventario, reportes de ventas y tasas entre terminales de forma instantánea.
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Opción 1: Emitir QR */}
-            <div className="p-4 rounded-xl border border-border/80 bg-background/50 flex flex-col justify-between space-y-3">
+            <div className="p-4 rounded-xl border border-border/80 bg-background/50 flex flex-col justify-between space-y-3 min-w-0">
               <div className="space-y-1.5">
                 <div className="p-2 rounded-lg bg-primary/10 text-primary w-fit">
                   <QrCode className="w-4 h-4" />
                 </div>
                 <h3 className="text-sm font-semibold text-foreground">1. Emitir Sincronización</h3>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground leading-relaxed">
                   Muestra el código QR con todos los datos actuales del negocio para que el otro Administrador lo escanee.
                 </p>
               </div>
@@ -220,38 +220,38 @@ export default function ShiftSync() {
                 size="sm"
                 onClick={handleStartAdminShare}
                 disabled={sharingAdmin}
-                className="w-full text-xs font-semibold h-9"
+                className="w-full text-xs font-semibold h-auto min-h-[36px] py-2"
               >
-                <RefreshCw className={`w-3.5 h-3.5 mr-1.5 text-primary ${sharingAdmin ? 'animate-spin' : ''}`} />
-                {sharingAdmin ? 'Generando...' : 'Mostrar QR de Admin'}
+                <RefreshCw className={`w-3.5 h-3.5 mr-1.5 text-primary shrink-0 ${sharingAdmin ? 'animate-spin' : ''}`} />
+                <span>{sharingAdmin ? 'Generando...' : 'Mostrar QR de Admin'}</span>
               </Button>
             </div>
 
             {/* Opción 2: Escanear QR */}
-            <div className="p-4 rounded-xl border border-border/80 bg-background/50 flex flex-col justify-between space-y-3">
+            <div className="p-4 rounded-xl border border-border/80 bg-background/50 flex flex-col justify-between space-y-3 min-w-0">
               <div className="space-y-1.5">
                 <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500 w-fit">
                   <ScanLine className="w-4 h-4" />
                 </div>
                 <h3 className="text-sm font-semibold text-foreground">2. Escanear y Recibir</h3>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground leading-relaxed">
                   Apunta tu cámara al QR que está mostrando el otro Administrador para recibir y actualizar todos los datos.
                 </p>
               </div>
               <Button
                 size="sm"
                 onClick={() => setScanAdminOpen(true)}
-                className="w-full text-xs font-semibold h-9"
+                className="w-full text-xs font-semibold h-auto min-h-[36px] py-2"
               >
-                <ScanLine className="w-3.5 h-3.5 mr-1.5" />
-                Escanear QR de Admin
+                <ScanLine className="w-3.5 h-3.5 mr-1.5 shrink-0" />
+                <span>Escanear QR de Admin</span>
               </Button>
             </div>
           </div>
 
-          <div className="p-3 rounded-lg bg-warning/10 border border-warning/30 text-[11px] text-warning space-y-1">
+          <div className="p-3.5 rounded-lg bg-warning/10 border border-warning/30 text-xs sm:text-[11px] text-warning space-y-1.5 leading-relaxed break-words">
             <p className="font-semibold flex items-center gap-1.5">
-              <Shield className="w-3.5 h-3.5" /> Protocolo de Seguridad Admin
+              <Shield className="w-3.5 h-3.5 shrink-0" /> Protocolo de Seguridad Admin
             </p>
             <p>
               Solo funciona con sesión de Administrador abierta Y aplicación licenciada. La pantalla de licencia jamás acepta estos códigos, así nadie sin licencia puede capturar los datos. La licencia y preferencias visuales de cada equipo se conservan intactas.

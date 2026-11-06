@@ -5,10 +5,43 @@ const http = require('http');
 const os = require('os');
 const crypto = require('crypto');
 
+const fs = require('fs');
+
 let mainWindow = null;
 let syncServer = null;
 let syncPayload = '';
 let syncToken = '';
+
+// Sistema de diagnóstico y registro seguro para depurar errores de carga en producción
+const logDir = path.join(app.getPath('userData'), 'logs');
+const logFile = path.join(logDir, 'app-runtime.log');
+
+function logDiagnostic(level, message, details = '') {
+  const timestamp = new Date().toISOString();
+  const line = `[${timestamp}] [${level}] ${message} ${details ? JSON.stringify(details) : ''}\n`;
+  try {
+    if (!fs.existsSync(logDir)) {
+      fs.mkdirSync(logDir, { recursive: true });
+    }
+    fs.appendFileSync(logFile, line);
+  } catch {
+    // Silencioso
+  }
+  if (level === 'ERROR' || level === 'FATAL') {
+    console.error(`[${level}]`, message, details);
+  } else {
+    console.log(`[${level}]`, message, details);
+  }
+}
+
+// Capturar excepciones globales del proceso principal
+process.on('uncaughtException', (err) => {
+  logDiagnostic('FATAL', 'UncaughtException en proceso principal:', err?.stack || err?.message || String(err));
+});
+
+process.on('unhandledRejection', (reason) => {
+  logDiagnostic('ERROR', 'UnhandledRejection en proceso principal:', reason?.stack || reason?.message || String(reason));
+});
 
 function localIpv4() {
   for (const addresses of Object.values(os.networkInterfaces())) {
@@ -27,6 +60,10 @@ function stopSyncServer() {
 }
 
 function createWindow() {
+  logDiagnostic('INFO', 'Iniciando creación de ventana principal', { isPackaged: app.isPackaged, version: app.getVersion() });
+
+  const appIconPath = path.join(__dirname, '..', 'resources', 'icon.ico');
+
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
@@ -38,7 +75,7 @@ function createWindow() {
     autoHideMenuBar: true,
     frame: false,
     titleBarStyle: 'hidden',
-    icon: path.join(__dirname, '..', 'build', 'icon.ico'),
+    icon: fs.existsSync(appIconPath) ? appIconPath : undefined,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -46,6 +83,19 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.cjs'),
       devTools: !app.isPackaged,
     },
+  });
+
+  // Diagnóstico del proceso renderer
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+    logDiagnostic('ERROR', 'did-fail-load detectado en webContents:', { errorCode, errorDescription, validatedURL });
+  });
+
+  mainWindow.webContents.on('render-process-gone', (event, details) => {
+    logDiagnostic('FATAL', 'render-process-gone:', details);
+  });
+
+  mainWindow.webContents.on('crashed', (event, killed) => {
+    logDiagnostic('FATAL', 'El proceso de renderizado crasheó:', { killed });
   });
 
   if (app.isPackaged) {
@@ -62,11 +112,20 @@ function createWindow() {
   }
 
   const indexHtml = path.join(__dirname, '..', 'dist', 'index.html');
+  logDiagnostic('INFO', 'Cargando index.html desde:', indexHtml);
+
+  if (!fs.existsSync(indexHtml)) {
+    logDiagnostic('ERROR', 'El archivo index.html no existe en la ruta esperada:', indexHtml);
+  }
+
   mainWindow.loadFile(indexHtml).catch((err) => {
-    console.error('Error cargando index.html:', err);
+    logDiagnostic('ERROR', 'Error al ejecutar loadFile(index.html):', err?.stack || err?.message || String(err));
   });
 
-  mainWindow.once('ready-to-show', () => mainWindow?.show());
+  mainWindow.once('ready-to-show', () => {
+    logDiagnostic('INFO', 'Ventana principal lista para mostrarse (ready-to-show)');
+    mainWindow?.show();
+  });
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('mailto:')) {

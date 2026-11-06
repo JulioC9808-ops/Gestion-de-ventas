@@ -8,6 +8,9 @@ const os = require('os');
 const crypto = require('crypto');
 
 function readHardwareParts() {
+  if (process.platform !== 'win32') {
+    return ['', '', '', ''];
+  }
   try {
     const { execSync } = require('child_process');
     const script = `
@@ -19,7 +22,7 @@ $ram = ((Get-CimInstance Win32_PhysicalMemory | ForEach-Object { $_.SerialNumber
 `;
     const out = execSync(
       `powershell -NoProfile -ExecutionPolicy Bypass -Command "${script.replace(/"/g, '\\"')}"`,
-      { encoding: 'utf8', timeout: 5000, windowsHide: true }
+      { encoding: 'utf8', timeout: 4000, windowsHide: true }
     ).trim();
     const raw = out.split('\n').map(s => (s || '').trim().toUpperCase()).slice(0, 4);
     while (raw.length < 4) raw.push('');
@@ -35,7 +38,13 @@ $ram = ((Get-CimInstance Win32_PhysicalMemory | ForEach-Object { $_.SerialNumber
   }
 }
 
-const PARTS = readHardwareParts();
+let PARTS = ['', '', '', ''];
+try {
+  PARTS = readHardwareParts();
+} catch {
+  PARTS = ['', '', '', ''];
+}
+
 // Combinado (misma fórmula que la versión anterior: las licencias ya activadas siguen valiendo)
 const MACHINE_ID = crypto.createHash('sha256').update(PARTS.join('##')).digest('hex');
 // Por componente: vacío = no válido (no cuenta para el 3 de 4)
