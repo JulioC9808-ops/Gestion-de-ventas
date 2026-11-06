@@ -25,10 +25,10 @@
 - **Catálogo de productos**: Registro por categorías, precios de venta, costos y control de stock mínimo.
 - **Entradas y reposiciones de almacén**: Registro de movimientos de entrada, reposición a piso de venta y mermas.
 - **Historial de movimientos**: Auditoría completa con fecha, responsable y concepto.
-- **Escáner de código de barras**: Soporte para cámara en dispositivos móviles y lectores de código de barras en PC.
+- **Escáner de código de barras**: Soporte para cámara en dispositivos móviles.
 
 ### 3. 💱 Monitor de Tasas de Cambio en Vivo (elTOQUE)
-- **Monedas soportadas**: USD, EUR, MLC, Zelle, Tarjeta Clásica (CLA), MXN, CAD, GBP, CHF, BRL, COP, CLP, ARS, VES, PEN, DOP y más.
+- **Monedas soportadas**: USD, EUR, MLC, Zelle, Tarjeta Clásica (CLA), MXN, CAD.
 - **Banderas SVG vectoriales**: Visualización nítida y consistente tanto en Windows como en Android.
 - **Iconos nativos y deltas de fluctuación**: Indicadores de variación (▲ subida / ▼ bajada) con colores representativos.
 - **Automatización de sincronización**: Actualizaciones programadas a las **10:00 AM** y **10:00 PM**, con caché local offline y opción de recarga manual.
