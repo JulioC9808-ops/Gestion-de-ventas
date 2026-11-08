@@ -63,10 +63,10 @@
       "uninstallerSidebar": "resources/installersidebar.bmp",
       "license": "resources/license.txt",
       "include": "resources/installer.nsh",
-      "oneClick": false,
+      "oneClick": true,
       "perMachine": false,
       "allowElevation": false,
-      "allowToChangeInstallationDirectory": true,
+      "allowToChangeInstallationDirectory": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "GEVEN",
@@ -76,7 +76,7 @@
       "menuCategory": "GEVEN",
       "installerLanguages": ["es_ES"],
       "language": "3082",
-      "multiLanguageInstaller": true,
+      "multiLanguageInstaller": false,
       "displayLanguageSelector": false
     }
   },

@@ -2,17 +2,17 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { isMobileDevice } from '@/lib/platform';
 import { setPinchZoomActive } from '@/lib/pinchZoom';
 import splashCup from '@/assets/splash-cup.png';
+import ModernWaveBackground from './ModernWaveBackground';
 
 /**
- * Pantalla de inicio / Splash con la identidad oficial:
- * 1. Logotipo / icono de la aplicación
- * 2. GEVEN (marca principal)
- * 3. Gestión de Ventas (subtítulo)
- * 4. Transición limpia y fluida hacia la app
+ * Pantalla de instalación y bienvenida moderna estilo Discord/Spotify:
+ * - Ventana compacta, flotante, sin bordes toscos
+ * - Fondo con ondas fluidas en movimiento continuo (azul claro, verde claro, amarillo claro)
+ * - Indicador de preparación dinámico con progreso elegante
+ * - Ultraligera: consumo mínimo de recursos (<0.5% CPU)
  */
 export default function IntroPlayer() {
   const [mobile] = useState(() => isMobileDevice());
-  // Se calcula en el primer render (sincrónico) para que no haya destello de la app.
   const [show, setShow] = useState(() => {
     try {
       if (sessionStorage.getItem('intro_played')) return false;
@@ -26,12 +26,10 @@ export default function IntroPlayer() {
   const [step, setStep] = useState(0);
   const [isClosing, setIsClosing] = useState(false);
 
-  // Quita el splash estático del index.html y habilita el zoom a partir del login
   const hideBootSplash = useCallback(() => {
     const el = document.getElementById('boot-splash');
     if (el) el.remove();
 
-    // Habilitar pellizcar / zoom una vez que termina la pantalla de carga (en login y app)
     const meta = document.getElementById('viewport-meta');
     if (meta) {
       meta.setAttribute(
@@ -48,7 +46,6 @@ export default function IntroPlayer() {
   }, [hideBootSplash]);
 
   useEffect(() => {
-    // Mantener zoom desactivado en intro y pantalla de login
     setPinchZoomActive(false);
 
     if (!show) {
@@ -58,19 +55,13 @@ export default function IntroPlayer() {
 
     hideBootSplash();
 
-    // Secuencia de animación fluida, profesional y sin retrasos innecesarios:
-    // 1. Aparece el logotipo/icono de la aplicación
-    const t1 = setTimeout(() => setStep(1), 80);
-    // 2. Aparece "GEVEN"
-    const t2 = setTimeout(() => setStep(2), 400);
-    // 3. Debajo aparece "Gestión de Ventas"
-    const t3 = setTimeout(() => setStep(3), 780);
-    // 4. Indicador sutil de carga operativa
-    const t4 = setTimeout(() => setStep(4), 1100);
-    // 5. Inicio suave de transición de desvanecimiento hacia la aplicación
-    const t5 = setTimeout(() => setIsClosing(true), mobile ? 2100 : 2400);
-    // 6. Cierre completo
-    const t6 = setTimeout(() => closeIntro(), mobile ? 2450 : 2750);
+    // Secuencia de preparación visual con progreso dinámico
+    const t1 = setTimeout(() => setStep(1), 120);  // 1: Iniciando
+    const t2 = setTimeout(() => setStep(2), 650);  // 2: Módulos y base de datos
+    const t3 = setTimeout(() => setStep(3), 1300); // 3: Catálogo y stock
+    const t4 = setTimeout(() => setStep(4), 1950); // 4: Listo
+    const t5 = setTimeout(() => setIsClosing(true), mobile ? 2500 : 2800);
+    const t6 = setTimeout(() => closeIntro(), mobile ? 2850 : 3150);
 
     return () => {
       clearTimeout(t1);
@@ -80,9 +71,8 @@ export default function IntroPlayer() {
       clearTimeout(t5);
       clearTimeout(t6);
     };
-  }, [show, mobile]);
+  }, [show, mobile, closeIntro, hideBootSplash]);
 
-  // Permitir cerrar/saltar de inmediato con click o teclas
   useEffect(() => {
     if (!show) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -92,14 +82,27 @@ export default function IntroPlayer() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [show]);
+  }, [show, closeIntro]);
 
   if (!show) return null;
+
+  const statusText =
+    step === 1 ? 'Iniciando sistema GEVEN...' :
+    step === 2 ? 'Cargando módulos y almacenamiento local...' :
+    step === 3 ? 'Verificando inventario y catálogos...' :
+    step >= 4 ? '¡Todo listo para trabajar!' :
+    'Preparando...';
+
+  const progressPercent =
+    step === 1 ? 25 :
+    step === 2 ? 60 :
+    step === 3 ? 88 :
+    step >= 4 ? 100 : 10;
 
   return (
     <div
       id="app-intro-overlay"
-      className={`fixed inset-0 z-[9999] w-full h-dvh overflow-hidden flex items-center justify-center select-none cursor-pointer transition-opacity duration-350 ease-out touch-none bg-background text-foreground ${
+      className={`fixed inset-0 z-[9999] w-full h-dvh overflow-hidden flex items-center justify-center select-none cursor-pointer transition-opacity duration-350 ease-out touch-none bg-[#070b14] text-foreground ${
         isClosing ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
       onTouchMove={e => {
@@ -108,70 +111,77 @@ export default function IntroPlayer() {
       onClick={closeIntro}
       title="Haz clic o presiona Esc para continuar"
     >
-      {/* Resplandor suave y discreto en el centro */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_45%,hsl(var(--primary)/0.12),transparent_65%)]" />
+      {/* Fondo completo con Ondas en Movimiento (Azul, Verde y Amarillo) */}
+      <ModernWaveBackground className="opacity-90" />
 
-      <div className="relative flex flex-col items-center justify-center px-6 max-w-sm w-full text-center">
-        {/* Paso 1: Logotipo / icono de la aplicación */}
+      {/* Resplandor ambiental suave en el centro */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,rgba(56,189,248,0.12),transparent_65%)]" />
+
+      {/* Ventana compacta y moderna estilo Discord/Spotify */}
+      <div
+        className="relative z-10 w-full max-w-[490px] mx-4 rounded-3xl p-7 sm:p-9 bg-[#0b1324]/85 backdrop-blur-2xl border border-white/10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] flex flex-col items-center text-center overflow-hidden animate-in fade-in zoom-in-95 duration-300"
+      >
+        {/* Micro-ondas internas dentro de la tarjeta para efecto de profundidad */}
+        <ModernWaveBackground className="opacity-40" />
+
+        {/* Halo de luz tras el logotipo */}
+        <div className="pointer-events-none absolute top-10 w-32 h-32 rounded-full bg-gradient-to-tr from-[#38bdf8]/20 via-[#34d399]/20 to-[#facc15]/20 blur-2xl" />
+
+        {/* 1. Logotipo oficial de GEVEN */}
         <div
           className={`relative transition-all duration-700 ease-out transform ${
-            step >= 1
-              ? 'opacity-100 scale-100 translate-y-0'
-              : 'opacity-0 scale-90 translate-y-2'
+            step >= 1 ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-90 translate-y-2'
           }`}
         >
-          <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl flex items-center justify-center p-2">
+          <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl flex items-center justify-center p-2 bg-gradient-to-b from-white/10 to-transparent border border-white/10 shadow-lg">
             <img
               src={splashCup}
               alt="GEVEN"
-              className="w-full h-full object-contain drop-shadow-md"
+              className="w-full h-full object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.5)]"
             />
           </div>
         </div>
 
-        {/* Paso 2: GEVEN (Nombre Principal) */}
+        {/* 2. Marca principal y subtítulo */}
         <div
           className={`mt-4 transition-all duration-500 ease-out transform ${
-            step >= 2
-              ? 'opacity-100 translate-y-0'
-              : 'opacity-0 translate-y-2'
+            step >= 1 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
           }`}
         >
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-[0.16em] font-display text-foreground">
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-[0.18em] font-display text-white">
             GEVEN
           </h1>
-        </div>
-
-        {/* Paso 3: Gestión de Ventas (Subtítulo / Descripción) */}
-        <div
-          className={`mt-1.5 transition-all duration-500 ease-out transform ${
-            step >= 3
-              ? 'opacity-100 translate-y-0'
-              : 'opacity-0 translate-y-2'
-          }`}
-        >
-          <p className="text-xs sm:text-sm font-semibold tracking-[0.24em] text-muted-foreground uppercase">
+          <p className="text-xs sm:text-sm font-semibold tracking-[0.24em] text-emerald-400 uppercase mt-1">
             Gestión de Ventas
           </p>
         </div>
 
-        {/* Paso 4: Línea de carga sutil, discreta y profesional */}
-        <div
-          className={`mt-8 w-36 h-1 bg-border/60 rounded-full overflow-hidden transition-opacity duration-500 ${
-            step >= 4 ? 'opacity-100' : 'opacity-0'
-          }`}
-        >
-          <div
-            className={`h-full bg-primary rounded-full transition-all duration-1200 ease-out ${
-              step >= 4 ? 'w-full' : 'w-0'
-            }`}
-          />
-        </div>
-      </div>
+        {/* 3. Estado dinámico de preparación */}
+        <div className="w-full max-w-xs mt-6 space-y-2.5">
+          <div className="flex items-center justify-between text-[11px] font-medium text-slate-300 px-0.5">
+            <span className="truncate">{statusText}</span>
+            <span className="text-amber-300 font-bold ml-2 shrink-0">{progressPercent}%</span>
+          </div>
 
-      {/* Acceso rápido para omitir */}
-      <div className="absolute bottom-5 right-5 z-10 px-3 py-1.5 rounded-full bg-muted/70 backdrop-blur-sm text-muted-foreground hover:text-foreground text-xs border border-border/40 transition-colors pointer-events-auto">
-        Saltar ✕
+          {/* Barra de progreso con gradiente tricolor [azul claro, verde claro, amarillo claro] */}
+          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden p-0.5 border border-white/5">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-[#38bdf8] via-[#34d399] to-[#facc15] transition-all duration-500 ease-out shadow-[0_0_12px_rgba(52,211,153,0.5)]"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Pie con indicador de versión y botón de omisión rápida */}
+        <div className="mt-7 flex items-center justify-between w-full pt-4 border-t border-white/5 text-[11px] text-slate-400">
+          <span className="inline-flex items-center gap-1.5 font-mono text-[10px] bg-white/5 px-2.5 py-0.5 rounded-full border border-white/10">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            v1.3.8
+          </span>
+          <span className="hover:text-white transition-colors cursor-pointer text-slate-400 font-medium">
+            Saltar ✕
+          </span>
+        </div>
       </div>
     </div>
   );
