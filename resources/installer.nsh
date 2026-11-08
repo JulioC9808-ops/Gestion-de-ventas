@@ -183,7 +183,8 @@
     FunctionEnd
 
     ; Timer periódico para asegurar que el Sidebar siempre permanezca visible,
-    ; en el orden Z correcto y que ninguna página secundaria lo solape al navegar.
+    ; en el orden Z correcto y que la página interior (#32770) ocupe todo el ancho
+    ; desde x=164 hasta el borde derecho sin dejar ningún cuadro gris en el Finish.
     Function GevenOnSidebarTimer
       ${If} $g_gevenSidebarHwnd != 0
         System::Call 'user32::IsWindow(p $g_gevenSidebarHwnd) i.r0'
@@ -196,25 +197,36 @@
       ; Comprueba el diálogo de página interior actual (#32770)
       FindWindow $0 "#32770" "" $HWNDPARENT
       ${If} $0 != 0
-        ; Si la página tiene el control 1044 (página Finish), utiliza el layout nativo de pantalla completa
-        GetDlgItem $1 $0 1044
-        ${If} $1 == 0
-          System::Call '*(i, i, i, i) p.r1'
-          System::Call 'user32::GetWindowRect(p $0, p r1)'
-          System::Call '*$1(i .r2, i .r3, i .r4, i .r5)'
-          System::Free $1
+        ; 1. Ancho cliente total de $HWNDPARENT
+        System::Call '*(i, i, i, i) p.r1'
+        System::Call 'user32::GetClientRect(p $HWNDPARENT, p r1)'
+        System::Call '*$1(i .r2, i .r3, i .r4, i .r5)'
+        System::Free $1
+        ; r4 = ancho cliente total. Restamos 164 px del Sidebar permanente
+        IntOp $6 $4 - 164
 
-          System::Call '*(i, i) p.r1'
-          System::Call '*$1(i r2, i r3)'
-          System::Call 'user32::ScreenToClient(p $HWNDPARENT, p r1)'
-          System::Call '*$1(i .r2, i .r3)'
-          System::Free $1
+        ; 2. Rect en pantalla de #32770
+        System::Call '*(i, i, i, i) p.r1'
+        System::Call 'user32::GetWindowRect(p $0, p r1)'
+        System::Call '*$1(i .r2, i .r3, i .r4, i .r5)'
+        System::Free $1
+        ; r7 = alto real del diálogo interior (rect.bottom - rect.top)
+        IntOp $7 $5 - $3
 
-          ${If} $r2 < 164
-            IntOp $4 $4 - $2 ; ancho
-            IntOp $5 $5 - $3 ; alto
-            System::Call 'user32::SetWindowPos(p $0, p 0, i 164, i r3, i r4, i r5, i 0x14)'
-          ${EndIf}
+        ; 3. Convertir origen (r2, r3) a coordenadas cliente de $HWNDPARENT
+        System::Call '*(i, i) p.r1'
+        System::Call '*$1(i r2, i r3)'
+        System::Call 'user32::ScreenToClient(p $HWNDPARENT, p r1)'
+        System::Call '*$1(i .r2, i .r3)'
+        System::Free $1
+
+        ; 4. Si la página no está en x=164 o no cubre todo el ancho restante:
+        ${If} $r2 != 164
+        ${OrIf} $r4 != $6
+          ; SetWindowPos: x=164, y=r3, cx=r6 (cubre hasta el borde derecho), cy=r7
+          System::Call 'user32::SetWindowPos(p $0, p 0, i 164, i r3, i r6, i r7, i 0x14)'
+          System::Call 'user32::InvalidateRect(p $0, p 0, i 1)'
+          System::Call 'user32::InvalidateRect(p $HWNDPARENT, p 0, i 1)'
         ${EndIf}
       ${EndIf}
     FunctionEnd

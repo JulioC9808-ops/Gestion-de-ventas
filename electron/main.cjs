@@ -81,13 +81,52 @@ function createWindow() {
       nodeIntegration: false,
       sandbox: false,
       preload: path.join(__dirname, 'preload.cjs'),
-      devTools: !app.isPackaged,
+      devTools: true,
     },
   });
 
-  // Diagnóstico del proceso renderer
+  // Capturar mensajes de consola del renderer y guardarlos en el log de diagnóstico
+  mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+    const levels = ['DEBUG', 'INFO', 'WARN', 'ERROR'];
+    const lvl = levels[level] || 'RENDERER';
+    logDiagnostic(lvl, `[Renderer] ${message}`, { sourceId, line });
+  });
+
+  // Diagnóstico del proceso renderer y pantalla de rescate en caso de error
   mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
     logDiagnostic('ERROR', 'did-fail-load detectado en webContents:', { errorCode, errorDescription, validatedURL });
+    const recoveryHtml = `
+      <!DOCTYPE html>
+      <html lang="es">
+      <head>
+        <meta charset="utf-8">
+        <title>Diagnóstico de Carga - GEVEN</title>
+        <style>
+          body { font-family: system-ui, -apple-system, sans-serif; background: #0b1120; color: #f8fafc; padding: 40px; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+          .card { max-width: 620px; width: 100%; background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 32px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+          h2 { color: #f43f5e; margin-top: 0; font-size: 20px; }
+          p { font-size: 14px; color: #94a3b8; line-height: 1.6; }
+          pre { background: #020617; color: #fb7185; padding: 14px; border-radius: 8px; font-size: 12px; overflow-x: auto; border: 1px solid #1e293b; word-break: break-all; }
+          .btn-group { margin-top: 24px; display: flex; gap: 12px; }
+          button { background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+          button:hover { background: #2563eb; }
+          .log-info { font-size: 11px; color: #64748b; margin-top: 16px; font-family: monospace; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <h2>Aviso de Carga en GEVEN</h2>
+          <p>No se pudo cargar el archivo principal de la interfaz (${errorCode}: ${errorDescription}).</p>
+          <pre>${validatedURL}</pre>
+          <p class="log-info">Archivo de registro: ${logFile.replace(/\\/g, '\\\\')}</p>
+          <div class="btn-group">
+            <button onclick="location.reload()">Reintentar Carga</button>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+    mainWindow?.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(recoveryHtml)}`).catch(() => {});
   });
 
   mainWindow.webContents.on('render-process-gone', (event, details) => {
@@ -98,25 +137,30 @@ function createWindow() {
     logDiagnostic('FATAL', 'El proceso de renderizado crasheó:', { killed });
   });
 
-  if (app.isPackaged) {
-    // Bloquear atajos comunes de DevTools como F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U
-    mainWindow.webContents.on('before-input-event', (event, input) => {
-      if (
-        input.key === 'F12' ||
-        ((input.control || input.meta) && input.shift && (input.key.toLowerCase() === 'i' || input.key.toLowerCase() === 'j')) ||
-        ((input.control || input.meta) && input.key.toLowerCase() === 'u')
-      ) {
-        event.preventDefault();
+  // Atajos de diagnóstico: F12 o Ctrl+Shift+I abren DevTools para depuración
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (
+      input.key === 'F12' ||
+      ((input.control || input.meta) && input.shift && input.key.toLowerCase() === 'i')
+    ) {
+      if (mainWindow?.webContents.isDevToolsOpened()) {
+        mainWindow?.webContents.closeDevTools();
+      } else {
+        mainWindow?.webContents.openDevTools({ mode: 'detach' });
       }
-    });
-  }
+      event.preventDefault();
+    }
+  });
 
-  const indexHtml = path.join(__dirname, '..', 'dist', 'index.html');
-  logDiagnostic('INFO', 'Cargando index.html desde:', indexHtml);
-
+  // Localizar index.html con comprobación de rutas alternativas
+  let indexHtml = path.join(__dirname, '..', 'dist', 'index.html');
   if (!fs.existsSync(indexHtml)) {
-    logDiagnostic('ERROR', 'El archivo index.html no existe en la ruta esperada:', indexHtml);
+    const altAppPath = path.join(app.getAppPath(), 'dist', 'index.html');
+    if (fs.existsSync(altAppPath)) {
+      indexHtml = altAppPath;
+    }
   }
+  logDiagnostic('INFO', 'Cargando index.html desde:', indexHtml);
 
   mainWindow.loadFile(indexHtml).catch((err) => {
     logDiagnostic('ERROR', 'Error al ejecutar loadFile(index.html):', err?.stack || err?.message || String(err));

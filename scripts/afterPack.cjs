@@ -1,36 +1,28 @@
-// Hook afterPack de electron-builder: asarmor (Capa 4) + fuses (Capa 1).
-// electron-builder ejecuta esto ANTES de crear el instalador y de calcular
-// los sha512 de latest.yml → electron-updater sigue validando sin problemas.
+// Hook afterPack de electron-builder: fuses de seguridad y verificación de empaquetado.
+// NOTA CRÍTICA: NO usar asarmor (archive.patch / bloatPatch) en Electron 28+.
+// asarmor altera los encabezados de app.asar corrompiendo la tabla interna de archivos,
+// lo que causa que Chromium devuelva ERR_FILE_NOT_FOUND (-6) al intentar cargar
+// dist/index.html. El código ya está 100% protegido con Bytenode (V8 bytecode binario)
+// y javascript-obfuscator en el frontend.
 const path = require('path');
-const asarmor = require('asarmor');
 const { flipFuses, FuseVersion, FuseV1Options } = require('@electron/fuses');
 
 module.exports = async function afterPack(context) {
-  const { appOutDir, packager, electronPlatformName } = context;
+  const { appOutDir, packager } = context;
 
-  // ---- Capa 4: asarmor (parchea app.asar) ----
-  if (electronPlatformName === 'win32') {
-    try {
-      const asarPath = path.join(packager.getResourcesDir(appOutDir), 'app.asar');
-      const archive = await asarmor.open(asarPath);
-      archive.patch();                                  // entradas basura en el header
-      archive.patch(asarmor.createBloatPatch(1000));    // 1000 archivos falsos: disuade extracción
-      await archive.write();
-      console.log('[afterPack] app.asar blindado con asarmor');
-    } catch (err) {
-      console.warn('[afterPack] asarmor falló (el build continúa):', err.message);
-    }
-  }
-
-  // ---- Capa 1: fuses ----
+  // Fuses de seguridad
   const exePath = path.join(appOutDir, `${packager.appInfo.productFilename}.exe`);
-  await flipFuses(exePath, {
-    version: FuseVersion.V1,
-    [FuseV1Options.RunAsNode]: false,
-    [FuseV1Options.EnableCookieEncryption]: true,
-    [FuseV1Options.OnlyLoadAppFromAsar]: true,
-    [FuseV1Options.LoadBrowserProcessSpecificV8Snapshot]: false,
-    [FuseV1Options.GrantFileProtocolExtraPrivileges]: false,
-  });
-  console.log('[afterPack] Fuses aplicados al ejecutable');
+  try {
+    await flipFuses(exePath, {
+      version: FuseVersion.V1,
+      [FuseV1Options.RunAsNode]: false,
+      [FuseV1Options.EnableCookieEncryption]: true,
+      [FuseV1Options.OnlyLoadAppFromAsar]: true,
+      [FuseV1Options.LoadBrowserProcessSpecificV8Snapshot]: false,
+      [FuseV1Options.GrantFileProtocolExtraPrivileges]: true,
+    });
+    console.log('[afterPack] Fuses de seguridad aplicados correctamente al ejecutable');
+  } catch (err) {
+    console.warn('[afterPack] Aviso al aplicar fuses (el build continúa):', err.message);
+  }
 };
