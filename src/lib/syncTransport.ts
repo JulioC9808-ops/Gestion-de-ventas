@@ -1,7 +1,7 @@
 import LZString from 'lz-string';
 import type { BackupPayload } from '@/lib/backup';
 import type { ShiftReport } from '@/types';
-import { WiFiDirect, buildWDQr, parseWDQr } from './wifiDirect';
+import { WiFiDirect, buildWDQr, parseWDQr, isWifiOffError } from './wifiDirect';
 import { Capacitor } from '@capacitor/core';
 
 /**
@@ -55,6 +55,39 @@ function isAndroidNative(): boolean {
   }
 }
 
+type LocalSyncPlugin = {
+  start: (options: { payload: string }) => Promise<{ url: string }>;
+  stop: () => Promise<void>;
+};
+
+function getLocalSync(): LocalSyncPlugin | undefined {
+  return window.Capacitor?.Plugins?.LocalSync as LocalSyncPlugin | undefined;
+}
+
+/** Android: intenta Wi-Fi Direct (estilo Zapya). Devuelve el QR o null si no se pudo. */
+async function tryWiFiDirectShare(payload: string): Promise<string | null> {
+  try {
+    const token = randomToken();
+    const { port, ssid, pass } = await WiFiDirect.startShare({ token, payload });
+    return buildWDQr(token, port, ssid, pass);
+  } catch (e) {
+    if (isWifiOffError(e)) throw new Error('Activa el Wi-Fi y vuelve a tocar el botón.');
+    return null;
+  }
+}
+
+async function receiveWD(raw: string): Promise<string | null> {
+  const wd = parseWDQr(raw);
+  if (!wd) return null;
+  try {
+    const { payload } = await WiFiDirect.receiveShare(wd);
+    return payload;
+  } catch (e) {
+    if (isWifiOffError(e)) throw new Error('Activa el Wi-Fi y vuelve a escanear el código.');
+    throw e;
+  }
+}
+
 function randomToken(): string {
   try {
     if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
@@ -73,7 +106,8 @@ export function decodeEmployeePackage(encoded: string): EmployeeSyncPackage | nu
     const json = LZString.decompressFromEncodedURIComponent(encoded);
     if (!json) return null;
     const parsed = JSON.parse(json) as EmployeeSyncPackage;
-    const isV2orV3 = parsed?.v === 2 || parsed?.v === 3;
+    const v = (parsed as { v?: number })?.v;
+    const isV2orV3 = v === 2 || v === 3;
     if (!isV2orV3 || parsed.account?.r !== 'employee' || !parsed.backup || !Array.isArray(parsed.backup.products)) return null;
     return parsed;
   } catch {
@@ -86,14 +120,9 @@ export async function startEmployeeShare(data: EmployeeSyncPackage): Promise<str
 
   // Android: WiFi Direct primero (sin router ni red previa); si falla, Wi-Fi local.
   if (isAndroidNative()) {
-    try {
-      const token = randomToken();
-      const { port } = await WiFiDirect.startShare({ token, payload });
-      return buildWDQr(token, port);
-    } catch {
-      // WiFi Direct no disponible (permiso/fabricante) → seguimos con Wi-Fi local.
-    }
-    const localSync = window.Capacitor?.Plugins?.LocalSync;
+    const qr = await tryWiFiDirectShare(payload);
+    if (qr) return qr;
+    const localSync = getLocalSync();
     if (localSync) {
       const result = await localSync.start({ payload });
       return `${WIFI_PREFIX}${result.url}`;
@@ -108,7 +137,7 @@ export async function startEmployeeShare(data: EmployeeSyncPackage): Promise<str
   if (window.desktopBridge?.startSyncServer) {
     return `${WIFI_PREFIX}${await window.desktopBridge.startSyncServer(payload)}`;
   }
-  const localSync = window.Capacitor?.Plugins?.LocalSync;
+  const localSync = getLocalSync();
   if (localSync) {
     const result = await localSync.start({ payload });
     return `${WIFI_PREFIX}${result.url}`;
@@ -131,7 +160,7 @@ export async function stopEmployeeShare(): Promise<void> {
     return;
   }
   try {
-    await window.Capacitor?.Plugins?.LocalSync?.stop();
+    await getLocalSync()?.stop();
   } catch {
     // ignore
   }
@@ -142,11 +171,8 @@ export async function receiveEmployeeShare(raw: string): Promise<EmployeeSyncPac
     return decodeEmployeePackage(raw.slice(DIRECT_PREFIX.length));
   }
   // WiFi Direct: el QR trae token|puerto del grupo del admin.
-  const wd = parseWDQr(raw);
-  if (wd) {
-    const { payload } = await WiFiDirect.receiveShare({ token: wd.token, port: wd.port });
-    return decodeEmployeePackage(payload);
-  }
+  const wdPayload = await receiveWD(raw);
+  if (wdPayload !== null) return decodeEmployeePackage(wdPayload);
   if (!raw.startsWith(WIFI_PREFIX)) return null;
   const url = raw.slice(WIFI_PREFIX.length);
   if (!/^http:\/\/[^/]+\/sync\/[a-zA-Z0-9-]+$/.test(url)) return null;
@@ -172,10 +198,14 @@ export function decodeShiftPackage(encoded: string): ShiftReport | null {
 
 export async function startShiftShare(report: ShiftReport): Promise<string> {
   const payload = encodeShiftPackage(report);
+  if (isAndroidNative()) {
+    const qr = await tryWiFiDirectShare(payload);
+    if (qr) return qr;
+  }
   if (window.desktopBridge?.startSyncServer) {
     return `${SHIFT_WIFI_PREFIX}${await window.desktopBridge.startSyncServer(payload)}`;
   }
-  const localSync = window.Capacitor?.Plugins?.LocalSync;
+  const localSync = getLocalSync();
   if (localSync) {
     const result = await localSync.start({ payload });
     return `${SHIFT_WIFI_PREFIX}${result.url}`;
@@ -187,12 +217,17 @@ export async function startShiftShare(report: ShiftReport): Promise<string> {
 }
 
 export async function stopShiftShare(): Promise<void> {
+  try {
+    await WiFiDirect.stopShare();
+  } catch {
+    // ignore
+  }
   if (window.desktopBridge?.stopSyncServer) {
     await window.desktopBridge.stopSyncServer();
     return;
   }
   try {
-    await window.Capacitor?.Plugins?.LocalSync?.stop();
+    await getLocalSync()?.stop();
   } catch {
     // ignore
   }
@@ -202,6 +237,8 @@ export async function receiveShiftShare(raw: string): Promise<ShiftReport | null
   if (raw.startsWith(SHIFT_DIRECT_PREFIX)) {
     return decodeShiftPackage(raw.slice(SHIFT_DIRECT_PREFIX.length));
   }
+  const wdPayload = await receiveWD(raw);
+  if (wdPayload !== null) return decodeShiftPackage(wdPayload);
   if (!raw.startsWith(SHIFT_WIFI_PREFIX)) return null;
   const url = raw.slice(SHIFT_WIFI_PREFIX.length);
   if (!/^http:\/\/[^/]+\/sync\/[a-zA-Z0-9-]+$/.test(url)) return null;
@@ -231,14 +268,9 @@ export async function startAdminShare(data: AdminSyncPackage): Promise<string> {
   const payload = encodeAdminPackage(data);
 
   if (isAndroidNative()) {
-    try {
-      const token = randomToken();
-      const { port } = await WiFiDirect.startShare({ token, payload });
-      return buildWDQr(token, port);
-    } catch {
-      // Fallback
-    }
-    const localSync = window.Capacitor?.Plugins?.LocalSync;
+    const qr = await tryWiFiDirectShare(payload);
+    if (qr) return qr;
+    const localSync = getLocalSync();
     if (localSync) {
       const result = await localSync.start({ payload });
       return `${ADMIN_WIFI_PREFIX}${result.url}`;
@@ -249,7 +281,7 @@ export async function startAdminShare(data: AdminSyncPackage): Promise<string> {
   if (window.desktopBridge?.startSyncServer) {
     return `${ADMIN_WIFI_PREFIX}${await window.desktopBridge.startSyncServer(payload)}`;
   }
-  const localSync = window.Capacitor?.Plugins?.LocalSync;
+  const localSync = getLocalSync();
   if (localSync) {
     const result = await localSync.start({ payload });
     return `${ADMIN_WIFI_PREFIX}${result.url}`;
@@ -268,7 +300,7 @@ export async function stopAdminShare(): Promise<void> {
     return;
   }
   try {
-    await window.Capacitor?.Plugins?.LocalSync?.stop();
+    await getLocalSync()?.stop();
   } catch {
     // ignore
   }
@@ -278,11 +310,8 @@ export async function receiveAdminShare(raw: string): Promise<AdminSyncPackage |
   if (raw.startsWith(ADMIN_DIRECT_PREFIX)) {
     return decodeAdminPackage(raw.slice(ADMIN_DIRECT_PREFIX.length));
   }
-  const wd = parseWDQr(raw);
-  if (wd) {
-    const { payload } = await WiFiDirect.receiveShare({ token: wd.token, port: wd.port });
-    return decodeAdminPackage(payload);
-  }
+  const wdPayload = await receiveWD(raw);
+  if (wdPayload !== null) return decodeAdminPackage(wdPayload);
   if (!raw.startsWith(ADMIN_WIFI_PREFIX)) return null;
   const url = raw.slice(ADMIN_WIFI_PREFIX.length);
   if (!/^http:\/\/[^/]+\/sync\/[a-zA-Z0-9-]+$/.test(url)) return null;
