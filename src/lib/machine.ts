@@ -1,32 +1,6 @@
 // Identidad de dispositivo para la licencia:
 // - PC (Electron): huella de hardware (disco/BIOS/CPU/RAM) expuesta por preload.cjs.
 // - Android (Capacitor): SHA-256 de Settings.Secure.ANDROID_ID vía LocalSyncPlugin.
-interface DesktopBridge {
-  isElectron: boolean;
-  machineId: string;
-  hardwareComponents?: { disk: string; bios: string; cpu: string; ram: string };
-  platform: string;
-  startSyncServer?: (payload: string) => Promise<string>;
-  stopSyncServer?: () => Promise<void>;
-  windowControls?: Record<string, unknown>;
-}
-
-declare global {
-  interface Window {
-    desktopBridge?: DesktopBridge;
-    Capacitor?: {
-      isNativePlatform?: () => boolean;
-      Plugins?: {
-        LocalSync?: {
-          start: (options: { payload: string }) => Promise<{ url: string }>;
-          stop: () => Promise<void>;
-          getAndroidId?: () => Promise<{ idHash: string }>;
-        };
-        WiFiDirect?: Record<string, unknown>;
-      };
-    };
-  }
-}
 
 export interface HardwareComponents {
   disk: string;

@@ -10,7 +10,11 @@ import android.net.wifi.WpsInfo
 import android.net.wifi.p2p.WifiP2pConfig
 import android.net.wifi.p2p.WifiP2pInfo
 import android.net.wifi.p2p.WifiP2pManager
+import android.net.wifi.WifiManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import android.provider.Settings
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.getcapacitor.JSObject
@@ -64,6 +68,23 @@ class WiFiDirectPlugin : Plugin() {
         return false
     }
 
+    /** Enciende el Wi-Fi solo si está apagado (Android 9 directo; 10+ abre el panel rápido). */
+    private fun ensureWifiOn(call: PluginCall): Boolean {
+        val ctx = activity ?: return false
+        val wm = ctx.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager ?: return true
+        if (wm.isWifiEnabled) return true
+        if (Build.VERSION.SDK_INT < 29) {
+            @Suppress("DEPRECATION")
+            if (wm.setWifiEnabled(true)) return true
+        } else {
+            try { ctx.startActivity(Intent(Settings.Panel.ACTION_WIFI)) } catch (ignored: Exception) {}
+        }
+        call.reject("WIFI_OFF: Activa el Wi-Fi en el panel y vuelve a intentarlo.")
+        return false
+    }
+
+    private val main = Handler(Looper.getMainLooper())
+
     private fun p2p(): WifiP2pManager? {
         if (manager == null) {
             manager = activity?.getSystemService(Context.WIFI_P2P_SERVICE) as? WifiP2pManager
@@ -77,6 +98,7 @@ class WiFiDirectPlugin : Plugin() {
     @PluginMethod
     fun startShare(call: PluginCall) {
         if (!ensurePermissions(call)) return
+        if (!ensureWifiOn(call)) return
         val t = call.getString("token") ?: ""
         val p = call.getString("payload") ?: ""
         if (t.isEmpty() || p.isEmpty()) { call.reject("Faltan datos para compartir"); return }
@@ -99,28 +121,44 @@ class WiFiDirectPlugin : Plugin() {
             // Algunos fabricantes no exponen setDeviceName; se ignora.
         }
 
-        // 2) Crear el grupo (el teléfono actúa como punto de acceso directo)
-        mgr.createGroup(channel, object : WifiP2pManager.ActionListener {
-            override fun onSuccess() {
-                // 3) Servidor HTTP sobre la interfaz del grupo
-                try {
-                    stopServer()
-                    server = ServerSocket(0)
-                    serverThread = Thread({
-                        val port = server?.localPort ?: 0
-                        val res = JSObject(); res.put("port", port)
-                        call.resolve(res)
-                        serveLoop()
-                    }, "wd-server")
-                    serverThread?.start()
-                } catch (e: Exception) {
-                    call.reject("No se pudo abrir la transferencia directa", e)
+        // 2) Quitar grupo previo y crear uno nuevo (el teléfono actúa como punto de acceso directo)
+        val create = {
+            mgr.createGroup(channel, object : WifiP2pManager.ActionListener {
+                override fun onSuccess() { openServerAndResolve(call, 0) }
+                override fun onFailure(reason: Int) {
+                    call.reject("No se pudo crear el grupo WiFi Direct (código $reason)")
                 }
+            })
+        }
+        try {
+            mgr.removeGroup(channel, object : WifiP2pManager.ActionListener {
+                override fun onSuccess() { main.postDelayed({ create() }, 300) }
+                override fun onFailure(reason: Int) { create() }
+            })
+        } catch (ignored: Exception) { create() }
+    }
+
+    /** Abre el servidor y devuelve puerto + nombre/clave del grupo para meterlos en el QR. */
+    private fun openServerAndResolve(call: PluginCall, attempt: Int) {
+        manager?.requestGroupInfo(channel) { group ->
+            if ((group == null || group.networkName.isNullOrEmpty()) && attempt < 10) {
+                main.postDelayed({ openServerAndResolve(call, attempt + 1) }, 400)
+                return@requestGroupInfo
             }
-            override fun onFailure(reason: Int) {
-                call.reject("No se pudo crear el grupo WiFi Direct (código $reason)")
+            try {
+                stopServer()
+                server = ServerSocket(0)
+                val res = JSObject()
+                res.put("port", server?.localPort ?: 0)
+                res.put("ssid", group?.networkName ?: "")
+                res.put("pass", group?.passphrase ?: "")
+                call.resolve(res)
+                serverThread = Thread({ serveLoop() }, "wd-server")
+                serverThread?.start()
+            } catch (e: Exception) {
+                call.reject("No se pudo abrir la transferencia directa", e)
             }
-        })
+        }
     }
 
     @PluginMethod
@@ -227,13 +265,36 @@ class WiFiDirectPlugin : Plugin() {
         pendingToken = call.getString("token") ?: ""
         pendingPort = (call.getInt("port") ?: 0)
         if (pendingToken.isEmpty() || pendingPort <= 0) { call.reject("QR inválido"); return }
+        if (!ensureWifiOn(call)) return
+        val ssid = call.getString("ssid") ?: ""
+        val pass = call.getString("pass") ?: ""
         pendingCall = call
+        // Tiempo máximo de espera
+        main.postDelayed({ if (pendingCall === call) fail("No se encontró el dispositivo emisor. Acércalos e intenta de nuevo.") }, 45000)
 
         val filter = IntentFilter().apply {
             addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION)
             addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION)
         }
         activity.registerReceiver(p2pReceiver, filter)
+
+        // Android 10+: conexión directa con nombre y clave del QR (sin buscar ni confirmar).
+        if (Build.VERSION.SDK_INT >= 29 && ssid.isNotEmpty() && pass.length >= 8) {
+            busy = true
+            val cfg = WifiP2pConfig.Builder()
+                .setNetworkName(ssid)
+                .setPassphrase(pass)
+                .enablePersistentMode(false)
+                .build()
+            mgr.connect(channel, cfg, object : WifiP2pManager.ActionListener {
+                override fun onSuccess() { /* espera CONNECTION_CHANGED */ }
+                override fun onFailure(reason: Int) {
+                    busy = false
+                    mgr.discoverPeers(channel, null)
+                }
+            })
+            return
+        }
 
         mgr.discoverPeers(channel, object : WifiP2pManager.ActionListener {
             override fun onSuccess() { /* llega PEERS_CHANGED */ }
