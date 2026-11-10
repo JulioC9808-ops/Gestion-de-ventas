@@ -16,11 +16,26 @@ interface Window {
     updates?: {
       onProgress: (cb: (percent: number) => void) => void;
       check: () => void;
+      applyChanges?: () => Promise<unknown>;
+      [key: string]: unknown;
     };
+    machineId?: string;
+    hardwareComponents?: { disk: string; bios: string; cpu: string; ram: string };
+    platform?: string;
+    startSyncServer?: (payload: string) => Promise<string>;
+    stopSyncServer?: () => Promise<void>;
     [key: string]: unknown;
   };
   Capacitor?: {
     isNativePlatform?: () => boolean;
+    Plugins?: {
+      LocalSync?: {
+        start: (options: { payload: string }) => Promise<{ url: string }>;
+        stop: () => Promise<void>;
+        getAndroidId?: () => Promise<{ idHash: string }>;
+      };
+      [key: string]: unknown;
+    };
     [key: string]: unknown;
   };
 }
